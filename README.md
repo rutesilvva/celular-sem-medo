@@ -2,7 +2,10 @@
 
 Base mobile navegável para uma plataforma de letramento digital voltada a pessoas idosas. O produto reúne uma experiência de prática segura para participantes e uma visão de acompanhamento para monitores.
 
-Esta entrega é um protótipo funcional em Expo/React Native: os fluxos principais, estados de interface e feedbacks estão implementados com dados locais, sem backend ou integrações reais.
+Esta entrega combina um protótipo funcional em Expo/React Native com a fundação
+versionada do backend. As telas ainda usam dados locais, mas a arquitetura
+Supabase, o esquema relacional, as regras de acesso, as migrações e os seeds já
+estão definidos para a integração das próximas issues.
 
 ## Visão do produto
 
@@ -16,7 +19,9 @@ Para o monitor, o aplicativo organiza o progresso da turma, o uso dos recursos d
 - React 19 e TypeScript em modo estrito;
 - Expo Router para navegação baseada em arquivos;
 - `@expo/vector-icons` para a iconografia;
-- `react-native-safe-area-context` para respeitar as áreas seguras do aparelho.
+- `react-native-safe-area-context` para respeitar as áreas seguras do aparelho;
+- Supabase Auth, Postgres e RLS como backend decidido para o MVP;
+- Supabase CLI 2.115.0 e Docker para o ambiente local reproduzível.
 
 A marca oficial está empacotada localmente em `assets/`, sem depender de rede para aparecer na splash, no login e nas telas de apoio.
 
@@ -76,7 +81,17 @@ src/
 ├── components/          # Shell de tela, navegação, feedback e UI reutilizável
 ├── context/             # Estado efêmero de perfil, preferências e avisos
 ├── data/                # Participantes, missões e métricas mockadas
-└── theme/               # Cores, tipografia, espaçamento, raios e sombras
+├── theme/               # Cores, tipografia, espaçamento, raios e sombras
+└── types/               # Tipos TypeScript gerados a partir do Postgres
+
+docs/
+├── adr/                 # Decisões arquiteturais
+└── architecture/        # Ambientes e modelo de dados
+
+supabase/
+├── migrations/          # Schema, constraints, índices, grants e RLS
+├── config.toml          # Configuração local não secreta
+└── seed.sql             # Catálogo sintético para desenvolvimento
 ```
 
 As rotas ficam em `app/`, seguindo as convenções do Expo Router. Regras visuais e componentes compartilhados ficam em `src/` para evitar que cada tela replique estilos e comportamentos.
@@ -85,6 +100,7 @@ As rotas ficam em `app/`, seguindo as convenções do Expo Router. Regras visuai
 
 - Node.js 20 LTS;
 - npm 10 ou superior;
+- Docker Desktop, OrbStack, Colima ou runtime Docker equivalente para o backend;
 - para dispositivo físico, Expo Go compatível com o SDK 54;
 - opcionalmente, Android Studio para emulador Android;
 - opcionalmente, macOS com Xcode para simulador iOS.
@@ -106,6 +122,42 @@ Se o Metro estiver com cache antigo, use:
 npx expo start --clear
 ```
 
+## Backend local
+
+A decisão e os contratos técnicos estão documentados em:
+
+- [ADR-0001 — backend do MVP](docs/adr/0001-backend-mvp.md);
+- [modelo de dados e matriz de acesso](docs/architecture/data-model.md);
+- [ambientes development, staging e production](docs/architecture/environments.md);
+- [guia completo de desenvolvimento](docs/development-setup.md).
+
+Com o Docker iniciado, prepare uma cópia local da configuração e suba a stack:
+
+```bash
+cp .env.example .env.local
+npm run backend:start
+npm run backend:status
+```
+
+No primeiro uso, o download das imagens pode demorar. `backend:start` aplica as
+migrações e o seed automaticamente.
+
+`backend:status` também mostra credenciais administrativas da stack local. Copie
+para o app somente `API_URL` e `PUBLISHABLE_KEY`; nunca coloque `SECRET_KEY`,
+`SERVICE_ROLE_KEY` ou `JWT_SECRET` em variável `EXPO_PUBLIC_*` ou no Git.
+
+Para provar que um clone novo é reproduzível, reconstrua o banco inteiro:
+
+```bash
+npm run backend:reset
+npm run backend:lint
+```
+
+O seed contém somente conteúdo sintético. Dados reais de produção nunca devem
+ser copiados para development ou staging. O Google OAuth local permanece
+desativado por padrão; a configuração mobile completa será feita na issue #3 e
+homologada em development build/staging.
+
 ## Comandos
 
 | Comando | Finalidade |
@@ -117,6 +169,13 @@ npx expo start --clear
 | `npm run export` | Gera os bundles de Android, iOS e web. |
 | `npm run lint` | Executa as regras do ESLint/Expo. |
 | `npm run typecheck` | Valida os tipos TypeScript sem gerar arquivos. |
+| `npm run backend:start` | Inicia Auth, Postgres, API e Studio locais. |
+| `npm run backend:status` | Mostra o status, endpoints e credenciais da stack local. |
+| `npm run backend:reset` | Recria o banco local com migrações e seed. |
+| `npm run backend:lint` | Analisa funções e schema Postgres locais. |
+| `npm run backend:migration:new -- nome` | Cria uma nova migração SQL. |
+| `npm run backend:types` | Regenera os tipos TypeScript do banco local. |
+| `npm run backend:stop` | Encerra os contêineres locais sem apagar os dados. |
 
 ## Como testar a demonstração
 
@@ -168,10 +227,11 @@ As preferências de letras maiores e contraste reforçado são aplicadas pelos c
 
 Os dados de participantes, missões e indicadores estão centralizados em `src/data/mock.ts`. O `AppContext` mantém o papel autenticado localmente, preferências, conclusão da missão, tentativas, uso de ajuda e feedbacks temporários enquanto o app está aberto. Ao concluir a prática, o progresso de Maria é atualizado também nas telas do monitor.
 
-Nesta versão:
+Nesta versão da interface:
 
 - login e senha não são autenticados; o guard de rotas separa os dois perfis apenas dentro da sessão local;
-- não existe API, banco de dados, sincronização ou armazenamento persistente;
+- a fundação do banco existe, mas o aplicativo ainda não está conectado à API,
+  à autenticação nem ao armazenamento persistente;
 - recarregar o aplicativo restaura os valores iniciais;
 - áudio e fala são representados por feedback visual, sem reprodução ou captura real;
 - o simulador não envia mensagens, fotos, localização ou transações;
@@ -179,4 +239,7 @@ Nesta versão:
 - métricas e gráficos usam valores estáticos ou cálculos feitos sobre os mocks;
 - a interface não deve ser usada como fonte de dados reais sobre participantes.
 
-Para evoluir esta base para produção, os próximos passos naturais são autenticação, persistência das preferências, API para turmas/missões, armazenamento seguro, áudio real, testes automatizados e revisão de acessibilidade com usuários.
+Para evoluir esta base para produção, os próximos passos são integrar o cliente
+Supabase, configurar Google OAuth, persistir a sessão com armazenamento seguro,
+conectar os fluxos ao modelo criado, implementar áudio real, adicionar testes
+automatizados e validar acessibilidade com usuários.

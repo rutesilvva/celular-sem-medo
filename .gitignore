@@ -6,6 +6,8 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+supabase/.branches/
+supabase/.temp/
 
 # generated native projects
 /android/
@@ -15,7 +17,9 @@ expo-env.d.ts
 .DS_Store
 *.log
 *.tsbuildinfo
-.env*.local
+.env
+.env.*
+!.env.example
 *.jks
 *.p8
 *.p12

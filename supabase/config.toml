@@ -1,0 +1,19 @@
+# Configuracao local nao secreta. A stack local e exclusiva para desenvolvimento.
+project_id = "celular-sem-medo"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:8081"
+additional_redirect_urls = [
+  "celularsemmedo-dev://auth/callback",
+  "exp://127.0.0.1:8081/--/auth/callback",
+]
+jwt_expiry = 3600
+enable_signup = true
+
+# O login Google local exige credenciais externas. Ele permanece desativado para
+# que `supabase start` funcione sem segredos. Para validar OAuth em aparelho,
+# prefira staging; nunca grave client secret neste arquivo.
+[auth.external.google]
+enabled = false
+skip_nonce_check = false
