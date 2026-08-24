@@ -4,12 +4,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, LogoMark } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantWelcomeScreen() {
   const router = useRouter();
-  const { currentUser } = useApp();
+  const { currentUser } = useAuth();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Olá';
 
   return (

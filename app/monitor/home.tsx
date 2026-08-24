@@ -6,12 +6,14 @@ import { MonitorNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { monitorMissions, participants } from '@/data/mock';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function MonitorHomeScreen() {
   const router = useRouter();
-  const { currentUser, participantProgress, showNotice } = useApp();
+  const { participantProgress, showNotice } = useApp();
+  const { currentUser } = useAuth();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Monitor';
   const currentParticipants = participants.map((participant) => participant.id === 'maria'
     ? { ...participant, progress: participantProgress }

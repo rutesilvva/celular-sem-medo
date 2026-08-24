@@ -26,10 +26,10 @@ if (!refreshResponse.ok || !rotated.refresh_token) throw new Error('Refresh rota
 if (rotated.refresh_token === signedIn.refresh_token) throw new Error('Refresh token não foi rotacionado.');
 
 const revokedToken = rotated.refresh_token;
-const logoutResponse = await fetch(`${url}/auth/v1/logout?scope=local`, {
+const logoutResponse = await fetch(`${url}/auth/v1/logout?scope=global`, {
   method: 'POST', headers: { ...publicHeaders, Authorization: `Bearer ${rotated.access_token}` },
 });
-if (!logoutResponse.ok) throw new Error('Logout local não revogou a sessão.');
+if (!logoutResponse.ok) throw new Error('Logout global não revogou a sessão.');
 
 const replayResponse = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
   method: 'POST', headers: publicHeaders, body: JSON.stringify({ refresh_token: revokedToken }),

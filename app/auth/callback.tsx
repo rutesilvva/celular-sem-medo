@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { exchangeGoogleCode, GoogleAuthError, GoogleAuthErrorCode } from '@/lib/google-auth';
 import { colors, spacing } from '@/theme/tokens';
 
@@ -21,7 +21,7 @@ const callbackErrors: Record<GoogleAuthErrorCode, string> = {
 export default function AuthCallbackScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ code?: string; error?: string }>();
-  const { acceptAuthenticatedAccount } = useApp();
+  const { acceptAuthenticatedAccount } = useAuth();
   const started = useRef(false);
   const [errorCode, setErrorCode] = useState<GoogleAuthErrorCode | null>(null);
   const parameterError = params.error || !params.code

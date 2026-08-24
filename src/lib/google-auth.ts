@@ -46,6 +46,7 @@ export async function signInWithGoogle(): Promise<AuthenticatedAccount | null> {
         redirectTo,
         skipBrowserRedirect: Platform.OS !== 'web',
         scopes: 'openid email profile',
+        queryParams: { prompt: 'select_account' },
       },
     });
     if (error) throw error;
@@ -122,10 +123,6 @@ export async function getCurrentAuthContext(): Promise<{ roles: Role[]; errorCod
     roles: [...new Set(data[0].access_roles.filter(isRole))],
     errorCode: data[0].error_code,
   };
-}
-
-export async function signOutFromGoogle() {
-  await getSupabase().auth.signOut({ scope: 'local' });
 }
 
 function getRedirectUrl() {

@@ -8,6 +8,7 @@ import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, SectionTitle, SwitchRow, Tag } from '@/components/ui';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type ReportPeriod = 7 | 30 | 90;
@@ -15,17 +16,21 @@ const periods: readonly ReportPeriod[] = [7, 30, 90];
 
 export default function MonitorProfileScreen() {
   const router = useRouter();
-  const { currentUser, preferences, setPreference, showNotice, signOut } = useApp();
+  const { preferences, setPreference, showNotice } = useApp();
+  const { currentUser, signOut } = useAuth();
   const displayName = currentUser?.name || 'Monitor';
   const [showAudioMetrics, setShowAudioMetrics] = useState(true);
   const [period, setPeriod] = useState<ReportPeriod>(30);
   const [periodOpen, setPeriodOpen] = useState(false);
 
-  const logout = () => {
-    signOut();
-    showNotice('Sessão encerrada com segurança.');
-    router.dismissAll();
-    router.replace('/login');
+  const logout = async () => {
+    try {
+      await signOut();
+    } finally {
+      showNotice('Sessão encerrada com segurança.');
+      router.dismissAll();
+      router.replace('/login');
+    }
   };
 
   return (

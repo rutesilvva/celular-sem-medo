@@ -6,17 +6,19 @@ import { StyleSheet, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, SwitchRow } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantAccessibilityScreen() {
   const router = useRouter();
-  const { completeParticipantOnboarding, preferences, setPreference, showNotice } = useApp();
+  const { preferences, setPreference, showNotice } = useApp();
+  const { completeParticipantOnboarding } = useAuth();
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     if (saving) return;
     setSaving(true);
-    const saved = await completeParticipantOnboarding();
+    const saved = await completeParticipantOnboarding(preferences);
     if (saved) {
       showNotice('Preferências salvas');
       router.dismissAll();

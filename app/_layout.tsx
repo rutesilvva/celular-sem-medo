@@ -1,25 +1,37 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppFeedback } from '@/components/AppFeedback';
-import { AppProvider, useApp } from '@/context/AppContext';
+import { AppProvider } from '@/context/AppContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { colors } from '@/theme/tokens';
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AppProvider>
-        <AppNavigator />
-        <StatusBar style="dark" />
-        <AppFeedback />
-      </AppProvider>
+      <AuthProvider>
+        <AppProvider>
+          <AppNavigator />
+          <StatusBar style="dark" />
+          <AppFeedback />
+        </AppProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
 
 function AppNavigator() {
-  const { sessionRole } = useApp();
+  const { sessionRole, status } = useAuth();
+
+  if (status === 'bootstrapping' || status === 'refreshing') {
+    return (
+      <View accessibilityLabel="Verificando sessão segura" style={styles.boot}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
 
   return (
     <Stack
@@ -35,7 +47,7 @@ function AppNavigator() {
       <Stack.Screen name="auth/callback" />
       <Stack.Screen name="+not-found" />
 
-      <Stack.Protected guard={sessionRole === 'participant'}>
+      <Stack.Protected guard={status === 'authenticated' && sessionRole === 'participant'}>
         <Stack.Screen name="participant/welcome" />
         <Stack.Screen name="participant/accessibility" />
         <Stack.Screen name="participant/home" />
@@ -49,7 +61,7 @@ function AppNavigator() {
         <Stack.Screen name="participant/profile" />
       </Stack.Protected>
 
-      <Stack.Protected guard={sessionRole === 'monitor'}>
+      <Stack.Protected guard={status === 'authenticated' && sessionRole === 'monitor'}>
         <Stack.Screen name="monitor/home" />
         <Stack.Screen name="monitor/participants" />
         <Stack.Screen name="monitor/participant-details" />
@@ -58,7 +70,7 @@ function AppNavigator() {
         <Stack.Screen name="monitor/profile" />
       </Stack.Protected>
 
-      <Stack.Protected guard={sessionRole === 'admin'}>
+      <Stack.Protected guard={status === 'authenticated' && sessionRole === 'admin'}>
         <Stack.Screen name="admin/home" />
         <Stack.Screen name="admin/users" />
         <Stack.Screen name="admin/classes" />
@@ -67,3 +79,7 @@ function AppNavigator() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  boot: { alignItems: 'center', backgroundColor: colors.background, flex: 1, justifyContent: 'center' },
+});

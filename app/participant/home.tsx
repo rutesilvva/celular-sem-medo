@@ -6,6 +6,7 @@ import { ParticipantNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 const learningAreas = [
@@ -45,7 +46,8 @@ const learningAreas = [
 
 export default function ParticipantHomeScreen() {
   const router = useRouter();
-  const { currentUser, mission, participantProgress } = useApp();
+  const { mission, participantProgress } = useApp();
+  const { currentUser } = useAuth();
   const displayName = currentUser?.name || 'Participante';
   const firstName = displayName.split(/\s+/)[0];
 

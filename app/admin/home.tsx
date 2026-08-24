@@ -6,12 +6,14 @@ import { AdminNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, Card, Header, MetricCard, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { managedClasses } from '@/data/admin';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function AdminHomeScreen() {
   const router = useRouter();
-  const { currentUser, managedUsers } = useApp();
+  const { managedUsers } = useApp();
+  const { currentUser } = useAuth();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Administrador';
   const count = (role: 'participant' | 'monitor' | 'admin') => managedUsers.filter((user) => user.role === role).length;
 

@@ -7,18 +7,23 @@ import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, SwitchRow, Tag } from '@/components/ui';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantProfileScreen() {
   const router = useRouter();
-  const { currentUser, preferences, setPreference, showNotice, signOut } = useApp();
+  const { preferences, setPreference, showNotice } = useApp();
+  const { currentUser, signOut } = useAuth();
   const displayName = currentUser?.name || 'Participante';
 
-  const logout = () => {
-    signOut();
-    showNotice('Sessão encerrada com segurança.');
-    router.dismissAll();
-    router.replace('/login');
+  const logout = async () => {
+    try {
+      await signOut();
+    } finally {
+      showNotice('Sessão encerrada com segurança.');
+      router.dismissAll();
+      router.replace('/login');
+    }
   };
 
   return (

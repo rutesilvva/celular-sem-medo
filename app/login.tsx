@@ -5,7 +5,8 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, LogoMark } from '@/components/ui';
-import { Role, useApp } from '@/context/AppContext';
+import type { Role } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { GoogleAuthError, GoogleAuthErrorCode, signInWithGoogle } from '@/lib/google-auth';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -23,15 +24,19 @@ export default function LoginScreen() {
   const router = useRouter();
   const {
     acceptAuthenticatedAccount,
-    authReady,
+    errorCode: sessionErrorCode,
     availableRoles,
     currentUser,
     participantOnboardingCompleted,
     selectSessionRole,
     sessionRole,
-  } = useApp();
+    status,
+    retrySessionRestore,
+  } = useAuth();
+  const authReady = status === 'anonymous' || status === 'authenticated';
   const [loading, setLoading] = useState(false);
-  const [errorCode, setErrorCode] = useState<GoogleAuthErrorCode | null>(null);
+  const [loginErrorCode, setLoginErrorCode] = useState<GoogleAuthErrorCode | null>(null);
+  const errorCode = loginErrorCode ?? sessionErrorCode;
   const authLock = useRef(false);
 
   useEffect(() => {
@@ -46,12 +51,12 @@ export default function LoginScreen() {
     if (authLock.current || !authReady) return;
     authLock.current = true;
     setLoading(true);
-    setErrorCode(null);
+    setLoginErrorCode(null);
     try {
       const account = await signInWithGoogle();
       if (account) acceptAuthenticatedAccount(account);
     } catch (authError) {
-      setErrorCode(authError instanceof GoogleAuthError ? authError.code : 'temporary_failure');
+      setLoginErrorCode(authError instanceof GoogleAuthError ? authError.code : 'temporary_failure');
     } finally {
       authLock.current = false;
       setLoading(false);
@@ -92,7 +97,12 @@ export default function LoginScreen() {
             <Ionicons name="alert-circle-outline" size={22} color={colors.danger} />
             <View style={styles.flex}>
               <AppText variant="small" color={colors.danger}>{errorMessages[errorCode]}</AppText>
-              <Pressable accessibilityRole="button" onPress={enterWithGoogle} disabled={loading} style={styles.retry}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={sessionErrorCode && !loginErrorCode ? retrySessionRestore : enterWithGoogle}
+                disabled={loading}
+                style={styles.retry}
+              >
                 <AppText variant="small" weight="800" color={colors.primary}>Tentar novamente</AppText>
               </Pressable>
             </View>
@@ -108,7 +118,7 @@ export default function LoginScreen() {
 }
 
 function UserIdentity() {
-  const { currentUser } = useApp();
+  const { currentUser } = useAuth();
   if (!currentUser) return null;
   const initials = getInitials(currentUser.name);
   return (

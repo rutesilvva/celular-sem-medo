@@ -58,13 +58,18 @@ async function removeChunks(key: string, manifest: StorageManifest) {
 }
 
 let client: SupabaseClient<Database> | null = null;
+let activeStorage: typeof secureStorage | Storage | null = null;
+let activeStorageKey: string | null = null;
 
 export function getSupabase(): SupabaseClient<Database> {
   if (client) return client;
   const config = getPublicConfig();
+  activeStorage = Platform.OS === 'web' ? globalThis.localStorage : secureStorage;
+  activeStorageKey = `csm-${config.appEnvironment}-auth`;
   client = createClient<Database>(config.supabaseUrl, config.supabasePublishableKey, {
     auth: {
-      storage: Platform.OS === 'web' ? globalThis.localStorage : secureStorage,
+      storage: activeStorage,
+      storageKey: activeStorageKey,
       autoRefreshToken: true,
       persistSession: true,
       // O callback dedicado troca o código PKCE uma única vez em todas as plataformas.
@@ -73,6 +78,32 @@ export function getSupabase(): SupabaseClient<Database> {
     },
   });
   return client;
+}
+
+export async function clearStoredSession() {
+  if (!activeStorage || !activeStorageKey) {
+    try {
+      getSupabase();
+    } catch {
+      return;
+    }
+  }
+  const storage = activeStorage;
+  const key = activeStorageKey;
+  if (!storage || !key) return;
+  await Promise.all([
+    safelyRemove(storage, key),
+    safelyRemove(storage, `${key}-user`),
+    safelyRemove(storage, `${key}-code-verifier`),
+  ]);
+}
+
+async function safelyRemove(storage: typeof secureStorage | Storage, key: string) {
+  try {
+    await storage.removeItem(key);
+  } catch {
+    // Logout continua deny-by-default mesmo se o storage do SO já estiver indisponível.
+  }
 }
 
 if (Platform.OS !== 'web') {
