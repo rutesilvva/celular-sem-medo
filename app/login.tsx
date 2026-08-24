@@ -13,7 +13,8 @@ const errorMessages = {
   cancelled: 'Entrada cancelada. Você pode tentar novamente quando quiser.',
   access_denied: 'O acesso foi negado pela conta Google.',
   invalid_configuration: 'O login Google não está configurado para este ambiente.',
-  no_access: 'Esta conta Google ainda não possui acesso ao aplicativo.',
+  not_provisioned: 'Esta conta Google ainda não está cadastrada no aplicativo.',
+  account_blocked: 'Esta conta está bloqueada. Fale com a administração.',
   unexpected: 'Não foi possível concluir a entrada. Tente novamente.',
 };
 

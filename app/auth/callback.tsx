@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { getCurrentRoles } from '@/lib/google-auth';
+import { getCurrentAuthContext } from '@/lib/google-auth';
 import { getSupabase } from '@/lib/supabase';
 import { colors, spacing } from '@/theme/tokens';
 
@@ -25,10 +25,16 @@ export default function AuthCallbackScreen() {
     if (!params.code || params.error) return;
     void getSupabase().auth.exchangeCodeForSession(params.code).then(async ({ error: exchangeError }) => {
       if (exchangeError) throw exchangeError;
-      const roles = await getCurrentRoles();
-      if (!roles.length) throw new Error('no_access');
-      signIn(roles[0]!);
-    }).catch(() => setError('Não foi possível recuperar a entrada. Inicie o login novamente.'));
+      const context = await getCurrentAuthContext();
+      if (context.errorCode === 'ACCOUNT_BLOCKED') throw new Error('blocked');
+      if (context.errorCode || !context.roles.length) throw new Error('not_provisioned');
+      signIn(context.roles[0]!);
+    }).catch((callbackError: unknown) => {
+      const reason = callbackError instanceof Error ? callbackError.message : '';
+      if (reason === 'blocked') setError('Esta conta está bloqueada. Fale com a administração.');
+      else if (reason === 'not_provisioned') setError('Esta conta ainda não está cadastrada no aplicativo.');
+      else setError('Não foi possível recuperar a entrada. Inicie o login novamente.');
+    });
   }, [params.code, params.error, signIn]);
 
   return (

@@ -7,7 +7,7 @@ import { getSupabase } from '@/lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export type GoogleAuthErrorCode = 'cancelled' | 'access_denied' | 'invalid_configuration' | 'no_access' | 'unexpected';
+export type GoogleAuthErrorCode = 'cancelled' | 'access_denied' | 'invalid_configuration' | 'not_provisioned' | 'account_blocked' | 'unexpected';
 
 export class GoogleAuthError extends Error {
   constructor(public code: GoogleAuthErrorCode) {
@@ -42,12 +42,12 @@ export async function signInWithGoogle(): Promise<Role[]> {
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     if (exchangeError) throw new GoogleAuthError('unexpected');
 
-    const allowedRoles = await getCurrentRoles();
-    if (!allowedRoles.length) {
+    const context = await getCurrentAuthContext();
+    if (context.errorCode) {
       await supabase.auth.signOut();
-      throw new GoogleAuthError('no_access');
+      throw new GoogleAuthError(context.errorCode === 'ACCOUNT_BLOCKED' ? 'account_blocked' : 'not_provisioned');
     }
-    return allowedRoles;
+    return context.roles;
   } catch (error) {
     if (error instanceof GoogleAuthError) throw error;
     throw new GoogleAuthError('invalid_configuration');
@@ -55,9 +55,16 @@ export async function signInWithGoogle(): Promise<Role[]> {
 }
 
 export async function getCurrentRoles(): Promise<Role[]> {
-  const { data: roles, error } = await getSupabase().rpc('get_my_access_roles');
-  if (error) throw new GoogleAuthError('unexpected');
-  return [...new Set((roles ?? []).map((item) => item.access_role).filter(isRole))];
+  return (await getCurrentAuthContext()).roles;
+}
+
+export async function getCurrentAuthContext(): Promise<{ roles: Role[]; errorCode: string | null }> {
+  const { data, error } = await getSupabase().rpc('get_my_auth_context');
+  if (error || !data?.[0]) throw new GoogleAuthError('unexpected');
+  return {
+    roles: [...new Set(data[0].access_roles.filter(isRole))],
+    errorCode: data[0].error_code,
+  };
 }
 
 export async function signOutFromGoogle() {

@@ -53,7 +53,7 @@ erDiagram
 
 | Tabela | Responsabilidade | Invariantes principais |
 | --- | --- | --- |
-| `profiles` | Nome e avatar associados ao usuário autenticado | PK/FK para `auth.users`; criada automaticamente no primeiro login. |
+| `profiles` | Nome, avatar e estado da conta autenticada | PK/FK para `auth.users`; nasce `pending`, só acessa o domínio quando `active` e perde acesso imediatamente quando `blocked`. |
 | `preferences` | Acessibilidade, áudio, voz, idioma e onboarding | Uma linha por perfil; o usuário só acessa a própria linha. |
 | `classes` | Turma de aprendizagem | Estado `active` ou `archived`; somente membros ativos leem. |
 | `memberships` | Papel de uma pessoa dentro de uma turma | Único por turma, pessoa e papel; `participant` ou `monitor`; revogação é server-side. |

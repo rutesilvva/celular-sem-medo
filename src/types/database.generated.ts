@@ -818,24 +818,36 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: Database["public"]["Enums"]["account_status"]
           avatar_url: string | null
+          block_reason_code: string | null
+          blocked_at: string | null
           created_at: string
           display_name: string
           id: string
+          status_changed_at: string
           updated_at: string
         }
         Insert: {
+          account_status?: Database["public"]["Enums"]["account_status"]
           avatar_url?: string | null
+          block_reason_code?: string | null
+          blocked_at?: string | null
           created_at?: string
           display_name: string
           id: string
+          status_changed_at?: string
           updated_at?: string
         }
         Update: {
+          account_status?: Database["public"]["Enums"]["account_status"]
           avatar_url?: string | null
+          block_reason_code?: string | null
+          blocked_at?: string | null
           created_at?: string
           display_name?: string
           id?: string
+          status_changed_at?: string
           updated_at?: string
         }
         Relationships: []
@@ -888,6 +900,15 @@ export type Database = {
           scope_id: string
         }[]
       }
+      get_my_auth_context: {
+        Args: never
+        Returns: {
+          access_roles: string[]
+          account_status: Database["public"]["Enums"]["account_status"]
+          error_code: string
+          user_id: string
+        }[]
+      }
       has_active_class_role: {
         Args: {
           required_role?: Database["public"]["Enums"]["app_role"]
@@ -896,6 +917,7 @@ export type Database = {
         Returns: boolean
       }
       has_any_active_access: { Args: never; Returns: boolean }
+      is_account_active: { Args: { target_user_id?: string }; Returns: boolean }
       is_active_class_member: {
         Args: { target_class_id: string }
         Returns: boolean
@@ -916,6 +938,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_status: "pending" | "active" | "blocked"
       admin_audit_action:
         | "administrator_granted"
         | "administrator_revoked"
@@ -1082,6 +1105,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      account_status: ["pending", "active", "blocked"],
       admin_audit_action: [
         "administrator_granted",
         "administrator_revoked",

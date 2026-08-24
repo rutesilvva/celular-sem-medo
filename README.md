@@ -132,6 +132,7 @@ A decisão e os contratos técnicos estão documentados em:
 
 - [ADR-0001 — backend do MVP](docs/adr/0001-backend-mvp.md);
 - [Google OAuth por plataforma e ambiente](docs/auth/google-oauth.md);
+- [contrato de autenticação backend e papéis](docs/auth/backend-auth-contract.md);
 - [modelo de dados e matriz de acesso](docs/architecture/data-model.md);
 - [ambientes development, staging e production](docs/architecture/environments.md);
 - [privacidade e proteção de dados do MVP](docs/privacy/README.md);
@@ -184,6 +185,7 @@ development build conforme o guia de autenticação.
 | `npm run lint` | Executa as regras do ESLint/Expo. |
 | `npm run typecheck` | Valida os tipos TypeScript sem gerar arquivos. |
 | `npm run backend:test` | Executa os testes pgTAP de autorização no banco local. |
+| `npm run backend:test:auth` | Testa rotação e revogação de refresh na stack Auth local. |
 | `npm run backend:start` | Inicia Auth, Postgres, API e Studio locais. |
 | `npm run backend:status` | Mostra o status, endpoints e credenciais da stack local. |
 | `npm run backend:reset` | Recria o banco local com migrações e seed. |
