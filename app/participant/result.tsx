@@ -6,22 +6,23 @@ import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, ProgressBar } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMissionContent } from '@/hooks/useMissionData';
+import { useParticipantProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantResultScreen() {
   const router = useRouter();
   const { assignmentId, completion } = useLocalSearchParams<{ assignmentId?: string; completion?: string }>();
-  const { mission, participantProgress } = useApp();
   const { currentUser } = useAuth();
   const query = useMissionContent(assignmentId ?? null);
+  const progressQuery = useParticipantProgress();
 
   if (query.loading) return <ResultState kind="loading" retry={query.retry} />;
   if (query.error) return <ResultState kind="error" retry={query.retry} />;
   if (!query.data) return <ResultState kind="empty" retry={query.retry} />;
   const details = query.data.details;
+  const progress = progressQuery.data;
 
   const continueTrail = () => {
     router.dismissAll();
@@ -77,8 +78,8 @@ export default function ParticipantResultScreen() {
         <View style={styles.divider} />
         <View style={styles.metrics}>
           <ResultMetric icon="time-outline" value={`${details.estimatedMinutes} min`} label="Duração estimada" />
-          <ResultMetric icon="refresh-outline" value={`${Math.max(1, mission.attempts)}`} label="Tentativas" />
-          <ResultMetric icon="trending-up-outline" value="+8%" label="Evolução" />
+          <ResultMetric icon="refresh-outline" value={`${progress?.attempt_count ?? 1}`} label="Tentativas totais" />
+          <ResultMetric icon="trending-up-outline" value={`${progress?.autonomy_percent ?? 0}%`} label="Autonomia" />
         </View>
       </Card>
 
@@ -88,15 +89,15 @@ export default function ParticipantResultScreen() {
             <AppText weight="800">Progresso da sua trilha</AppText>
             <AppText variant="small" color={colors.textMuted}>Uma nova habilidade aprendida.</AppText>
           </View>
-          <AppText variant="subheading" weight="800" color={colors.successText}>{participantProgress}%</AppText>
+          <AppText variant="subheading" weight="800" color={colors.successText}>{progress?.progress_percent ?? 0}%</AppText>
         </View>
-        <ProgressBar value={participantProgress} color={colors.success} height={12} />
+        <ProgressBar value={progress?.progress_percent ?? 0} color={colors.success} height={12} />
       </Card>
 
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir resultado"
-          message={`Parabéns, ${currentUser?.name || 'participante'}. Você concluiu a missão ${details.title} e avançou para ${participantProgress} por cento da sua trilha.`}
+          message={`Parabéns, ${currentUser?.name || 'participante'}. Você concluiu a missão ${details.title} e está com ${progress?.progress_percent ?? 0} por cento da sua trilha.`}
         />
         <Button
           label="Continuar minha trilha"

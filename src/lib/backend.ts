@@ -8,6 +8,10 @@ type MonitorParticipantRow = Database['public']['Functions']['get_monitor_class_
 type MissionCatalogRow = Database['public']['Functions']['get_participant_mission_catalog']['Returns'][number];
 type MissionDetailsRow = Database['public']['Functions']['get_participant_mission_details']['Returns'][number];
 type MissionStepRow = Database['public']['Functions']['get_participant_mission_steps']['Returns'][number];
+export type ParticipantProgress = Database['public']['Functions']['get_participant_progress']['Returns'][number];
+export type ParticipantCategoryProgress = Database['public']['Functions']['get_participant_category_progress']['Returns'][number];
+export type MonitorClassProgress = Database['public']['Functions']['get_monitor_class_progress']['Returns'][number];
+export type MonitorMissionProgress = Database['public']['Functions']['get_monitor_mission_progress']['Returns'][number];
 
 export type ClassParticipant = {
   id: string;
@@ -80,6 +84,30 @@ export async function getParticipantMissionContent(assignmentId: string): Promis
     details: detailsResult.data[0] ? mapMissionDetails(detailsResult.data[0]) : null,
     steps: stepsResult.data.map(mapMissionStep),
   };
+}
+
+export async function getParticipantProgress(): Promise<ParticipantProgress | null> {
+  const { data, error } = await getSupabase().rpc('get_participant_progress');
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function getParticipantCategoryProgress(): Promise<ParticipantCategoryProgress[]> {
+  const { data, error } = await getSupabase().rpc('get_participant_category_progress');
+  if (error) throw error;
+  return data;
+}
+
+export async function getMonitorClassProgress(classId: string, periodDays: number): Promise<MonitorClassProgress> {
+  const { data, error } = await getSupabase().rpc('get_monitor_class_progress', { target_class_id: classId, period_days: periodDays });
+  if (error || !data?.[0]) throw error ?? new Error('CLASS_PROGRESS_NOT_AVAILABLE');
+  return data[0];
+}
+
+export async function getMonitorMissionProgress(classId: string, periodDays: number): Promise<MonitorMissionProgress[]> {
+  const { data, error } = await getSupabase().rpc('get_monitor_mission_progress', { target_class_id: classId, period_days: periodDays });
+  if (error) throw error;
+  return data;
 }
 
 export async function getMyClassContexts() {

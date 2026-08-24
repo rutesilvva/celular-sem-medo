@@ -14,23 +14,12 @@ export type AccessibilityPreferences = {
 type AppContextValue = {
   preferences: AccessibilityPreferences;
   setPreference: (key: keyof AccessibilityPreferences, value: boolean) => void;
-  mission: MissionState;
-  participantProgress: number;
-  startMission: () => void;
-  requestMissionHelp: () => void;
-  finishMission: () => void;
   audioMessage: string | null;
   notice: string | null;
   playInstruction: (message?: string) => void;
   showNotice: (message: string) => void;
   managedUsers: ManagedUser[];
   removeManagedUser: (userId: string) => boolean;
-};
-
-export type MissionState = {
-  completed: boolean;
-  attempts: number;
-  usedHelp: boolean;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -44,7 +33,6 @@ const initialPreferences: AccessibilityPreferences = {
 
 export function AppProvider({ children }: PropsWithChildren) {
   const [preferences, setPreferences] = useState(initialPreferences);
-  const [mission, setMission] = useState<MissionState>({ completed: false, attempts: 0, usedHelp: false });
   const [audioMessage, setAudioMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [managedUsers, setManagedUsers] = useState(initialManagedUsers);
@@ -59,10 +47,6 @@ export function AppProvider({ children }: PropsWithChildren) {
   const setPreference = useCallback((key: keyof AccessibilityPreferences, value: boolean) => {
     setPreferences((current) => ({ ...current, [key]: value }));
   }, []);
-
-  const startMission = useCallback(() => setMission((current) => ({ ...current, attempts: 1, usedHelp: false })), []);
-  const requestMissionHelp = useCallback(() => setMission((current) => ({ ...current, attempts: Math.max(2, current.attempts), usedHelp: true })), []);
-  const finishMission = useCallback(() => setMission((current) => ({ ...current, attempts: Math.max(1, current.attempts), completed: true })), []);
 
   const playInstruction = useCallback((message = 'Reproduzindo instrução…') => {
     if (audioTimer.current) clearTimeout(audioTimer.current);
@@ -86,12 +70,11 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [managedUsers]);
 
   const value = useMemo(() => ({
-    preferences, setPreference, mission,
-    participantProgress: mission.completed ? 80 : 72, startMission, requestMissionHelp, finishMission,
+    preferences, setPreference,
     audioMessage, notice, playInstruction, showNotice, managedUsers, removeManagedUser,
   }), [
-    audioMessage, finishMission, managedUsers, mission, notice, playInstruction, preferences,
-    removeManagedUser, requestMissionHelp, setPreference, showNotice, startMission,
+    audioMessage, managedUsers, notice, playInstruction, preferences,
+    removeManagedUser, setPreference, showNotice,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

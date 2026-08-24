@@ -1,17 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MonitorNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { developmentMonitorMissions } from '@/data/development-mock';
-import type { DevelopmentMonitorMission } from '@/data/development-mock';
+import { useMyClass } from '@/hooks/useClassData';
+import { useMonitorProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type MissionFilter = 'all' | 'active' | 'planned';
-type MonitorMission = DevelopmentMonitorMission;
+type MonitorMission = { id: string; title: string; completion: number; difficulty: number; audio: number; status: 'Ativa' };
 
 const filters: readonly { key: MissionFilter; label: string }[] = [
   { key: 'all', label: 'Todas' },
@@ -28,15 +28,13 @@ const missionIcons = {
 export default function MonitorMissionsScreen() {
   const [filter, setFilter] = useState<MissionFilter>('all');
   const { showNotice } = useApp();
-
-  const visibleMissions = useMemo(() => developmentMonitorMissions.filter((mission) => {
-    if (filter === 'active') return mission.status === 'Ativa';
-    if (filter === 'planned') return mission.status === 'Planejada';
-    return true;
-  }), [filter]);
+  const classQuery = useMyClass('monitor');
+  const progressQuery = useMonitorProgress(classQuery.data?.class_id ?? null, 30);
+  const missions: MonitorMission[] = progressQuery.missions.data.map((mission) => ({ id: mission.assignment_id, title: mission.title, completion: mission.completion_percent, difficulty: mission.difficulty_percent, audio: mission.audio_usage_percent, status: 'Ativa' }));
+  const visibleMissions = filter === 'planned' ? [] : missions;
 
   const averageCompletion = Math.round(
-    developmentMonitorMissions.reduce((total, mission) => total + mission.completion, 0) / Math.max(1, developmentMonitorMissions.length),
+    missions.reduce((total, mission) => total + mission.completion, 0) / Math.max(1, missions.length),
   );
 
   return (
@@ -44,7 +42,7 @@ export default function MonitorMissionsScreen() {
       <Header title="Missões" subtitle="Acompanhe a prática da turma" audio />
 
       <View style={styles.metrics}>
-        <MetricCard icon="flag-outline" value={`${developmentMonitorMissions.filter((mission) => mission.status === 'Ativa').length}`} label="missões ativas" tone="purple" />
+        <MetricCard icon="flag-outline" value={`${missions.length}`} label="missões ativas" tone="purple" />
         <MetricCard icon="trending-up-outline" value={`${averageCompletion}%`} label="conclusão média" tone="green" />
       </View>
 
@@ -55,7 +53,7 @@ export default function MonitorMissionsScreen() {
         <View style={styles.highlightCopy}>
           <AppText weight="800">Destaque da semana</AppText>
           <AppText variant="small" color={colors.textMuted}>
-            “Enviar uma foto” tem a maior conclusão e o menor índice de dificuldade.
+            {missions.length ? `“${[...missions].sort((a, b) => b.completion - a.completion)[0]?.title}” possui a maior conclusão no período.` : 'A turma ainda não possui atividade no período.'}
           </AppText>
         </View>
       </Card>
@@ -89,7 +87,7 @@ export default function MonitorMissionsScreen() {
       <View style={styles.missionList}>
         {visibleMissions.map((mission) => (
           <MissionCard
-            key={mission.title}
+            key={mission.id}
             mission={mission}
             onOpen={() => showNotice(`Análise de “${mission.title}” selecionada.`)}
           />
@@ -120,7 +118,7 @@ function MissionCard({ mission, onOpen }: { mission: MonitorMission; onOpen: () 
         </View>
         <View style={styles.missionCopy}>
           <AppText variant="subheading" weight="800">{mission.title}</AppText>
-          <Tag label={mission.status} tone={mission.status === 'Ativa' ? 'green' : 'gray'} />
+          <Tag label={mission.status} tone="green" />
         </View>
       </View>
 

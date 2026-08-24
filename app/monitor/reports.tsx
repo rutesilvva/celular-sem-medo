@@ -3,56 +3,23 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MonitorNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useMyClass } from '@/hooks/useClassData';
-import { developmentMonitorMissions } from '@/data/development-mock';
+import { useMonitorProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type ReportPeriod = 7 | 30 | 90;
 
 const periods: readonly ReportPeriod[] = [7, 30, 90];
-const reportData: Record<ReportPeriod, {
-  completed: string;
-  progress: string;
-  autonomy: string;
-  audio: string;
-  trend: string;
-}> = {
-  7: { completed: '18', progress: '+8%', autonomy: '68%', audio: '73%', trend: '8 pontos acima da semana anterior' },
-  30: { completed: '62', progress: '+19%', autonomy: '64%', audio: '76%', trend: '19 pontos acima do mês anterior' },
-  90: { completed: '148', progress: '+34%', autonomy: '59%', audio: '71%', trend: '34 pontos desde o início da turma' },
-};
-
-const timelineData: Record<ReportPeriod, readonly { label: string; value: number }[]> = {
-  7: [
-    { label: 'Seg', value: 1 },
-    { label: 'Ter', value: 2 },
-    { label: 'Qua', value: 3 },
-    { label: 'Qui', value: 2 },
-    { label: 'Sex', value: 4 },
-    { label: 'Sáb', value: 3 },
-    { label: 'Dom', value: 3 },
-  ],
-  30: [
-    { label: 'Sem 1', value: 12 },
-    { label: 'Sem 2', value: 14 },
-    { label: 'Sem 3', value: 16 },
-    { label: 'Sem 4', value: 20 },
-  ],
-  90: [
-    { label: 'Jun', value: 41 },
-    { label: 'Jul', value: 47 },
-    { label: 'Ago', value: 60 },
-  ],
-};
-
 export default function ReportsScreen() {
   const [period, setPeriod] = useState<ReportPeriod>(30);
   const { showNotice } = useApp();
   const classQuery = useMyClass('monitor');
-  const data = reportData[period];
+  const progress = useMonitorProgress(classQuery.data?.class_id ?? null, period);
+  const data = progress.summary.data;
 
   return (
     <Screen footer={<MonitorNav active="reports" />}>
@@ -91,12 +58,12 @@ export default function ReportsScreen() {
       </View>
 
       <View style={styles.metricGrid}>
-        <MetricCard icon="checkmark-done-outline" value={data.completed} label="missões concluídas" tone="green" />
-        <MetricCard icon="trending-up-outline" value={data.progress} label="evolução no período" tone="purple" />
+        <MetricCard icon="checkmark-done-outline" value={`${data?.completed_missions ?? 0}`} label="missões concluídas" tone="green" />
+        <MetricCard icon="trending-up-outline" value={`${data?.completion_percent ?? 0}%`} label="conclusão da turma" tone="purple" />
       </View>
       <View style={styles.metricGrid}>
-        <MetricCard icon="hand-left-outline" value={data.autonomy} label="índice de autonomia" tone="yellow" />
-        <MetricCard icon="volume-high-outline" value={data.audio} label="uso de áudio" tone="blue" />
+        <MetricCard icon="hand-left-outline" value={`${data?.autonomy_percent ?? 0}%`} label="índice de autonomia" tone="yellow" />
+        <MetricCard icon="volume-high-outline" value={`${data?.audio_usage_percent ?? 0}%`} label="uso de áudio" tone="blue" />
       </View>
 
       <Card style={styles.insight}>
@@ -104,47 +71,44 @@ export default function ReportsScreen() {
           <Ionicons name="trending-up-outline" size={27} color={colors.success} />
         </View>
         <View style={styles.flexCopy}>
-          <AppText weight="800">A turma está evoluindo</AppText>
-          <AppText variant="small" color={colors.textMuted}>O progresso está {data.trend}.</AppText>
+          <AppText weight="800">Resumo calculado no backend</AppText>
+          <AppText variant="small" color={colors.textMuted}>{data?.active_participants ?? 0} participantes praticaram nos últimos {period} dias.</AppText>
         </View>
         <Tag label="Tendência positiva" tone="green" />
       </Card>
 
-      <SectionTitle>Evolução das missões concluídas</SectionTitle>
-      <TimelineChart period={period} />
+      {progress.summary.loading || progress.missions.loading ? <DataState kind="loading" title="Calculando relatório" message="Consolidando tentativas e eventos da turma." /> : progress.summary.error || progress.missions.error ? <DataState kind="error" title="Não foi possível calcular" message="Tente carregar os dados novamente." onRetry={() => { progress.summary.retry(); progress.missions.retry(); }} /> : null}
 
       <SectionTitle>Conclusão por missão</SectionTitle>
       <Card style={styles.chartCard}>
         <AppText variant="small" color={colors.textMuted}>
           Percentual de participantes que concluíram cada atividade.
         </AppText>
-        {developmentMonitorMissions.map((mission) => (
+        {progress.missions.data.map((mission) => (
           <View
-            accessibilityLabel={`${mission.title}: ${mission.completion}% de conclusão`}
-            key={mission.title}
+            accessibilityLabel={`${mission.title}: ${mission.completion_percent}% de conclusão`}
+            key={mission.assignment_id}
             style={styles.barRow}
           >
             <View style={styles.barHeading}>
               <AppText variant="small" weight="700" style={styles.flexCopy}>{mission.title}</AppText>
-              <AppText variant="small" weight="800" color={colors.primary}>{mission.completion}%</AppText>
+              <AppText variant="small" weight="800" color={colors.primary}>{mission.completion_percent}%</AppText>
             </View>
-            <ProgressBar value={mission.completion} color={mission.completion >= 70 ? colors.success : colors.primary} height={12} />
+            <ProgressBar value={mission.completion_percent} color={mission.completion_percent >= 70 ? colors.success : colors.primary} height={12} />
           </View>
         ))}
       </Card>
 
       <SectionTitle>Onde a turma mais pede ajuda</SectionTitle>
       <Card style={styles.difficultyCard}>
-        <DifficultyRow label="Confirmar uma ação" value={48} icon="checkmark-circle-outline" />
-        <DifficultyRow label="Encontrar o botão correto" value={37} icon="hand-left-outline" divider />
-        <DifficultyRow label="Revisar antes de enviar" value={22} icon="eye-outline" divider />
+        <DifficultyRow label="Tentativas com erro, dica ou ajuda" value={data?.difficulty_percent ?? 0} icon="hand-left-outline" />
       </Card>
 
       <SectionTitle>Uso dos recursos de apoio</SectionTitle>
       <Card style={styles.supportCard}>
-        <SupportColumn icon="volume-high-outline" value={73} label="Áudio" color={colors.blue} background={colors.blueSoft} />
-        <SupportColumn icon="hand-left-outline" value={42} label="Onde tocar" color={colors.primary} background={colors.primarySoft} />
-        <SupportColumn icon="bulb-outline" value={31} label="Dicas" color="#8A6000" background={colors.warningSoft} />
+        <SupportColumn icon="volume-high-outline" value={data?.audio_usage_percent ?? 0} label="Áudio" color={colors.blue} background={colors.blueSoft} />
+        <SupportColumn icon="hand-left-outline" value={data?.difficulty_percent ?? 0} label="Com apoio" color={colors.primary} background={colors.primarySoft} />
+        <SupportColumn icon="bulb-outline" value={data?.autonomy_percent ?? 0} label="Autonomia" color="#8A6000" background={colors.warningSoft} />
       </Card>
 
       <Card style={styles.exportCard}>
@@ -164,77 +128,6 @@ export default function ReportsScreen() {
         />
       </Card>
     </Screen>
-  );
-}
-
-function TimelineChart({ period }: { period: ReportPeriod }) {
-  const series = timelineData[period];
-  const maximum = Math.max(...series.map((item) => item.value));
-  const total = series.reduce((sum, item) => sum + item.value, 0);
-
-  return (
-    <Card style={styles.timelineCard}>
-      <View style={styles.timelineHeading}>
-        <View style={styles.flexCopy}>
-          <AppText weight="800">Últimos {period} dias</AppText>
-          <AppText variant="small" color={colors.textMuted}>
-            Quantidade concluída em cada intervalo.
-          </AppText>
-        </View>
-        <View accessibilityLabel={`${total} missões concluídas no período`} style={styles.timelineTotal}>
-          <AppText variant="subheading" weight="800" color={colors.primary}>{total}</AppText>
-          <AppText variant="caption" color={colors.textMuted}>no total</AppText>
-        </View>
-      </View>
-
-      <View
-        accessibilityLabel={`Gráfico de evolução das missões concluídas nos últimos ${period} dias`}
-        style={styles.timelinePlot}
-      >
-        <View importantForAccessibility="no-hide-descendants" style={styles.gridLines}>
-          <View style={styles.gridLine} />
-          <View style={styles.gridLine} />
-          <View style={styles.gridLine} />
-        </View>
-        <View style={styles.barColumns}>
-          {series.map((item, index) => {
-            const barHeight = 22 + (item.value / maximum) * 92;
-            const isLatest = index === series.length - 1;
-            return (
-              <View
-                accessible
-                accessibilityLabel={`${item.label}: ${item.value} ${item.value === 1 ? 'missão concluída' : 'missões concluídas'}`}
-                key={item.label}
-                style={styles.timelineColumn}
-              >
-                <View style={styles.barValueArea}>
-                  <AppText variant="caption" weight="800" color={isLatest ? colors.success : colors.primary}>
-                    {item.value}
-                  </AppText>
-                  <View
-                    style={[
-                      styles.timelineBar,
-                      { height: barHeight },
-                      isLatest && styles.timelineBarLatest,
-                    ]}
-                  />
-                </View>
-                <AppText variant="caption" weight="700" color={colors.textMuted} style={styles.center}>
-                  {item.label}
-                </AppText>
-              </View>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.timelineLegend}>
-        <View style={styles.legendDot} />
-        <AppText variant="caption" color={colors.textMuted}>
-          A barra verde destaca o intervalo mais recente.
-        </AppText>
-      </View>
-    </Card>
   );
 }
 

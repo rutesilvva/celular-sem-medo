@@ -946,6 +946,32 @@ export type Database = {
           progress_percent: number
         }[]
       }
+      get_monitor_class_progress: {
+        Args: { period_days?: number; target_class_id: string }
+        Returns: {
+          active_participants: number
+          assigned_missions: number
+          audio_usage_percent: number
+          autonomy_percent: number
+          completed_missions: number
+          completion_percent: number
+          difficulty_percent: number
+          participant_count: number
+        }[]
+      }
+      get_monitor_mission_progress: {
+        Args: { period_days?: number; target_class_id: string }
+        Returns: {
+          assignment_id: string
+          audio_usage_percent: number
+          autonomy_percent: number
+          completed_participants: number
+          completion_percent: number
+          difficulty_percent: number
+          participant_count: number
+          title: string
+        }[]
+      }
       get_monitor_participant: {
         Args: { target_class_id: string; target_participant_id: string }
         Returns: {
@@ -986,6 +1012,16 @@ export type Database = {
           class_shift: string
           joined_at: string
           membership_id: string
+        }[]
+      }
+      get_participant_category_progress: {
+        Args: never
+        Returns: {
+          assigned_missions: number
+          category: string
+          class_id: string
+          completed_missions: number
+          progress_percent: number
         }[]
       }
       get_participant_mission_catalog: {
@@ -1040,6 +1076,25 @@ export type Database = {
           step_position: number
           step_type: Database["public"]["Enums"]["mission_step_type"]
           title: string
+        }[]
+      }
+      get_participant_progress: {
+        Args: never
+        Returns: {
+          assigned_missions: number
+          attempt_count: number
+          audio_usage_percent: number
+          autonomy_percent: number
+          class_id: string
+          completed_attempt_count: number
+          completed_missions: number
+          difficulty_percent: number
+          latest_assignment_id: string
+          latest_completed_at: string
+          latest_completion_kind: string
+          latest_mission_title: string
+          practice_streak_days: number
+          progress_percent: number
         }[]
       }
       has_active_class_role: {

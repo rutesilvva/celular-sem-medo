@@ -6,53 +6,21 @@ import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, ProgressBar, SectionTitle, Tag } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMissionCatalog } from '@/hooks/useMissionData';
+import { useParticipantCategoryProgress, useParticipantProgress } from '@/hooks/useProgressData';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
-const learningAreas = [
-  {
-    title: 'Mensagens',
-    detail: '2 de 3 missões',
-    progress: 66,
-    icon: 'chatbubbles-outline',
-    color: colors.primary,
-    background: colors.primarySoft,
-  },
-  {
-    title: 'Fotos e vídeos',
-    detail: '1 de 2 missões',
-    progress: 50,
-    icon: 'images-outline',
-    color: colors.blue,
-    background: colors.blueSoft,
-  },
-  {
-    title: 'Segurança digital',
-    detail: '1 de 3 missões',
-    progress: 33,
-    icon: 'shield-checkmark-outline',
-    color: colors.success,
-    background: colors.successSoft,
-  },
-  {
-    title: 'Recursos do celular',
-    detail: 'Próxima área',
-    progress: 0,
-    icon: 'phone-portrait-outline',
-    color: '#8A6000',
-    background: colors.warningSoft,
-  },
-] as const;
 const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
 export default function ParticipantHomeScreen() {
   const router = useRouter();
-  const { mission, participantProgress } = useApp();
   const { currentUser } = useAuth();
   const missionQuery = useMissionCatalog();
+  const progressQuery = useParticipantProgress();
+  const categoryQuery = useParticipantCategoryProgress();
   const recommendedMission = missionQuery.data?.[0];
+  const progress = progressQuery.data;
   const displayName = currentUser?.name || 'Participante';
   const firstName = displayName.split(/\s+/)[0];
 
@@ -68,7 +36,7 @@ export default function ParticipantHomeScreen() {
         <AudioButton
           compact
           label="Ouvir resumo da tela inicial"
-          message={`Bom dia, ${firstName}. ${mission.completed ? 'Você concluiu a missão enviar uma foto.' : 'Sua missão recomendada é enviar uma foto.'} Sua trilha está em ${participantProgress} por cento.`}
+          message={`Bom dia, ${firstName}. Você concluiu ${progress?.completed_missions ?? 0} missões. Sua trilha está em ${progress?.progress_percent ?? 0} por cento.`}
         />
       </View>
 
@@ -81,9 +49,9 @@ export default function ParticipantHomeScreen() {
             <AppText weight="800">Sua trilha está avançando</AppText>
             <AppText variant="small" color={colors.textMuted}>Continue praticando no seu ritmo.</AppText>
           </View>
-          <AppText weight="800" color={colors.primary}>{participantProgress}%</AppText>
+          <AppText weight="800" color={colors.primary}>{progress?.progress_percent ?? 0}%</AppText>
         </View>
-        <ProgressBar value={participantProgress} />
+        <ProgressBar value={progress?.progress_percent ?? 0} />
       </Card>
 
       <SectionTitle
@@ -143,25 +111,27 @@ export default function ParticipantHomeScreen() {
 
       <SectionTitle>Áreas de aprendizagem</SectionTitle>
       <View accessibilityRole="list" style={styles.areaGrid}>
-        {learningAreas.map((area) => (
+        {categoryQuery.data.map((area) => {
+          const appearance = categoryAppearance(area.category);
+          return (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${area.title}. ${area.detail}. ${area.progress}% concluído.`}
+            accessibilityLabel={`${area.category}. ${area.completed_missions} de ${area.assigned_missions}. ${area.progress_percent}% concluído.`}
             accessibilityHint="Abre a lista de missões"
-            key={area.title}
+            key={`${area.class_id}:${area.category}`}
             onPress={() => router.push('/participant/missions')}
             style={({ pressed }) => [styles.areaCard, pressed && styles.pressed]}
           >
-            <View style={[styles.areaIcon, { backgroundColor: area.background }]}>
-              <Ionicons name={area.icon} size={27} color={area.color} />
+            <View style={[styles.areaIcon, { backgroundColor: appearance.background }]}>
+              <Ionicons name={appearance.icon} size={27} color={appearance.color} />
             </View>
             <View style={styles.areaCopy}>
-              <AppText weight="800">{area.title}</AppText>
-              <AppText variant="caption" color={colors.textMuted}>{area.detail}</AppText>
+              <AppText weight="800">{area.category}</AppText>
+              <AppText variant="caption" color={colors.textMuted}>{area.completed_missions} de {area.assigned_missions} missões</AppText>
             </View>
-            <ProgressBar value={area.progress} color={area.color} height={7} />
+            <ProgressBar value={area.progress_percent} color={appearance.color} height={7} />
           </Pressable>
-        ))}
+        );})}
       </View>
 
       <Card style={styles.helpCard}>
@@ -177,6 +147,13 @@ export default function ParticipantHomeScreen() {
       </Card>
     </Screen>
   );
+}
+
+function categoryAppearance(category: string) {
+  if (category === 'Mensagens') return { icon: 'chatbubbles-outline' as const, color: colors.primary, background: colors.primarySoft };
+  if (category === 'Segurança digital') return { icon: 'shield-checkmark-outline' as const, color: colors.success, background: colors.successSoft };
+  if (category === 'Mobilidade') return { icon: 'car-outline' as const, color: colors.blue, background: colors.blueSoft };
+  return { icon: 'apps-outline' as const, color: '#8A6000', background: colors.warningSoft };
 }
 
 const styles = StyleSheet.create({

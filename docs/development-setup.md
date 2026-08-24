@@ -216,6 +216,8 @@ em staging e production.
 
 O contrato e as garantias do executor estão em
 [`docs/missions/safe-mission-engine.md`](missions/safe-mission-engine.md).
+As fórmulas usadas nas telas de participante e monitor estão em
+[`docs/progress/metrics.md`](progress/metrics.md).
 
 ## Verificações antes de abrir um pull request
 

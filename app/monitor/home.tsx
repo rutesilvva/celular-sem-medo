@@ -8,8 +8,8 @@ import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { developmentMonitorMissions } from '@/data/development-mock';
 import { useMyClass, useMonitorParticipants } from '@/hooks/useClassData';
+import { useMonitorProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function MonitorHomeScreen() {
@@ -19,6 +19,7 @@ export default function MonitorHomeScreen() {
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Monitor';
   const classQuery = useMyClass('monitor');
   const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null);
+  const progressQuery = useMonitorProgress(classQuery.data?.class_id ?? null, 30);
   const currentParticipants = participantsQuery.data ?? [];
 
   if (classQuery.loading || (classQuery.data && participantsQuery.loading)) {
@@ -67,8 +68,8 @@ export default function MonitorHomeScreen() {
         <MetricCard icon="trending-up-outline" value={`${averageProgress}%`} label="progresso médio" tone="green" />
       </View>
       <View style={styles.metricGrid}>
-        <MetricCard icon="volume-high-outline" value={`${averageAudio}%`} label="usaram apoio em áudio" tone="blue" />
-        <MetricCard icon="flag-outline" value="2" label="missões em andamento" tone="yellow" />
+        <MetricCard icon="volume-high-outline" value={`${progressQuery.summary.data?.audio_usage_percent ?? averageAudio}%`} label="usaram apoio em áudio" tone="blue" />
+        <MetricCard icon="flag-outline" value={`${progressQuery.summary.data?.assigned_missions ?? 0}`} label="missões em andamento" tone="yellow" />
       </View>
 
       <SectionTitle
@@ -117,18 +118,18 @@ export default function MonitorHomeScreen() {
 
       <SectionTitle>Missões da turma</SectionTitle>
       <Card style={styles.missionSummary}>
-        {developmentMonitorMissions.slice(0, 2).map((mission, index) => (
-          <View key={mission.title} style={[styles.missionRow, index > 0 && styles.divider]}>
+        {progressQuery.missions.data.slice(0, 2).map((mission, index) => (
+          <View key={mission.assignment_id} style={[styles.missionRow, index > 0 && styles.divider]}>
             <View style={styles.missionIcon}>
               <Ionicons name={index === 0 ? 'image-outline' : 'shield-checkmark-outline'} size={24} color={colors.primary} />
             </View>
             <View style={styles.missionCopy}>
               <View style={styles.progressCopy}>
                 <AppText variant="small" weight="800" style={styles.missionTitle}>{mission.title}</AppText>
-                <AppText variant="small" weight="800" color={colors.primary}>{mission.completion}%</AppText>
+                <AppText variant="small" weight="800" color={colors.primary}>{mission.completion_percent}%</AppText>
               </View>
-              <ProgressBar value={mission.completion} height={8} />
-              <AppText variant="caption" color={colors.textMuted}>{mission.audio}% usaram apoio em áudio</AppText>
+              <ProgressBar value={mission.completion_percent} height={8} />
+              <AppText variant="caption" color={colors.textMuted}>{mission.autonomy_percent}% concluíram com autonomia</AppText>
             </View>
           </View>
         ))}

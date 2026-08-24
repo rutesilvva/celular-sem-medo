@@ -1,6 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
@@ -14,12 +13,8 @@ import { colors, radius, spacing } from '@/theme/tokens';
 export default function ParticipantStuckScreen() {
   const router = useRouter();
   const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
-  const { playInstruction, requestMissionHelp } = useApp();
+  const { playInstruction } = useApp();
   const query = useMissionContent(assignmentId ?? null);
-
-  useEffect(() => {
-    requestMissionHelp();
-  }, [requestMissionHelp]);
 
   if (query.loading) return <HelpState kind="loading" retry={query.retry} />;
   if (query.error) return <HelpState kind="error" retry={query.retry} />;

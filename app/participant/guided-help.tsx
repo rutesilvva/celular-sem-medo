@@ -6,14 +6,12 @@ import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, Tag } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
 import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantGuidedHelpScreen() {
   const router = useRouter();
   const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
-  const { finishMission } = useApp();
   const query = useMissionContent(assignmentId ?? null);
 
   if (query.loading) return <GuidedState kind="loading" retry={query.retry} />;
@@ -23,7 +21,6 @@ export default function ParticipantGuidedHelpScreen() {
   if (!content || !currentStep) return <GuidedState kind="empty" retry={query.retry} />;
 
   const completeWithGuidance = () => {
-    finishMission();
     router.push({ pathname: '/participant/result', params: { assignmentId: content.details.assignmentId } });
   };
 

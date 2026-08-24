@@ -6,7 +6,6 @@ import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, Tag } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
 import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -15,7 +14,6 @@ const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 export default function ParticipantMissionDetailsScreen() {
   const router = useRouter();
   const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
-  const { startMission } = useApp();
   const query = useMissionContent(assignmentId ?? null);
 
   if (query.loading) return <State kind="loading" onRetry={query.retry} />;
@@ -24,7 +22,6 @@ export default function ParticipantMissionDetailsScreen() {
 
   const { details, steps } = query.data;
   const beginTraining = () => {
-    startMission();
     router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId } });
   };
 
