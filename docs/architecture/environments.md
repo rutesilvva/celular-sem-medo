@@ -17,17 +17,16 @@ O Celular Sem Medo deve manter development, staging e production isolados. A pro
 | Deploy | Máquina local | Automático após merge em `main` | Aprovação manual a partir de release imutável |
 | SLA | Nenhum | Interno | Definido pelo produto e fornecedores |
 
-## Identidade de cada aplicativo
+## Identidade do aplicativo
 
-Para permitir instalação simultânea e impedir callbacks cruzados, cada variante deve ter identidade própria:
+Todos os builds usam a identidade já reservada: package e bundle ID
+`br.com.celularsemmedo.app` e scheme `celularsemmedo`. Os ambientes são isolados
+por projeto Supabase, projeto/cliente Google e EAS Environment. Builds de
+ambientes diferentes não coexistem no mesmo aparelho com essa identidade.
 
-| Ambiente | Android package / iOS bundle ID | URL scheme |
-| --- | --- | --- |
-| Development | `br.com.celularsemmedo.app.dev` | `celularsemmedo-dev` |
-| Staging | `br.com.celularsemmedo.app.staging` | `celularsemmedo-staging` |
-| Production | `br.com.celularsemmedo.app` | `celularsemmedo` |
-
-O repositório ainda usa `app.json` com a identidade de produção. Antes dos builds remotos, a configuração deve migrar para `app.config.ts` ou mecanismo equivalente que derive nome, pacote, scheme, ícones e endpoints de `APP_ENV`, falhando quando o ambiente for desconhecido.
+O `app.config.ts` é a fonte de configuração nativa. A build recebe
+explicitamente `EXPO_PUBLIC_APP_ENV` e os endpoints do próprio ambiente, sem
+fallback de staging para production.
 
 ## Fronteiras de confiança
 
@@ -67,6 +66,8 @@ O aplicativo não é uma fronteira de segurança. Trocar parâmetros, abrir deep
 | `EXPO_PUBLIC_SUPABASE_URL` | Endpoint do projeto do ambiente | Pública, mas não compartilhada entre ambientes |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave publicável do projeto | Segurança depende de RLS |
 | `EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID` | Identidade OAuth web, se o fluxo escolhido exigir | Não é secret |
+| `EXPO_PUBLIC_GOOGLE_AUTH_ANDROID_CLIENT_ID` | Cliente Android do ambiente | Não é secret; package fixo e fingerprints próprios |
+| `EXPO_PUBLIC_GOOGLE_AUTH_IOS_CLIENT_ID` | Cliente iOS do ambiente | Não é secret; bundle ID fixo |
 | `EXPO_PUBLIC_SENTRY_DSN` | Destino de erros, se Sentry for adotado | Configurar scrubbing e ambiente |
 
 O código deve validar presença, formato e combinação dessas variáveis ao iniciar. Uma build de production deve falhar se apontar para Supabase, Google ou observabilidade de outro ambiente.

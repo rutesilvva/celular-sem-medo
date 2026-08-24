@@ -1,19 +1,28 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, LogoMark } from '@/components/ui';
 import { Role, useApp } from '@/context/AppContext';
-import { colors, radius, spacing, type } from '@/theme/tokens';
+import { GoogleAuthError, signInWithGoogle } from '@/lib/google-auth';
+import { colors, radius, spacing } from '@/theme/tokens';
+
+const errorMessages = {
+  cancelled: 'Entrada cancelada. Você pode tentar novamente quando quiser.',
+  access_denied: 'O acesso foi negado pela conta Google.',
+  invalid_configuration: 'O login Google não está configurado para este ambiente.',
+  no_access: 'Esta conta Google ainda não possui acesso ao aplicativo.',
+  unexpected: 'Não foi possível concluir a entrada. Tente novamente.',
+};
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { role, sessionRole, setRole, signIn } = useApp();
-  const [email, setEmail] = useState('maria@exemplo.com');
-  const [password, setPassword] = useState('123456');
-  const [showPassword, setShowPassword] = useState(false);
+  const { sessionRole, signIn } = useApp();
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (sessionRole === 'participant') router.replace('/participant/welcome');
@@ -21,170 +30,76 @@ export default function LoginScreen() {
     if (sessionRole === 'admin') router.replace('/admin/home');
   }, [router, sessionRole]);
 
-  const enter = () => signIn(role);
+  const enterWithGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const roles = await signInWithGoogle();
+      if (roles.length === 1) signIn(roles[0]!);
+      else setAvailableRoles(roles);
+    } catch (authError) {
+      const code = authError instanceof GoogleAuthError ? authError.code : 'unexpected';
+      setError(errorMessages[code]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Screen keyboard contentStyle={styles.content}>
+    <Screen contentStyle={styles.content}>
       <View style={styles.brand}>
         <LogoMark compact wordmark />
-        <View>
-          <AppText variant="small" color={colors.textMuted} style={styles.center}>Segurança para aprender e praticar.</AppText>
-        </View>
+        <AppText variant="small" color={colors.textMuted} style={styles.center}>Segurança para aprender e praticar.</AppText>
       </View>
-
       <Card style={styles.form}>
-        <View style={styles.formHeading}>
+        <View style={styles.heading}>
           <AppText variant="heading" weight="800" color={colors.primary} style={styles.center}>Entrar na sua conta</AppText>
-          <AppText color={colors.textMuted} style={styles.center}>Informe seus dados para continuar.</AppText>
+          <AppText color={colors.textMuted} style={styles.center}>Participantes, monitores e administradores usam a mesma entrada.</AppText>
         </View>
-
-        <Field
-          label="E-mail"
-          icon="mail-outline"
-          value={email}
-          placeholder="seu@email.com"
-          onChangeText={setEmail}
-          keyboardType="email-address"
-        />
-
-        <View style={styles.fieldGroup}>
-          <AppText variant="small" weight="700" color={colors.primary}>Senha</AppText>
-          <View style={styles.inputShell}>
-            <Ionicons name="lock-closed-outline" size={22} color={colors.iconMuted} />
-            <TextInput
-              accessibilityLabel="Senha"
-              autoCapitalize="none"
-              onChangeText={setPassword}
-              placeholder="Digite sua senha"
-              placeholderTextColor={colors.placeholder}
-              secureTextEntry={!showPassword}
-              style={styles.input}
-              value={password}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-              hitSlop={8}
-              onPress={() => setShowPassword((current) => !current)}
-            >
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color={colors.primary} />
-            </Pressable>
+        {availableRoles.length ? (
+          <View style={styles.roleGroup}>
+            <AppText weight="800" style={styles.center}>Como deseja continuar?</AppText>
+            <AppText variant="small" color={colors.textMuted} style={styles.center}>Mostramos somente os acessos autorizados para sua conta.</AppText>
+            {availableRoles.map((role) => <RoleCard key={role} role={role} onPress={() => signIn(role)} />)}
           </View>
-        </View>
-
-        <View style={styles.roleGroup}>
-          <AppText variant="small" weight="700" color={colors.primary}>Entrar como</AppText>
-          <View style={styles.roleRow}>
-            <RoleCard role="participant" selected={role === 'participant'} onPress={() => setRole('participant')} />
-            <RoleCard role="monitor" selected={role === 'monitor'} onPress={() => setRole('monitor')} />
+        ) : (
+          <Button label={loading ? 'Conectando ao Google…' : 'Continuar com Google'} onPress={enterWithGoogle} disabled={loading} icon="logo-google" />
+        )}
+        {error ? (
+          <View accessibilityLiveRegion="polite" style={styles.error}>
+            <Ionicons name="alert-circle-outline" size={22} color={colors.danger} />
+            <AppText variant="small" color={colors.danger} style={styles.flex}>{error}</AppText>
           </View>
-          <RoleCard role="admin" selected={role === 'admin'} onPress={() => setRole('admin')} />
+        ) : null}
+        <View style={styles.security}>
+          <Ionicons name="shield-checkmark-outline" size={23} color={colors.success} />
+          <AppText variant="small" color={colors.textMuted} style={styles.flex}>O Google confirma sua identidade. Seu acesso é definido com segurança pelo servidor.</AppText>
         </View>
-
-        <Button
-          label={`Entrar como ${role === 'participant' ? 'participante' : role === 'monitor' ? 'monitor' : 'administrador'}`}
-          onPress={enter}
-          icon="arrow-forward"
-        />
-        <AppText variant="small" color={colors.textMuted} style={styles.center}>
-          Não tem uma conta? Fale com seu monitor.
-        </AppText>
       </Card>
     </Screen>
   );
 }
 
-function Field({ label, icon, value, placeholder, onChangeText, keyboardType }: {
-  label: string;
-  icon: 'mail-outline';
-  value: string;
-  placeholder: string;
-  onChangeText: (value: string) => void;
-  keyboardType: 'email-address';
-}) {
+function RoleCard({ role, onPress }: { role: Role; onPress: () => void }) {
+  const labels = { participant: 'Participante', monitor: 'Monitor', admin: 'Administrador' };
   return (
-    <View style={styles.fieldGroup}>
-      <AppText variant="small" weight="700" color={colors.primary}>{label}</AppText>
-      <View style={styles.inputShell}>
-        <Ionicons name={icon} size={22} color={colors.iconMuted} />
-        <TextInput
-          accessibilityLabel={label}
-          autoCapitalize="none"
-          keyboardType={keyboardType}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.placeholder}
-          style={styles.input}
-          value={value}
-        />
-      </View>
-    </View>
-  );
-}
-
-function RoleCard({ role, selected, onPress }: { role: Role; selected: boolean; onPress: () => void }) {
-  const labels = {
-    participant: { title: 'Participante', caption: 'Quero praticar', icon: 'person-outline' as const, color: colors.primary },
-    monitor: { title: 'Monitor', caption: 'Acompanho a turma', icon: 'people-outline' as const, color: colors.warning },
-    admin: { title: 'Administrador', caption: 'Gerencio todo o aplicativo', icon: 'shield-checkmark-outline' as const, color: colors.danger },
-  };
-  const content = labels[role];
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityLabel={`${content.title}, ${content.caption}`}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => [styles.roleCard, selected && styles.roleSelected, pressed && styles.pressed]}
-    >
-      {selected ? (
-        <View style={styles.check}><Ionicons name="checkmark" size={16} color={colors.surface} /></View>
-      ) : null}
-      <View style={[styles.roleIcon, role === 'monitor' && styles.monitorIcon, role === 'admin' && styles.adminIcon]}>
-        <Ionicons name={content.icon} size={28} color={content.color} />
-      </View>
-      <AppText variant="small" weight="800" color={colors.primary}>{content.title}</AppText>
-      <AppText variant="caption" color={colors.textMuted}>{content.caption}</AppText>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.roleCard, pressed && styles.pressed]}>
+      <AppText weight="800" style={styles.flex}>{labels[role]}</AppText>
+      <Ionicons name="arrow-forward" size={22} color={colors.primary} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingTop: spacing.xxl },
+  content: { justifyContent: 'center', minHeight: '100%', paddingTop: spacing.xxl },
   brand: { alignItems: 'center', gap: spacing.md },
   center: { textAlign: 'center' },
-  form: { gap: spacing.lg, padding: spacing.xl },
-  formHeading: { gap: spacing.xs },
-  fieldGroup: { gap: spacing.sm },
-  inputShell: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 54,
-    paddingHorizontal: spacing.md,
-  },
-  input: { color: colors.text, flex: 1, fontFamily: type.family, fontSize: type.body, minHeight: 50 },
-  roleGroup: { gap: spacing.sm },
-  roleRow: { flexDirection: 'row', gap: spacing.md },
-  roleCard: {
-    alignItems: 'center',
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    flex: 1,
-    gap: spacing.xs,
-    minHeight: 142,
-    padding: spacing.md,
-    position: 'relative',
-  },
-  roleSelected: { backgroundColor: '#FBF8FF', borderColor: colors.primary },
-  roleIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
-  monitorIcon: { backgroundColor: colors.warningSoft },
-  adminIcon: { backgroundColor: colors.dangerSoft },
-  check: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 24, justifyContent: 'center', position: 'absolute', right: 8, top: 8, width: 24 },
-  pressed: { opacity: 0.72 },
+  form: { gap: spacing.xl, padding: spacing.xl },
+  heading: { gap: spacing.sm },
+  roleGroup: { gap: spacing.md },
+  roleCard: { alignItems: 'center', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', minHeight: 56, paddingHorizontal: spacing.lg },
+  error: { alignItems: 'center', backgroundColor: colors.dangerSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  security: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  flex: { flex: 1 },
+  pressed: { opacity: 0.65 },
 });

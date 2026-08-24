@@ -32,6 +32,7 @@ function AppNavigator() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="auth/callback" />
       <Stack.Screen name="+not-found" />
 
       <Stack.Protected guard={sessionRole === 'participant'}>

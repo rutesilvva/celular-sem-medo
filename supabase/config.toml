@@ -5,8 +5,8 @@ project_id = "celular-sem-medo"
 enabled = true
 site_url = "http://127.0.0.1:8081"
 additional_redirect_urls = [
-  "celularsemmedo-dev://auth/callback",
-  "exp://127.0.0.1:8081/--/auth/callback",
+  "celularsemmedo://auth/callback",
+  "http://127.0.0.1:8081/auth/callback",
 ]
 jwt_expiry = 3600
 enable_signup = true

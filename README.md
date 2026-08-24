@@ -32,8 +32,8 @@ O projeto é mobile-first, em orientação retrato e com tema claro. A versão w
 ### Entrada
 
 1. A tela de abertura apresenta a marca e avança automaticamente para o login; também é possível tocar para continuar.
-2. O login demonstrativo permite alternar entre **Participante**, **Monitor** e **Administrador**; a autenticação Google real resolverá esses papéis no servidor.
-3. Os campos vêm preenchidos para facilitar a demonstração. Não há validação de credenciais nesta versão.
+2. Participantes, monitores e administradores usam o mesmo botão **Continuar com Google**.
+3. Depois da autenticação, os papéis são resolvidos pelo servidor; quando houver mais de um acesso, a pessoa escolhe somente entre os papéis autorizados.
 
 ### Participante
 
@@ -73,18 +73,21 @@ assets/                 # Marca oficial e ícone do aplicativo
 app/
 ├── _layout.tsx          # Providers, stack raiz, transições e status bar
 ├── index.tsx            # Splash
-├── login.tsx            # Entrada e escolha de perfil
+├── login.tsx            # Entrada única com Google
+├── auth/                # Callback do OAuth
+├── admin/               # Administração global
 ├── participant/         # Jornada e navegação do participante
 └── monitor/             # Painel e navegação do monitor
 
 src/
 ├── components/          # Shell de tela, navegação, feedback e UI reutilizável
-├── context/             # Estado efêmero de perfil, preferências e avisos
+├── context/             # Sessão, perfil, preferências e avisos
 ├── data/                # Participantes, missões e métricas mockadas
 ├── theme/               # Cores, tipografia, espaçamento, raios e sombras
 └── types/               # Tipos TypeScript gerados a partir do Postgres
 
 docs/
+├── auth/                # Google OAuth, redirects e roteiro de homologação
 ├── adr/                 # Decisões arquiteturais
 ├── architecture/        # Ambientes e modelo de dados
 └── privacy/             # LGPD, retenção, direitos, acesso e lojas
@@ -102,7 +105,7 @@ As rotas ficam em `app/`, seguindo as convenções do Expo Router. Regras visuai
 - Node.js 22.13 ou superior;
 - npm 10 ou superior;
 - Docker Desktop, OrbStack, Colima ou runtime Docker equivalente para o backend;
-- para dispositivo físico, Expo Go compatível com o SDK 57 ou um development build;
+- para autenticação em dispositivo físico, um development build; Expo Go não é alvo do fluxo OAuth;
 - opcionalmente, Android Studio para emulador Android;
 - opcionalmente, macOS com Xcode para simulador iOS.
 
@@ -128,6 +131,7 @@ npx expo start --clear
 A decisão e os contratos técnicos estão documentados em:
 
 - [ADR-0001 — backend do MVP](docs/adr/0001-backend-mvp.md);
+- [Google OAuth por plataforma e ambiente](docs/auth/google-oauth.md);
 - [modelo de dados e matriz de acesso](docs/architecture/data-model.md);
 - [ambientes development, staging e production](docs/architecture/environments.md);
 - [privacidade e proteção de dados do MVP](docs/privacy/README.md);
@@ -163,8 +167,8 @@ npm run backend:lint
 
 O seed contém somente conteúdo sintético. Dados reais de produção nunca devem
 ser copiados para development ou staging. O Google OAuth local permanece
-desativado por padrão; a configuração mobile completa será feita na issue #3 e
-homologada em development build/staging.
+desativado por padrão; a homologação usa credenciais externas de staging e um
+development build conforme o guia de autenticação.
 
 ## Comandos
 

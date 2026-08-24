@@ -1,6 +1,8 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { initialManagedUsers, ManagedUser } from '@/data/admin';
+import { getCurrentRoles, signOutFromGoogle } from '@/lib/google-auth';
+import { getSupabase } from '@/lib/supabase';
 
 export type Role = 'participant' | 'monitor' | 'admin';
 
@@ -63,6 +65,22 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
   }, []);
 
+  useEffect(() => {
+    try {
+      const supabase = getSupabase();
+      void supabase.auth.getSession().then(async ({ data }) => {
+        if (!data.session) return;
+        const roles = await getCurrentRoles();
+        if (roles.length === 1) {
+          setRole(roles[0]!);
+          setSessionRole(roles[0]!);
+        }
+      }).catch(() => undefined);
+    } catch {
+      // A tela de login apresenta erro tratável quando o ambiente não está configurado.
+    }
+  }, []);
+
   const setPreference = useCallback((key: keyof AccessibilityPreferences, value: boolean) => {
     setPreferences((current) => ({ ...current, [key]: value }));
   }, []);
@@ -73,6 +91,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signOut = useCallback(() => {
+    void signOutFromGoogle().catch(() => undefined);
     setSessionRole(null);
     setAudioMessage(null);
   }, []);
