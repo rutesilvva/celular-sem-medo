@@ -10,7 +10,8 @@ fonte de verdade; este desenho serve para leitura e revisão do domínio.
 - O papel não é global nem informado pelo aplicativo: ele pertence a um vínculo
   ativo entre pessoa e turma em `memberships`.
 - Uma pessoa pode ser participante em uma turma e monitor em outra, sem duplicar
-  a conta Google.
+  a conta Google. Os dois papéis na mesma turma serão proibidos no provisionamento;
+  a constraint inicial ainda precisa ser fortalecida para impor essa decisão.
 - Conteúdo de missão é imutável por versão. Tentativas e eventos apontam para a
   versão praticada, preservando o histórico.
 - IDs são UUIDs e horários são `timestamptz`.
@@ -50,16 +51,23 @@ erDiagram
 | `preferences` | Acessibilidade, áudio, voz, idioma e onboarding | Uma linha por perfil; o usuário só acessa a própria linha. |
 | `classes` | Turma de aprendizagem | Estado `active` ou `archived`; somente membros ativos leem. |
 | `memberships` | Papel de uma pessoa dentro de uma turma | Único por turma, pessoa e papel; `participant` ou `monitor`; revogação é server-side. |
-| `invitations` | Autorização prévia para entrar em uma turma | E-mail normalizado, hash SHA-256 do token, expiração e consumo único; token puro não é salvo. |
+| `invitations` | Autorização prévia para entrar em uma turma | E-mail normalizado, campo de hash em formato hexadecimal, expiração e consumo único. A migração atual não prova algoritmo/entropia; geração server-side ainda é obrigatória. |
 | `missions` | Identidade estável do item de catálogo | Slug único, categoria, dificuldade, duração e estado. |
 | `mission_versions` | Conteúdo publicável de uma missão | Versão crescente por missão; no máximo uma versão publicada por vez. |
 | `mission_steps` | Passos, instruções, áudio, dicas e ação esperada | Posição única na versão; objetos e listas são validados como JSON. |
 | `class_mission_assignments` | Liberação de uma versão para uma turma | Criada por monitor ativo; janela de disponibilidade e obrigatoriedade opcionais. |
 | `attempts` | Execução de uma missão por participante | Vínculo, turma, versão e atribuição coerentes por FKs compostas; só uma tentativa em andamento por atribuição. |
-| `attempt_events` | Linha do tempo append-only da tentativa | Sequência única por tentativa e payload JSON; suporta reenvio idempotente por ID. |
+| `attempt_events` | Linha do tempo append-only da tentativa | PK e sequência única impedem duplicata, mas retry hoje retorna conflito; idempotência exige RPC futura com `ON CONFLICT` seguro. |
 | `help_requests` | Pedido contextual de ajuda ao monitor | Pertence à mesma turma/tentativa; estados `open`, `in_progress`, `resolved` ou `cancelled`. |
 
 ## Autorização inicial
+
+Esta tabela descreve a fundação criada na primeira migração. O contrato normativo
+e os testes obrigatórios estão em
+[`docs/privacy/authorization-and-logging.md`](../privacy/authorization-and-logging.md).
+Antes de production, as policies precisam ser fortalecidas para exigir conta,
+turma e vínculo ativos de forma uniforme e para projetar somente as colunas
+necessárias ao monitor.
 
 | Recurso | Participante | Monitor |
 | --- | --- | --- |
@@ -76,6 +84,33 @@ Criação de turma, ativação/revogação de vínculo, consumo de convite e pub
 de conteúdo não têm policy de escrita para o cliente. Essas operações serão feitas
 por função server-side autenticada e auditável nas issues correspondentes.
 
+## Lacunas conhecidas de privacidade
+
+A migração inicial não implementa ainda o ciclo completo da Issue #2:
+
+- FKs de autoria e histórico impedem apagar uma conta com um simples
+  `DELETE auth.users`; a purga precisa de transação idempotente e tombstones;
+- a leitura atual de `invitations` expõe `token_hash` ao monitor;
+- `attempts.metadata`, `attempt_events.payload` e os textos de ajuda precisam de
+  allowlist, limite e bloqueio de PII/voz/transcrição;
+- o monitor recebe hoje as linhas completas de tentativas/eventos, inclusive
+  `metadata`/`payload`, em vez de views pedagógicas mínimas;
+- o participante lê atribuições agendadas, arquivadas ou fora da janela porque a
+  leitura ainda não aplica disponibilidade; também não possui grant/policy para
+  cancelar o próprio pedido de ajuda;
+- convite ainda aceita qualquer expiração futura; o limite de sete dias e a
+  geração criptográfica no servidor precisam ser impostos por RPC/constraint;
+- `attempt_events.recorded_at` e `occurred_at` ainda podem ser informados pelo
+  cliente; o primeiro deve vir do servidor e o segundo precisa de janela válida;
+- algumas policies do titular não exigem vínculo ativo, e os helpers ainda não
+  consideram de modo uniforme turma arquivada e tipo do usuário monitorado;
+- pedidos de ajuda precisam validar monitor ativo e imutabilidade após fechamento.
+
+O inventário técnico, a ordem de exclusão e a evidência esperada estão em
+[`docs/privacy/rights-and-operations.md`](../privacy/rights-and-operations.md#lacunas-técnicas-que-bloqueiam-production).
+Essas lacunas ficam explícitas para que a fundação não seja confundida com uma
+autorização pronta para dados reais.
+
 ## Estados relevantes
 
 ```text
@@ -87,9 +122,11 @@ help request: open → in_progress → resolved
                          └────────→ cancelled
 ```
 
-Estados fechados não são reabertos pelo cliente. Triggers também impedem a troca
-dos campos de identidade de tentativas, atribuições e pedidos de ajuda depois da
-criação.
+Os triggers impedem reabrir tentativas e pedidos de ajuda fechados e protegem os
+campos de identidade de tentativas, atribuições e pedidos depois da criação.
+Transições de `classes` e `class_mission_assignments` ainda não têm máquina de
+estados: o grant atual permite, por exemplo, `archived → active`. A próxima
+migração deve definir transições autorizadas e correção administrativa auditada.
 
 ## Evolução do schema
 

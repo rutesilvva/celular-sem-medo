@@ -48,7 +48,8 @@ O aplicativo não é uma fronteira de segurança. Trocar parâmetros, abrir deep
 
 ## Contrato de autenticação e autorização
 
-- participante e monitor entram com Google;
+- participante e monitor têm Google como opção de autenticação; a build iOS de
+  production também oferece Apple se a exceção estrita da loja não for comprovada;
 - o cliente solicita apenas identidade básica;
 - o backend resolve o papel usando cadastro, convite ou vínculo administrativo;
 - uma conta sem papel válido recebe estado de acesso pendente, não escolhe livremente o perfil;
@@ -193,6 +194,12 @@ Rollback do aplicativo pode usar uma versão anterior ou OTA compatível. Rollba
 - mudanças auditáveis e aprovadas;
 - exclusão e exportação de dados atendem à política de privacidade.
 
+Production não recebe pessoas reais enquanto houver bloqueio no
+[checklist de privacidade](../privacy/README.md#bloqueios-para-tratar-dados-reais).
+O projeto deve configurar os prazos do
+[inventário de retenção](../privacy/data-inventory.md), inclusive sessão, logs,
+jobs de expiração e janela máxima de backup.
+
 ## Checklist de criação de ambiente remoto
 
 - [ ] Projeto Supabase exclusivo criado na região aprovada.
@@ -205,6 +212,11 @@ Rollback do aplicativo pode usar uma versão anterior ou OTA compatível. Rollba
 - [ ] Migrações aplicadas pelo pipeline.
 - [ ] Login, logout, expiração e negação de acesso validados.
 - [ ] Responsável e procedimento de rotação documentados.
+- [ ] Controlador, canal de privacidade e papel das instituições definidos.
+- [ ] DPA, subprocessadores, países e mecanismo de transferência registrados.
+- [ ] Exclusão, exportação, revogação global e jobs de retenção testados.
+- [ ] Formulários Data Safety/App Privacy conferidos contra o binário final.
+- [ ] Requisito da App Review Guideline 4.8 resolvido para o login no iOS.
 
 ## Referências
 

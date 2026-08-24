@@ -86,7 +86,8 @@ src/
 
 docs/
 ├── adr/                 # Decisões arquiteturais
-└── architecture/        # Ambientes e modelo de dados
+├── architecture/        # Ambientes e modelo de dados
+└── privacy/             # LGPD, retenção, direitos, acesso e lojas
 
 supabase/
 ├── migrations/          # Schema, constraints, índices, grants e RLS
@@ -129,6 +130,12 @@ A decisão e os contratos técnicos estão documentados em:
 - [ADR-0001 — backend do MVP](docs/adr/0001-backend-mvp.md);
 - [modelo de dados e matriz de acesso](docs/architecture/data-model.md);
 - [ambientes development, staging e production](docs/architecture/environments.md);
+- [privacidade e proteção de dados do MVP](docs/privacy/README.md);
+- [política de privacidade — minuta pública](docs/privacy/privacy-policy.md);
+- [inventário de dados e retenção](docs/privacy/data-inventory.md);
+- [fluxos de exclusão, exportação e revogação](docs/privacy/rights-and-operations.md);
+- [autorização, cenários de teste e logs](docs/privacy/authorization-and-logging.md);
+- [mapeamento Google Play Data Safety e Apple App Privacy](docs/privacy/store-disclosures.md);
 - [guia completo de desenvolvimento](docs/development-setup.md);
 - [política de segurança das dependências](docs/dependency-security.md).
 
@@ -244,5 +251,7 @@ Nesta versão da interface:
 
 Para evoluir esta base para produção, os próximos passos são integrar o cliente
 Supabase, configurar Google OAuth, persistir a sessão com armazenamento seguro,
-conectar os fluxos ao modelo criado, implementar áudio real, adicionar testes
-automatizados e validar acessibilidade com usuários.
+conectar os fluxos ao modelo criado, implementar os controles de privacidade e
+testes RLS definidos em `docs/privacy/`, adicionar testes automatizados e validar
+acessibilidade com usuários. Captura/transcrição de voz permanece bloqueada até
+cumprir os gates jurídicos, técnicos e das lojas.

@@ -179,7 +179,10 @@ Não será criada uma API própria de autenticação (`/auth/google`, `/auth/ref
 ### Fluxo de autenticação decidido
 
 1. A pessoa toca em **Continuar com Google** no aplicativo.
-2. A integração Google mobile obtém um ID token, usando nonce aleatório quando suportado pelo fluxo escolhido.
+2. A integração Google mobile obtém um ID token com nonce aleatório no fluxo
+   `signInWithIdToken`; a validação permanece habilitada e
+   `skip_nonce_check=true` é proibido. Qualquer fluxo alternativo precisa oferecer
+   proteção equivalente contra replay e associação incorreta.
 3. O aplicativo chama `supabase.auth.signInWithIdToken` para o provedor `google`, ou o fluxo OAuth/PKCE oficial equivalente quando a biblioteca mobile escolhida exigir navegador.
 4. Supabase Auth valida a identidade Google e emite access token e refresh token da sessão Supabase.
 5. O aplicativo consulta o contexto de acesso server-side: perfil, estado da conta, papéis ativos e vínculos de turma.
@@ -187,6 +190,12 @@ Não será criada uma API própria de autenticação (`/auth/google`, `/auth/ref
 7. Com um único papel, o aplicativo abre o fluxo correspondente. Com mais de um papel, uma escolha pós-login mostra somente os papéis retornados pelo backend.
 
 O papel recebido pelo cliente serve para apresentação e navegação. Toda leitura e escrita continua sendo autorizada por grants/RLS ou por uma função server-side.
+
+Google permanece a opção de autenticação dos dois papéis. Para distribuição no
+iOS, a [avaliação da App Review Guideline 4.8](../privacy/store-disclosures.md#login-no-ios)
+trata Sign in with Apple como requisito até que se comprove a exceção estrita de
+contas educacionais/empresariais gerenciadas. Um provedor Apple adicional não
+altera a autorização por vínculo e contas nunca são mescladas apenas pelo e-mail.
 
 ### Identidade e provisionamento
 
@@ -274,9 +283,20 @@ Migrações, funções e policies devem ser versionadas e revisadas. Alteraçõe
 
 - Coletar somente nome, e-mail verificado, avatar opcional e dados necessários à aprendizagem/monitoramento.
 - Não solicitar nem persistir Google access token para APIs que o produto não usa.
-- Definir retenção e limpeza para contas autenticadas sem vínculo, convites expirados, tentativas e auditoria.
-- Prever exportação, correção e exclusão da conta/dados conforme política de privacidade e requisitos aplicáveis da LGPD.
+- Aplicar os prazos e rotinas definidos no
+  [inventário de dados e retenção](../privacy/data-inventory.md), inclusive para
+  contas sem vínculo, convites, tentativas, eventos, ajuda e auditoria.
+- Implementar exportação, correção, revogação e exclusão conforme
+  [direitos e operação](../privacy/rights-and-operations.md).
 - Revisar região de hospedagem, DPA, backups e responsáveis pelo tratamento antes de usar dados reais.
+
+A [política de privacidade](../privacy/privacy-policy.md), a
+[matriz normativa de autorização e testes](../privacy/authorization-and-logging.md)
+e o [mapeamento das lojas](../privacy/store-disclosures.md) são contratos
+complementares aprovados na Issue #2. Eles registram também as diferenças entre
+a fundação inicial e os controles que ainda bloqueiam production; esta ADR não
+deve ser lida como afirmação de que a migração inicial já implementa exclusão ou
+todos os cenários RLS.
 
 ## Consequências
 
