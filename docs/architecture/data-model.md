@@ -1,7 +1,8 @@
 # Modelo de dados inicial do MVP
 
-Este documento apresenta o esquema criado pela migração
-`supabase/migrations/202608230001_initial_product_model.sql`. O Postgres é a
+Este documento apresenta o esquema criado pelas migrações em
+`supabase/migrations/`, incluindo o endurecimento de autorização da migração
+`202608230003_harden_role_authorization.sql`. O Postgres é a
 fonte de verdade; este desenho serve para leitura e revisão do domínio.
 
 ## Princípios
@@ -100,11 +101,7 @@ A migração inicial não implementa ainda o ciclo completo da Issue #2:
 - a leitura atual de `invitations` expõe `token_hash` ao monitor;
 - `attempts.metadata`, `attempt_events.payload` e os textos de ajuda precisam de
   allowlist, limite e bloqueio de PII/voz/transcrição;
-- o monitor recebe hoje as linhas completas de tentativas/eventos, inclusive
-  `metadata`/`payload`, em vez de views pedagógicas mínimas;
-- o participante lê atribuições agendadas, arquivadas ou fora da janela porque a
-  leitura ainda não aplica disponibilidade; também não possui grant/policy para
-  cancelar o próprio pedido de ajuda;
+- o participante ainda não possui RPC para cancelar o próprio pedido de ajuda;
 - convite ainda aceita qualquer expiração futura; o limite de sete dias e a
   geração criptográfica no servidor precisam ser impostos por RPC/constraint;
 - `attempt_events.recorded_at` e `occurred_at` ainda podem ser informados pelo

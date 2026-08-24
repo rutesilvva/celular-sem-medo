@@ -163,6 +163,7 @@ Para provar que um clone novo é reproduzível, reconstrua o banco inteiro:
 ```bash
 npm run backend:reset
 npm run backend:lint
+npm run backend:test
 ```
 
 O seed contém somente conteúdo sintético. Dados reais de produção nunca devem
@@ -182,6 +183,7 @@ development build conforme o guia de autenticação.
 | `npm run audit` | Bloqueia dependências com vulnerabilidade moderada ou superior. |
 | `npm run lint` | Executa as regras do ESLint/Expo. |
 | `npm run typecheck` | Valida os tipos TypeScript sem gerar arquivos. |
+| `npm run backend:test` | Executa os testes pgTAP de autorização no banco local. |
 | `npm run backend:start` | Inicia Auth, Postgres, API e Studio locais. |
 | `npm run backend:status` | Mostra o status, endpoints e credenciais da stack local. |
 | `npm run backend:reset` | Recria o banco local com migrações e seed. |

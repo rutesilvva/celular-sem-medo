@@ -20,6 +20,7 @@
     "backend:status": "supabase status",
     "backend:reset": "supabase db reset --local",
     "backend:lint": "supabase db lint --local --level warning",
+    "backend:test": "supabase test db",
     "backend:migration:new": "supabase migration new",
     "backend:types": "supabase gen types typescript --local > src/types/database.generated.ts"
   },

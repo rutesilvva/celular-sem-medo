@@ -854,6 +854,33 @@ export type Database = {
         Returns: boolean
       }
       can_monitor_user: { Args: { target_user_id: string }; Returns: boolean }
+      get_monitor_attempt_event_summaries: {
+        Args: { target_attempt_id: string; target_class_id: string }
+        Returns: {
+          attempt_id: string
+          event_id: string
+          event_type: Database["public"]["Enums"]["attempt_event_type"]
+          occurred_at: string
+          participant_id: string
+          sequence_number: number
+          step_id: string
+        }[]
+      }
+      get_monitor_attempt_summaries: {
+        Args: { target_class_id: string }
+        Returns: {
+          assignment_id: string
+          attempt_id: string
+          completed_at: string
+          current_step_id: string
+          last_activity_at: string
+          mission_version_id: string
+          participant_id: string
+          score: number
+          started_at: string
+          status: Database["public"]["Enums"]["attempt_status"]
+        }[]
+      }
       get_my_access_roles: {
         Args: never
         Returns: {
@@ -868,6 +895,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_any_active_access: { Args: never; Returns: boolean }
       is_active_class_member: {
         Args: { target_class_id: string }
         Returns: boolean
