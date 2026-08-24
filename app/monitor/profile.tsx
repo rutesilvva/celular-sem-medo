@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { MonitorNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, SectionTitle, SwitchRow, Tag } from '@/components/ui';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -14,7 +15,8 @@ const periods: readonly ReportPeriod[] = [7, 30, 90];
 
 export default function MonitorProfileScreen() {
   const router = useRouter();
-  const { preferences, setPreference, showNotice, signOut } = useApp();
+  const { currentUser, preferences, setPreference, showNotice, signOut } = useApp();
+  const displayName = currentUser?.name || 'Monitor';
   const [showAudioMetrics, setShowAudioMetrics] = useState(true);
   const [period, setPeriod] = useState<ReportPeriod>(30);
   const [periodOpen, setPeriodOpen] = useState(false);
@@ -35,12 +37,10 @@ export default function MonitorProfileScreen() {
       />
 
       <Card style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <AppText variant="heading" weight="800" color={colors.primary}>HS</AppText>
-        </View>
+        <UserAvatar name={displayName} avatarUrl={currentUser?.avatarUrl ?? null} />
         <View style={styles.profileCopy}>
-          <AppText variant="subheading" weight="800">Helena Souza</AppText>
-          <AppText variant="small" color={colors.textMuted}>helena.souza@exemplo.com</AppText>
+          <AppText variant="subheading" weight="800">{displayName}</AppText>
+          <AppText variant="small" color={colors.textMuted}>{currentUser?.email || 'E-mail não informado'}</AppText>
           <Tag label="Monitor(a)" tone="purple" />
         </View>
         <Pressable

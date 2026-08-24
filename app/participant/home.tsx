@@ -45,7 +45,9 @@ const learningAreas = [
 
 export default function ParticipantHomeScreen() {
   const router = useRouter();
-  const { mission, participantProgress } = useApp();
+  const { currentUser, mission, participantProgress } = useApp();
+  const displayName = currentUser?.name || 'Participante';
+  const firstName = displayName.split(/\s+/)[0];
 
   return (
     <Screen footer={<ParticipantNav active="home" />} contentStyle={styles.content}>
@@ -53,13 +55,13 @@ export default function ParticipantHomeScreen() {
         <View style={styles.greeting}>
           <AppText variant="small" color={colors.textMuted}>Bom dia,</AppText>
           <AppText accessibilityRole="header" variant="heading" weight="800" color={colors.primary}>
-            Maria Aparecida
+            {displayName}
           </AppText>
         </View>
         <AudioButton
           compact
           label="Ouvir resumo da tela inicial"
-          message={`Bom dia, Maria. ${mission.completed ? 'Você concluiu a missão enviar uma foto.' : 'Sua missão recomendada é enviar uma foto.'} Sua trilha está em ${participantProgress} por cento.`}
+          message={`Bom dia, ${firstName}. ${mission.completed ? 'Você concluiu a missão enviar uma foto.' : 'Sua missão recomendada é enviar uma foto.'} Sua trilha está em ${participantProgress} por cento.`}
         />
       </View>
 

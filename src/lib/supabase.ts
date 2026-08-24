@@ -67,7 +67,8 @@ export function getSupabase(): SupabaseClient<Database> {
       storage: Platform.OS === 'web' ? globalThis.localStorage : secureStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: Platform.OS === 'web',
+      // O callback dedicado troca o código PKCE uma única vez em todas as plataformas.
+      detectSessionInUrl: false,
       flowType: 'pkce',
     },
   });

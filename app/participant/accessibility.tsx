@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
@@ -9,12 +10,21 @@ import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantAccessibilityScreen() {
   const router = useRouter();
-  const { preferences, setPreference, showNotice } = useApp();
+  const { completeParticipantOnboarding, preferences, setPreference, showNotice } = useApp();
+  const [saving, setSaving] = useState(false);
 
-  const save = () => {
-    showNotice('Preferências salvas');
-    router.dismissAll();
-    router.replace('/participant/home');
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    const saved = await completeParticipantOnboarding();
+    if (saved) {
+      showNotice('Preferências salvas');
+      router.dismissAll();
+      router.replace('/participant/home');
+    } else {
+      showNotice('Não foi possível salvar. Verifique sua conexão e tente novamente.');
+    }
+    setSaving(false);
   };
 
   return (
@@ -92,10 +102,11 @@ export default function ParticipantAccessibilityScreen() {
           message="Escolha letras maiores, alto contraste, instruções em áudio e resposta por voz. Você poderá mudar tudo depois."
         />
         <Button
-          label="Salvar e continuar"
+          label={saving ? 'Salvando…' : 'Salvar e continuar'}
           icon="checkmark"
           accessibilityHint="Salva as preferências e abre a tela inicial"
           onPress={save}
+          disabled={saving}
         />
       </View>
     </Screen>

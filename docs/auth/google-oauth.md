@@ -20,6 +20,24 @@ autorizados; o cliente nunca cria papel.
 O app usa `expo-web-browser`, PKCE e `expo-secure-store`. Expo Go não é alvo de
 homologação; Android/iOS precisam de development build ou binário EAS.
 
+## Comportamento do cliente
+
+- A web navega para o Google e a rota `/auth/callback` troca o código PKCE uma
+  única vez. No mobile, o navegador seguro retorna pelo scheme e a própria ação
+  conclui a troca.
+- Um lock imediato, além do estado visual desabilitado, impede autenticações
+  paralelas causadas por toques repetidos.
+- Cancelamento, acesso negado, falta de conexão, conta não cadastrada, conta
+  bloqueada, configuração inválida e falha temporária possuem mensagens distintas
+  e permitem nova tentativa sem reiniciar o aplicativo.
+- Nome, e-mail e foto são carregados da sessão/perfil autenticado. Sem foto, a
+  interface mostra iniciais com descrição acessível.
+- O cliente aceita somente papéis presentes em `get_my_auth_context()`. Com um
+  papel, segue diretamente ao fluxo correspondente; com mais de um, mostra um
+  seletor pós-login restrito à lista devolvida pelo servidor.
+- Participante com onboarding concluído vai ao início. Caso contrário, vê as
+  boas-vindas e a conclusão é persistida em `preferences`.
+
 ## Clientes no Google Auth Platform
 
 Crie um projeto Google isolado por ambiente remoto. Em cada projeto:

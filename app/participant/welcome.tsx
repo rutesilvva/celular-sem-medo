@@ -4,10 +4,13 @@ import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, LogoMark } from '@/components/ui';
+import { useApp } from '@/context/AppContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantWelcomeScreen() {
   const router = useRouter();
+  const { currentUser } = useApp();
+  const firstName = currentUser?.name.split(/\s+/)[0] || 'Olá';
 
   return (
     <Screen contentStyle={styles.content}>
@@ -15,7 +18,7 @@ export default function ParticipantWelcomeScreen() {
         <LogoMark />
         <View style={styles.copy}>
           <AppText variant="title" weight="800" color={colors.primary} style={styles.center}>
-            Olá, Maria!
+            Olá, {firstName}!
           </AppText>
           <AppText variant="subheading" weight="700" style={styles.center}>
             Este é um lugar seguro para aprender.
@@ -41,7 +44,7 @@ export default function ParticipantWelcomeScreen() {
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir boas-vindas"
-          message="Olá, Maria. Este é um lugar seguro para aprender. Você pode praticar no seu ritmo e sem medo de errar."
+          message={`Olá, ${firstName}. Este é um lugar seguro para aprender. Você pode praticar no seu ritmo e sem medo de errar.`}
         />
         <Button
           label="Começar"

@@ -3,17 +3,20 @@ import { StyleSheet } from 'react-native';
 import { AdminNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, Tag } from '@/components/ui';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
 import { colors, spacing } from '@/theme/tokens';
 
 export default function AdminProfileScreen() {
-  const { signOut } = useApp();
+  const { currentUser, signOut } = useApp();
+  const displayName = currentUser?.name || 'Administrador';
   return (
     <Screen footer={<AdminNav active="profile" />}>
       <Header title="Perfil" subtitle="Administrador global" />
       <Card style={styles.card}>
-        <AppText variant="heading" weight="800">Patrícia Souza</AppText>
-        <AppText color={colors.textMuted}>patricia@exemplo.com</AppText>
+        <UserAvatar name={displayName} avatarUrl={currentUser?.avatarUrl ?? null} />
+        <AppText variant="heading" weight="800">{displayName}</AppText>
+        <AppText color={colors.textMuted}>{currentUser?.email || 'E-mail não informado'}</AppText>
         <Tag label="Admin global ativo" tone="red" />
       </Card>
       <Card style={styles.card}>

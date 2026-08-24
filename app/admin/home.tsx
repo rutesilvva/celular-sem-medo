@@ -11,7 +11,8 @@ import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function AdminHomeScreen() {
   const router = useRouter();
-  const { managedUsers } = useApp();
+  const { currentUser, managedUsers } = useApp();
+  const firstName = currentUser?.name.split(/\s+/)[0] || 'Administrador';
   const count = (role: 'participant' | 'monitor' | 'admin') => managedUsers.filter((user) => user.role === role).length;
 
   return (
@@ -20,7 +21,7 @@ export default function AdminHomeScreen() {
       <View style={styles.welcome}>
         <View style={styles.icon}><Ionicons name="shield-checkmark" size={28} color={colors.primary} /></View>
         <View style={styles.copy}>
-          <AppText variant="heading" weight="800">Olá, Patrícia!</AppText>
+          <AppText variant="heading" weight="800">Olá, {firstName}!</AppText>
           <AppText color={colors.textMuted}>Gerencie pessoas, turmas e acessos.</AppText>
         </View>
       </View>

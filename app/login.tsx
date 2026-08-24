@@ -1,47 +1,59 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, LogoMark } from '@/components/ui';
 import { Role, useApp } from '@/context/AppContext';
-import { GoogleAuthError, signInWithGoogle } from '@/lib/google-auth';
+import { GoogleAuthError, GoogleAuthErrorCode, signInWithGoogle } from '@/lib/google-auth';
 import { colors, radius, spacing } from '@/theme/tokens';
 
-const errorMessages = {
+const errorMessages: Record<GoogleAuthErrorCode, string> = {
   cancelled: 'Entrada cancelada. Você pode tentar novamente quando quiser.',
-  access_denied: 'O acesso foi negado pela conta Google.',
+  access_denied: 'O acesso foi negado pela conta Google. Você pode tentar novamente.',
   invalid_configuration: 'O login Google não está configurado para este ambiente.',
   not_provisioned: 'Esta conta Google ainda não está cadastrada no aplicativo.',
   account_blocked: 'Esta conta está bloqueada. Fale com a administração.',
-  unexpected: 'Não foi possível concluir a entrada. Tente novamente.',
+  offline: 'Você parece estar sem internet. Verifique a conexão e tente novamente.',
+  temporary_failure: 'O serviço está temporariamente indisponível. Tente novamente em instantes.',
 };
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { sessionRole, signIn } = useApp();
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const {
+    acceptAuthenticatedAccount,
+    authReady,
+    availableRoles,
+    currentUser,
+    participantOnboardingCompleted,
+    selectSessionRole,
+    sessionRole,
+  } = useApp();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<GoogleAuthErrorCode | null>(null);
+  const authLock = useRef(false);
 
   useEffect(() => {
-    if (sessionRole === 'participant') router.replace('/participant/welcome');
+    if (sessionRole === 'participant') {
+      router.replace(participantOnboardingCompleted ? '/participant/home' : '/participant/welcome');
+    }
     if (sessionRole === 'monitor') router.replace('/monitor/home');
     if (sessionRole === 'admin') router.replace('/admin/home');
-  }, [router, sessionRole]);
+  }, [participantOnboardingCompleted, router, sessionRole]);
 
   const enterWithGoogle = async () => {
+    if (authLock.current || !authReady) return;
+    authLock.current = true;
     setLoading(true);
-    setError(null);
+    setErrorCode(null);
     try {
-      const roles = await signInWithGoogle();
-      if (roles.length === 1) signIn(roles[0]!);
-      else setAvailableRoles(roles);
+      const account = await signInWithGoogle();
+      if (account) acceptAuthenticatedAccount(account);
     } catch (authError) {
-      const code = authError instanceof GoogleAuthError ? authError.code : 'unexpected';
-      setError(errorMessages[code]);
+      setErrorCode(authError instanceof GoogleAuthError ? authError.code : 'temporary_failure');
     } finally {
+      authLock.current = false;
       setLoading(false);
     }
   };
@@ -57,19 +69,33 @@ export default function LoginScreen() {
           <AppText variant="heading" weight="800" color={colors.primary} style={styles.center}>Entrar na sua conta</AppText>
           <AppText color={colors.textMuted} style={styles.center}>Participantes, monitores e administradores usam a mesma entrada.</AppText>
         </View>
-        {availableRoles.length ? (
+        {availableRoles.length > 1 && currentUser ? (
           <View style={styles.roleGroup}>
+            <UserIdentity />
             <AppText weight="800" style={styles.center}>Como deseja continuar?</AppText>
-            <AppText variant="small" color={colors.textMuted} style={styles.center}>Mostramos somente os acessos autorizados para sua conta.</AppText>
-            {availableRoles.map((role) => <RoleCard key={role} role={role} onPress={() => signIn(role)} />)}
+            <AppText variant="small" color={colors.textMuted} style={styles.center}>Mostramos somente os acessos autorizados pelo servidor.</AppText>
+            {availableRoles.map((role) => (
+              <RoleCard key={role} role={role} onPress={() => selectSessionRole(role)} />
+            ))}
           </View>
         ) : (
-          <Button label={loading ? 'Conectando ao Google…' : 'Continuar com Google'} onPress={enterWithGoogle} disabled={loading} icon="logo-google" />
+          <Button
+            label={!authReady ? 'Verificando sessão…' : loading ? 'Conectando ao Google…' : 'Continuar com Google'}
+            onPress={enterWithGoogle}
+            disabled={loading || !authReady}
+            icon="logo-google"
+            accessibilityHint="Abre a seleção segura de conta do Google"
+          />
         )}
-        {error ? (
+        {errorCode ? (
           <View accessibilityLiveRegion="polite" style={styles.error}>
             <Ionicons name="alert-circle-outline" size={22} color={colors.danger} />
-            <AppText variant="small" color={colors.danger} style={styles.flex}>{error}</AppText>
+            <View style={styles.flex}>
+              <AppText variant="small" color={colors.danger}>{errorMessages[errorCode]}</AppText>
+              <Pressable accessibilityRole="button" onPress={enterWithGoogle} disabled={loading} style={styles.retry}>
+                <AppText variant="small" weight="800" color={colors.primary}>Tentar novamente</AppText>
+              </Pressable>
+            </View>
           </View>
         ) : null}
         <View style={styles.security}>
@@ -78,6 +104,31 @@ export default function LoginScreen() {
         </View>
       </Card>
     </Screen>
+  );
+}
+
+function UserIdentity() {
+  const { currentUser } = useApp();
+  if (!currentUser) return null;
+  const initials = getInitials(currentUser.name);
+  return (
+    <View style={styles.identity}>
+      {currentUser.avatarUrl ? (
+        <Image
+          source={{ uri: currentUser.avatarUrl }}
+          accessibilityLabel={`Foto de perfil de ${currentUser.name}`}
+          style={styles.avatar}
+        />
+      ) : (
+        <View accessibilityLabel={`Foto indisponível. Iniciais de ${currentUser.name}: ${initials}`} style={styles.avatarFallback}>
+          <AppText weight="800" color={colors.primary}>{initials}</AppText>
+        </View>
+      )}
+      <View style={styles.flex}>
+        <AppText weight="800">{currentUser.name}</AppText>
+        <AppText variant="small" color={colors.textMuted}>{currentUser.email || 'E-mail não informado'}</AppText>
+      </View>
+    </View>
   );
 }
 
@@ -91,6 +142,10 @@ function RoleCard({ role, onPress }: { role: Role; onPress: () => void }) {
   );
 }
 
+function getInitials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('pt-BR') || '?';
+}
+
 const styles = StyleSheet.create({
   content: { justifyContent: 'center', minHeight: '100%', paddingTop: spacing.xxl },
   brand: { alignItems: 'center', gap: spacing.md },
@@ -99,8 +154,12 @@ const styles = StyleSheet.create({
   heading: { gap: spacing.sm },
   roleGroup: { gap: spacing.md },
   roleCard: { alignItems: 'center', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', minHeight: 56, paddingHorizontal: spacing.lg },
-  error: { alignItems: 'center', backgroundColor: colors.dangerSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  error: { alignItems: 'flex-start', backgroundColor: colors.dangerSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  retry: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
   security: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  identity: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  avatar: { borderRadius: radius.round, height: 52, width: 52 },
+  avatarFallback: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
   flex: { flex: 1 },
   pressed: { opacity: 0.65 },
 });

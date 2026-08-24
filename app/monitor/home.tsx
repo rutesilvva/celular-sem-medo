@@ -11,7 +11,8 @@ import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function MonitorHomeScreen() {
   const router = useRouter();
-  const { participantProgress, showNotice } = useApp();
+  const { currentUser, participantProgress, showNotice } = useApp();
+  const firstName = currentUser?.name.split(/\s+/)[0] || 'Monitor';
   const currentParticipants = participants.map((participant) => participant.id === 'maria'
     ? { ...participant, progress: participantProgress }
     : participant);
@@ -34,7 +35,7 @@ export default function MonitorHomeScreen() {
 
       <View style={styles.welcome}>
         <View style={styles.welcomeCopy}>
-          <AppText variant="heading" weight="800">Olá, Helena!</AppText>
+          <AppText variant="heading" weight="800">Olá, {firstName}!</AppText>
           <AppText color={colors.textMuted}>Veja como a turma avançou esta semana.</AppText>
         </View>
         <Pressable

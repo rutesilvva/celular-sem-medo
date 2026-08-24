@@ -5,12 +5,14 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ParticipantNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, SwitchRow, Tag } from '@/components/ui';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantProfileScreen() {
   const router = useRouter();
-  const { preferences, setPreference, showNotice, signOut } = useApp();
+  const { currentUser, preferences, setPreference, showNotice, signOut } = useApp();
+  const displayName = currentUser?.name || 'Participante';
 
   const logout = () => {
     signOut();
@@ -24,11 +26,10 @@ export default function ParticipantProfileScreen() {
       <Header title="Perfil e configurações" subtitle="Deixe o aplicativo do seu jeito." />
 
       <Card style={styles.profileCard}>
-        <View accessibilityLabel="Foto de perfil de Maria Aparecida" style={styles.avatar}>
-          <AppText variant="heading" weight="800" color={colors.surface}>MA</AppText>
-        </View>
+        <UserAvatar name={displayName} avatarUrl={currentUser?.avatarUrl ?? null} size={64} inverted />
         <View style={styles.profileCopy}>
-          <AppText variant="subheading" weight="800">Maria Aparecida</AppText>
+          <AppText variant="subheading" weight="800">{displayName}</AppText>
+          <AppText variant="small" color={colors.textMuted}>{currentUser?.email || 'E-mail não informado'}</AppText>
           <AppText variant="small" color={colors.textMuted}>Participante · Turma Manhã</AppText>
           <Tag label="Nível 3" tone="purple" />
         </View>
