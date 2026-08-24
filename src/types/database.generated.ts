@@ -488,13 +488,13 @@ export type Database = {
           accepted_by: string | null
           class_id: string
           created_at: string
-          email: string
+          email: string | null
           expires_at: string
           id: string
           invited_by: string
           revoked_at: string | null
           role: Database["public"]["Enums"]["app_role"]
-          token_hash: string
+          token_hash: string | null
           updated_at: string
         }
         Insert: {
@@ -502,13 +502,13 @@ export type Database = {
           accepted_by?: string | null
           class_id: string
           created_at?: string
-          email: string
+          email?: string | null
           expires_at: string
           id?: string
           invited_by: string
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
-          token_hash: string
+          token_hash?: string | null
           updated_at?: string
         }
         Update: {
@@ -516,13 +516,13 @@ export type Database = {
           accepted_by?: string | null
           class_id?: string
           created_at?: string
-          email?: string
+          email?: string | null
           expires_at?: string
           id?: string
           invited_by?: string
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
-          token_hash?: string
+          token_hash?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -865,7 +865,42 @@ export type Database = {
         }
         Returns: boolean
       }
+      append_attempt_event: {
+        Args: {
+          event_id: string
+          event_occurred_at?: string
+          event_payload?: Json
+          target_attempt_id: string
+          target_event_type: Database["public"]["Enums"]["attempt_event_type"]
+          target_sequence_number: number
+          target_step_id?: string
+        }
+        Returns: {
+          inserted: boolean
+          stored_event_id: string
+        }[]
+      }
       can_monitor_user: { Args: { target_user_id: string }; Returns: boolean }
+      consume_class_invitation: {
+        Args: { plain_token: string }
+        Returns: {
+          access_role: Database["public"]["Enums"]["app_role"]
+          class_id: string
+        }[]
+      }
+      create_class_invitation: {
+        Args: {
+          invited_email: string
+          invited_role?: Database["public"]["Enums"]["app_role"]
+          target_class_id: string
+        }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          invitation_token: string
+        }[]
+      }
+      expire_invitation_secrets: { Args: never; Returns: number }
       get_monitor_attempt_event_summaries: {
         Args: { target_attempt_id: string; target_class_id: string }
         Returns: {
@@ -936,6 +971,19 @@ export type Database = {
         Args: { target_version_id: string }
         Returns: boolean
       }
+      is_safe_attempt_metadata: { Args: { value: Json }; Returns: boolean }
+      list_class_invitations: {
+        Args: { target_class_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          expires_at: string
+          invitation_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }[]
+      }
+      purge_closed_invitation_personal_data: { Args: never; Returns: number }
     }
     Enums: {
       account_status: "pending" | "active" | "blocked"

@@ -238,7 +238,7 @@ Princípios técnicos:
 A migração inicial é uma fundação, não a prova de que estes fluxos já funcionam.
 As mudanças abaixo devem virar migrações/testes nas issues de backend:
 
-Resolvidas pela migração `202608230003_harden_role_authorization.sql` e pelos dez
+Resolvidas pela migração `202608230003_harden_role_authorization.sql` e pelos 19
 testes pgTAP em `supabase/tests/authorization_hardening.sql`:
 
 - `PRIV-DB-04`: vínculo e turma ativos passaram a ser obrigatórios e conta órfã
@@ -250,20 +250,29 @@ testes pgTAP em `supabase/tests/authorization_hardening.sql`:
   `metadata` ou `payload`;
 - `PRIV-DB-15`: índice único impede dois papéis da mesma pessoa na mesma turma.
 
-Restam **14 lacunas técnicas** nesta lista:
+Resolvidas pela migração `202608240001_secure_invitations_and_payloads.sql` e
+pelos 23 testes pgTAP em `supabase/tests/secure_invitations_and_payloads.sql`:
+
+- `PRIV-DB-02`: convites são criados e consumidos por RPC; o token puro retorna
+  uma única vez e o hash não é concedido ao cliente;
+- `PRIV-DB-03`: metadados e eventos usam allowlists com limites; texto livre de
+  ajuda, voz, transcrição e chaves desconhecidas são rejeitados no MVP;
+- `PRIV-DB-11`: `recorded_at` é gerado pelo servidor e `occurred_at` fica limitado
+  à janela de 24 horas anteriores até cinco minutos no futuro;
+- `PRIV-DB-12`: o servidor gera token criptográfico, persiste somente SHA-256,
+  limita validade a sete dias e limpa segredos expirados;
+- `PRIV-DB-14`: eventos entram por RPC append-only e o retry do mesmo ID é
+  idempotente sem atualizar ou duplicar a linha.
+
+Restam **9 lacunas técnicas** nesta lista:
 
 | ID | Lacuna atual | Correção exigida | Evidência de aceite |
 | --- | --- | --- | --- |
 | PRIV-DB-01 | Excluir `auth.users` pode falhar por FKs `RESTRICT` e FKs compostas para `memberships` em convites, atribuições, tentativas e ajuda | Criar status de conta, função idempotente e decidir entre desacoplar o sujeito de Auth ou tombstone por turma/papel; um perfil genérico não basta | Teste de exclusão para participante, monitor/autor e retry após falha |
-| PRIV-DB-02 | Monitor seleciona a linha inteira de `invitations`, inclusive `token_hash`, e o tipo do cliente aceita o hash | Gerar/consumir token só no servidor e expor view/RPC sem hash; limpar e-mail/hash pelo prazo | Teste prova que cliente e monitor nunca leem hash/token |
-| PRIV-DB-03 | `attempts.metadata`, `attempt_events.payload` e textos de ajuda aceitam conteúdo livre | Allowlist e limite por evento; proibir chaves/voz/transcrição e não aceitar texto livre de ajuda no MVP | Testes-canário rejeitam token, e-mail, áudio, texto livre e payload grande |
 | PRIV-DB-06 | Pedido de ajuda pode ser atribuído a monitor inativo e nota fechada pode mudar | Resolver por RPC/trigger que verifica monitor ativo e imutabilidade após encerramento | Testes positivos/negativos e auditoria sanitizada |
 | PRIV-DB-07 | Não há tabelas/rotinas para pedidos, consentimentos, ledger de exclusão e jobs de retenção | Modelar superfícies administrativas isoladas do cliente mobile | Migrações, grants, RLS, cron e teste de expiração |
 | PRIV-DB-08 | Participante não possui grant/policy para cancelar o próprio pedido, embora o contrato permita cancelamento | Criar RPC limitada a `open`/próprio pedido ou retirar a função do produto | Cancelamento próprio passa; pedido alheio/assumido/fechado falha |
-| PRIV-DB-11 | Cliente fornece `attempt_events.recorded_at` e `occurred_at` | Gerar `recorded_at` no servidor e aceitar `occurred_at` somente em janela/tolerância documentada | Timestamp futuro/antigo e update forjado falham |
-| PRIV-DB-12 | Convite aceita qualquer expiração futura e o banco só valida 64 caracteres hex, não algoritmo/entropia | Gerar token criptográfico/hash no servidor e impor validade máxima de 7 dias | Convite >7 dias, hash do cliente e token fraco falham |
 | PRIV-DB-13 | `classes` e atribuições podem voltar de `archived` para `active` pelo update atual | Definir máquina de estados e reservar reativação excepcional a operação administrativa auditada | Transições proibidas falham para o cliente |
-| PRIV-DB-14 | PK/unique de `attempt_events` impede duplicata, mas retry retorna conflito; não há RPC de upsert idempotente | Criar RPC que deriva ator, valida payload e usa `ON CONFLICT` sem permitir update ou alvo alheio | PART-008 repete ID e não duplica nem altera evento |
 | PRIV-AUTH-01 | Signup do Auth pode criar conta Google sem vínculo | Bloquear onboarding funcional, executar limpeza em até 24 h e não expor catálogo/dados | Conta desconhecida é negada e removida pelo job |
 | PRIV-AUTH-02 | Supabase Auth mantém metadados de identidade e uma resposta de login pode conter provider token transitório | Auditar `raw_user_meta_data`/`identity_data`, não duplicar resposta bruta e garantir que o adapter persista só a sessão Supabase necessária | Teste de storage/bundle prova ausência de provider token e claims excedentes |
 | PRIV-MOBILE-01 | O app ainda não tem SecureStore, limpeza de cache, reautenticação ou Central de Privacidade | Implementar na integração de Auth/privacidade | Teste em Android/iOS, reinstalação/troca de conta e acessibilidade |

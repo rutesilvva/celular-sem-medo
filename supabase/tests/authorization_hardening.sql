@@ -50,7 +50,7 @@ values (
   'b0000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000001',
   'c0000000-0000-4000-8000-000000000001',
-  '{"internal":"must-not-reach-monitor"}'
+  '{"client_version":"0.1.0-test","resumed_count":0}'
 );
 
 insert into public.attempt_events (
@@ -63,7 +63,7 @@ values (
   'a0000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000001',
   'b0000000-0000-4000-8000-000000000001',
-  1, 'attempt_started', '{"internal":"must-not-reach-monitor"}'
+  1, 'attempt_started', '{}'
 );
 
 set local role authenticated;
