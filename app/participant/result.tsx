@@ -1,6 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
@@ -14,14 +13,10 @@ import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantResultScreen() {
   const router = useRouter();
-  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
-  const { finishMission, mission, participantProgress, startMission } = useApp();
+  const { assignmentId, completion } = useLocalSearchParams<{ assignmentId?: string; completion?: string }>();
+  const { mission, participantProgress } = useApp();
   const { currentUser } = useAuth();
   const query = useMissionContent(assignmentId ?? null);
-
-  useEffect(() => {
-    finishMission();
-  }, [finishMission]);
 
   if (query.loading) return <ResultState kind="loading" retry={query.retry} />;
   if (query.error) return <ResultState kind="error" retry={query.retry} />;
@@ -34,7 +29,6 @@ export default function ParticipantResultScreen() {
   };
 
   const practiceAgain = () => {
-    startMission();
     router.dismissAll();
     router.replace({ pathname: '/participant/mission-details', params: { assignmentId: details.assignmentId } });
   };
@@ -60,9 +54,11 @@ export default function ParticipantResultScreen() {
             Missão concluída com coragem
           </AppText>
           <AppText color={colors.textMuted} style={styles.center}>
-            {mission.usedHelp
-              ? 'Você encontrou o botão certo, recebeu apoio e terminou a prática.'
-              : 'Você encontrou o botão certo e terminou a prática com autonomia.'}
+            {completion === 'with_help'
+              ? 'Você recebeu ajuda e concluiu todos os passos da prática.'
+              : completion === 'with_hint'
+                ? 'Você usou uma dica e concluiu todos os passos da prática.'
+                : 'Você concluiu todos os passos com autonomia.'}
           </AppText>
         </View>
       </View>

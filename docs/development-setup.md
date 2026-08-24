@@ -214,6 +214,9 @@ As missões demonstrativas do painel do monitor ficam disponíveis apenas quando
 `EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS=true`. Essa opção deve permanecer `false`
 em staging e production.
 
+O contrato e as garantias do executor estão em
+[`docs/missions/safe-mission-engine.md`](missions/safe-mission-engine.md).
+
 ## Verificações antes de abrir um pull request
 
 Execute o que já existe no repositório:

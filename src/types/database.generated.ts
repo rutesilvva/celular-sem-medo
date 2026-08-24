@@ -1082,6 +1082,26 @@ export type Database = {
         }[]
       }
       purge_closed_invitation_personal_data: { Args: never; Returns: number }
+      set_mission_attempt_progress: {
+        Args: {
+          mark_completed?: boolean
+          target_attempt_id: string
+          target_step_id: string
+        }
+        Returns: Database["public"]["Enums"]["attempt_status"]
+      }
+      start_or_resume_mission_attempt: {
+        Args: { requested_attempt_id: string; target_assignment_id: string }
+        Returns: {
+          attempt_id: string
+          attempt_status: Database["public"]["Enums"]["attempt_status"]
+          current_step_id: string
+          mistake_count: number
+          next_sequence_number: number
+          used_help: boolean
+          used_hint: boolean
+        }[]
+      }
     }
     Enums: {
       account_status: "pending" | "active" | "blocked"
@@ -1127,7 +1147,6 @@ export type Database = {
     }
   }
 }
-
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]

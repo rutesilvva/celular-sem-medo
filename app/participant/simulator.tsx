@@ -1,192 +1,110 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
-import { AppText, AudioButton, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
+import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import type { MissionAction } from '@/features/mission-engine/executor';
 import { useMissionContent } from '@/hooks/useMissionData';
+import { useMissionEngine } from '@/hooks/useMissionEngine';
+import type { ParticipantMissionDetails, ParticipantMissionStep } from '@/lib/backend';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantSimulatorScreen() {
-  const router = useRouter();
   const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
-  const { finishMission, requestMissionHelp, showNotice } = useApp();
   const query = useMissionContent(assignmentId ?? null);
-
   if (query.loading) return <SimulatorState kind="loading" retry={query.retry} />;
   if (query.error) return <SimulatorState kind="error" retry={query.retry} />;
-  const content = query.data;
-  const currentStep = content?.steps[1] ?? content?.steps[0];
-  if (!content || !currentStep) return <SimulatorState kind="empty" retry={query.retry} />;
+  if (!query.data) return <SimulatorState kind="empty" retry={query.retry} />;
+  return <MissionExecutor assignmentId={query.data.details.assignmentId} details={query.data.details} steps={query.data.steps} />;
+}
 
-  const completeMission = () => {
-    finishMission();
-    showNotice('Clipe encontrado. Missão concluída!');
-    router.push({ pathname: '/participant/result', params: { assignmentId: content.details.assignmentId } });
-  };
+function MissionExecutor({ assignmentId, details, steps }: { assignmentId: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[] }) {
+  const router = useRouter();
+  const { playInstruction } = useApp();
+  const engine = useMissionEngine(assignmentId, steps);
+  const step = engine.currentStep;
 
-  const openDifficulty = () => {
-    requestMissionHelp();
-    router.push({ pathname: '/participant/stuck', params: { assignmentId: content.details.assignmentId } });
-  };
+  useEffect(() => {
+    if (!engine.run.completed) return;
+    router.replace({ pathname: '/participant/result', params: { assignmentId, completion: engine.completion, attemptId: engine.attemptId ?? '' } });
+  }, [assignmentId, engine.attemptId, engine.completion, engine.run.completed, router]);
+
+  if (engine.loading) return <SimulatorState kind="loading" retry={engine.retry} />;
+  if (!step) return <SimulatorState kind="empty" retry={engine.retry} />;
 
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header
-        title="Simulador seguro"
-        subtitle="Nada será enviado de verdade."
-        onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId: content.details.assignmentId } })}
-        audio
-      />
-
+      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
-          <View style={styles.stepBadge}>
-            <AppText variant="small" weight="800" color={colors.primary}>PASSO {currentStep.position} DE {content.steps.length}</AppText>
-          </View>
-          <Tag label="Ambiente seguro" tone="green" />
+          <AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText>
+          <Tag label="Simulação segura" tone="green" />
         </View>
-        <AppText variant="subheading" weight="800">
-          {currentStep.title}
-        </AppText>
-        <AppText color={colors.textMuted}>
-          {currentStep.instruction}
-        </AppText>
-        <AppText variant="small" color={colors.successText}>{currentStep.safetyNote}</AppText>
-        <ProgressBar value={Math.round(100 * currentStep.position / content.steps.length)} />
+        <AppText variant="subheading" weight="800">{step.title}</AppText>
+        <AppText color={colors.textMuted}>{step.instruction}</AppText>
+        <ProgressBar value={Math.round(100 * step.position / steps.length)} />
       </Card>
-
-      <View accessibilityLabel="Conversa de treino com Ana" style={styles.phone}>
-        <View style={styles.chatHeader}>
-          <View style={styles.avatar}>
-            <AppText weight="800" color={colors.primary}>A</AppText>
-          </View>
-          <View style={styles.chatPerson}>
-            <AppText weight="800">Ana · Treino</AppText>
-            <AppText variant="caption" color={colors.successText}>Simulação segura</AppText>
-          </View>
-          <Ionicons name="shield-checkmark" size={24} color={colors.success} />
+      <Card style={styles.simulation}>
+        <View style={styles.safeHeader}>
+          <View style={styles.safeIcon}><Ionicons name="shield-checkmark" size={28} color={colors.success} /></View>
+          <View style={styles.safeCopy}><AppText weight="800">Ambiente fictício</AppText><AppText variant="small" color={colors.successText}>Sem mensagens, fotos, pagamentos, GPS, downloads ou permissões reais.</AppText></View>
         </View>
-
-        <View style={styles.chatBody}>
-          <View style={styles.receivedBubble}>
-            <AppText>Você pode me mandar a foto das flores?</AppText>
-            <AppText variant="caption" color={colors.textMuted} style={styles.messageTime}>10:42</AppText>
-          </View>
-
-          <View style={styles.emptySpace}>
-            <Ionicons name="lock-closed-outline" size={22} color={colors.iconMuted} />
-            <AppText variant="small" color={colors.textMuted} style={styles.center}>
-              Esta conversa existe só para você praticar.
-            </AppText>
-          </View>
+        <View style={styles.taskArea}>
+          <Ionicons name={iconForStep(step)} size={46} color={colors.primary} />
+          <AppText variant="subheading" weight="800" style={styles.center}>{step.title}</AppText>
+          <AppText color={colors.textMuted} style={styles.center}>{step.safetyNote}</AppText>
         </View>
-
-        <View style={styles.composer}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Anexar foto, botão de clipe"
-            accessibilityHint="Conclui o passo de treino e abre o resultado"
-            onPress={completeMission}
-            style={({ pressed }) => [styles.attachButton, pressed && styles.pressed]}
-          >
-            <Ionicons name="attach" size={29} color={colors.primary} />
-          </Pressable>
-          <View style={styles.messageField}>
-            <AppText variant="small" color={colors.textMuted}>
-              Mensagem
-            </AppText>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Abrir câmera"
-            accessibilityHint="Demonstra uma tentativa diferente do passo pedido"
-            onPress={openDifficulty}
-            style={({ pressed }) => [styles.cameraButton, pressed && styles.pressed]}
-          >
-            <Ionicons name="camera-outline" size={26} color={colors.iconMuted} />
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.actions}>
-        <AudioButton
-          label="Ouvir instrução novamente"
-          message={currentStep.audioText}
-        />
-        <Button
-          label="Preciso de uma dica"
-          icon="help-circle-outline"
-          variant="soft"
-          accessibilityHint="Abre as opções de ajuda"
-          onPress={openDifficulty}
-        />
+        <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+      </Card>
+      {engine.run.mistakes > 0 ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
+      {engine.run.usedHint || engine.run.usedHelp ? <Card style={styles.hints}><AppText weight="800">{engine.run.usedHelp ? 'Ajuda passo a passo' : 'Dicas deste passo'}</AppText>{step.hints.map((hint) => <AppText key={hint}>• {hint}</AppText>)}</Card> : null}
+      {engine.error ? <AppText color={colors.danger}>{engine.error}</AppText> : null}
+      <View style={styles.supportActions}>
+        <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} />
+        <Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} />
+        <Button label="Preciso de ajuda" icon="hand-left-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('help')} />
       </View>
     </Screen>
   );
 }
 
+function StepActions({ step, busy, onSubmit }: { step: ParticipantMissionStep; busy: boolean; onSubmit: (action: MissionAction) => Promise<void> }) {
+  const expected = asObject(step.expectedAction);
+  const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+  if (options.length) return <View style={styles.options}>{options.map((option) => <Button key={option.id} label={option.label} variant="secondary" disabled={busy} onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })} />)}</View>;
+  const action = expected.action === 'tap' ? 'tap' : 'continue';
+  return <Button label={action === 'tap' ? labelForTarget(expected.target) : 'Continuar'} icon={action === 'tap' ? 'hand-left-outline' : 'arrow-forward'} disabled={busy} onPress={() => void onSubmit({ action, target: expected.target })} />;
+}
+
+function asObject(value: ParticipantMissionStep['expectedAction']): { action?: string; target?: string } {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as { action?: string; target?: string } : {};
+}
+function isOption(value: unknown): value is { id: string; label: string } {
+  return Boolean(value && typeof value === 'object' && typeof (value as { id?: unknown }).id === 'string' && typeof (value as { label?: unknown }).label === 'string');
+}
+function labelForTarget(target?: string) {
+  const labels: Record<string, string> = { attachment_button: 'Tocar no clipe', location_option: 'Escolher localização' };
+  return target ? labels[target] ?? 'Tocar na opção indicada' : 'Continuar';
+}
+function iconForStep(step: ParticipantMissionStep): 'phone-portrait-outline' | 'hand-left-outline' | 'list-outline' | 'shield-checkmark-outline' {
+  if (step.type === 'instruction') return 'phone-portrait-outline';
+  if (step.type === 'tap_target') return 'hand-left-outline';
+  if (step.type === 'multiple_choice') return 'list-outline';
+  return 'shield-checkmark-outline';
+}
 function SimulatorState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; retry: () => void }) {
   const router = useRouter();
-  return (
-    <Screen footer={<ParticipantNav active="missions" />}>
-      <Header title="Simulador seguro" onBack={() => router.replace('/participant/missions')} />
-      <DataState
-        kind={kind}
-        title={kind === 'loading' ? 'Preparando o treino' : kind === 'error' ? 'Não foi possível carregar' : 'Treino indisponível'}
-        message="A versão publicada não está disponível para esta turma."
-        onRetry={retry}
-      />
-    </Screen>
-  );
+  return <Screen footer={<ParticipantNav active="missions" />}><Header title="Simulador seguro" onBack={() => router.replace('/participant/missions')} /><DataState kind={kind} title={kind === 'loading' ? 'Preparando o treino' : kind === 'error' ? 'Não foi possível carregar' : 'Treino indisponível'} message="A versão publicada não está disponível para esta turma." onRetry={retry} /></Screen>;
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg },
-  instructionCard: { backgroundColor: colors.primarySoft, gap: spacing.md },
-  instructionTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  stepBadge: { backgroundColor: colors.surface, borderRadius: radius.round, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  phone: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primaryDark,
-    borderRadius: radius.xl,
-    borderWidth: 3,
-    minHeight: 430,
-    overflow: 'hidden',
-    ...shadow,
-  },
-  chatHeader: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  avatar: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
-  chatPerson: { flex: 1 },
-  chatBody: { flex: 1, gap: spacing.xl, justifyContent: 'space-between', padding: spacing.lg },
-  receivedBubble: { alignSelf: 'flex-start', backgroundColor: '#EFEEF2', borderRadius: radius.lg, borderTopLeftRadius: radius.sm, maxWidth: '86%', padding: spacing.md },
-  messageTime: { alignSelf: 'flex-end', marginTop: spacing.xs },
-  emptySpace: { alignItems: 'center', gap: spacing.sm, justifyContent: 'center', minHeight: 165, paddingHorizontal: spacing.xxxl },
-  center: { textAlign: 'center' },
-  composer: { alignItems: 'center', borderTopColor: colors.border, borderTopWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
-  attachButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-    borderRadius: radius.round,
-    borderWidth: 2,
-    height: 52,
-    justifyContent: 'center',
-    width: 52,
-  },
-  messageField: { backgroundColor: '#F4F2F6', borderRadius: radius.round, flex: 1, justifyContent: 'center', minHeight: 48, paddingHorizontal: spacing.md },
-  cameraButton: { alignItems: 'center', borderRadius: radius.round, height: 48, justifyContent: 'center', width: 48 },
-  actions: { gap: spacing.md },
-  pressed: { opacity: 0.68, transform: [{ scale: 0.96 }] },
+  content: { gap: spacing.lg }, instructionCard: { backgroundColor: colors.primarySoft, gap: spacing.md }, instructionTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  simulation: { borderColor: colors.primaryDark, borderWidth: 2, gap: spacing.xl, minHeight: 390, ...shadow }, safeHeader: { alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, paddingBottom: spacing.md },
+  safeIcon: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 }, safeCopy: { flex: 1 }, taskArea: { alignItems: 'center', flex: 1, gap: spacing.md, justifyContent: 'center', padding: spacing.lg }, center: { textAlign: 'center' },
+  options: { gap: spacing.md }, feedback: { alignItems: 'center', backgroundColor: colors.warningSoft, flexDirection: 'row', gap: spacing.md }, hints: { backgroundColor: colors.primarySoft, gap: spacing.sm }, supportActions: { gap: spacing.md },
 });

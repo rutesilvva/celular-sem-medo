@@ -148,6 +148,29 @@ export async function appendAttemptEvent(input: {
   return data[0];
 }
 
+export async function startOrResumeMissionAttempt(assignmentId: string, attemptId: string) {
+  const { data, error } = await getSupabase().rpc('start_or_resume_mission_attempt', {
+    target_assignment_id: assignmentId,
+    requested_attempt_id: attemptId,
+  });
+  if (error || !data?.[0]) throw error ?? new Error('ATTEMPT_NOT_STARTED');
+  return data[0];
+}
+
+export async function setMissionAttemptProgress(input: {
+  attemptId: string;
+  stepId: string;
+  completed?: boolean;
+}) {
+  const { data, error } = await getSupabase().rpc('set_mission_attempt_progress', {
+    target_attempt_id: input.attemptId,
+    target_step_id: input.stepId,
+    mark_completed: input.completed ?? false,
+  });
+  if (error) throw error;
+  return data;
+}
+
 function mapParticipant(row: MonitorParticipantRow): ClassParticipant {
   const score = Number(row.average_score);
   const progress = row.progress_percent;

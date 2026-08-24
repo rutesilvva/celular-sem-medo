@@ -63,15 +63,10 @@ begin
   insert into public.class_mission_assignments (
     id, class_id, mission_version_id, assigned_by, status, is_required, available_from
   )
-  values (
-    '76000000-0000-4000-8000-000000000001',
-    class_id,
-    '20000000-0000-4000-8000-000000000001',
-    monitor_id,
-    'active',
-    true,
-    now()
-  )
+  values
+    ('76000000-0000-4000-8000-000000000001', class_id, '20000000-0000-4000-8000-000000000001', monitor_id, 'active', true, now()),
+    ('76000000-0000-4000-8000-000000000002', class_id, '20000000-0000-4000-8000-000000000004', monitor_id, 'active', false, now()),
+    ('76000000-0000-4000-8000-000000000003', class_id, '20000000-0000-4000-8000-000000000005', monitor_id, 'active', false, now())
   on conflict (class_id, mission_version_id) do update set
     assigned_by = excluded.assigned_by,
     status = excluded.status,
