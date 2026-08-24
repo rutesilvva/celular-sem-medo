@@ -1,26 +1,36 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantSimulatorScreen() {
   const router = useRouter();
+  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
   const { finishMission, requestMissionHelp, showNotice } = useApp();
+  const query = useMissionContent(assignmentId ?? null);
+
+  if (query.loading) return <SimulatorState kind="loading" retry={query.retry} />;
+  if (query.error) return <SimulatorState kind="error" retry={query.retry} />;
+  const content = query.data;
+  const currentStep = content?.steps[1] ?? content?.steps[0];
+  if (!content || !currentStep) return <SimulatorState kind="empty" retry={query.retry} />;
 
   const completeMission = () => {
     finishMission();
     showNotice('Clipe encontrado. Missão concluída!');
-    router.push('/participant/result');
+    router.push({ pathname: '/participant/result', params: { assignmentId: content.details.assignmentId } });
   };
 
   const openDifficulty = () => {
     requestMissionHelp();
-    router.push('/participant/stuck');
+    router.push({ pathname: '/participant/stuck', params: { assignmentId: content.details.assignmentId } });
   };
 
   return (
@@ -28,24 +38,25 @@ export default function ParticipantSimulatorScreen() {
       <Header
         title="Simulador seguro"
         subtitle="Nada será enviado de verdade."
-        onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/mission-details')}
+        onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId: content.details.assignmentId } })}
         audio
       />
 
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
           <View style={styles.stepBadge}>
-            <AppText variant="small" weight="800" color={colors.primary}>PASSO 2 DE 3</AppText>
+            <AppText variant="small" weight="800" color={colors.primary}>PASSO {currentStep.position} DE {content.steps.length}</AppText>
           </View>
           <Tag label="Ambiente seguro" tone="green" />
         </View>
         <AppText variant="subheading" weight="800">
-          Toque no clipe para escolher uma foto
+          {currentStep.title}
         </AppText>
         <AppText color={colors.textMuted}>
-          Procure o botão com o desenho de clipe na parte de baixo da conversa.
+          {currentStep.instruction}
         </AppText>
-        <ProgressBar value={66} />
+        <AppText variant="small" color={colors.successText}>{currentStep.safetyNote}</AppText>
+        <ProgressBar value={Math.round(100 * currentStep.position / content.steps.length)} />
       </Card>
 
       <View accessibilityLabel="Conversa de treino com Ana" style={styles.phone}>
@@ -104,7 +115,7 @@ export default function ParticipantSimulatorScreen() {
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir instrução novamente"
-          message="Procure o botão com desenho de clipe na parte de baixo da conversa. Toque nele para escolher uma foto de treino."
+          message={currentStep.audioText}
         />
         <Button
           label="Preciso de uma dica"
@@ -114,6 +125,21 @@ export default function ParticipantSimulatorScreen() {
           onPress={openDifficulty}
         />
       </View>
+    </Screen>
+  );
+}
+
+function SimulatorState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; retry: () => void }) {
+  const router = useRouter();
+  return (
+    <Screen footer={<ParticipantNav active="missions" />}>
+      <Header title="Simulador seguro" onBack={() => router.replace('/participant/missions')} />
+      <DataState
+        kind={kind}
+        title={kind === 'loading' ? 'Preparando o treino' : kind === 'error' ? 'Não foi possível carregar' : 'Treino indisponível'}
+        message="A versão publicada não está disponível para esta turma."
+        onRetry={retry}
+      />
     </Screen>
   );
 }

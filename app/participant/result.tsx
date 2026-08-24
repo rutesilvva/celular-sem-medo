@@ -1,21 +1,32 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, ProgressBar } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
+import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantResultScreen() {
   const router = useRouter();
+  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
   const { finishMission, mission, participantProgress, startMission } = useApp();
+  const { currentUser } = useAuth();
+  const query = useMissionContent(assignmentId ?? null);
 
   useEffect(() => {
     finishMission();
   }, [finishMission]);
+
+  if (query.loading) return <ResultState kind="loading" retry={query.retry} />;
+  if (query.error) return <ResultState kind="error" retry={query.retry} />;
+  if (!query.data) return <ResultState kind="empty" retry={query.retry} />;
+  const details = query.data.details;
 
   const continueTrail = () => {
     router.dismissAll();
@@ -25,7 +36,7 @@ export default function ParticipantResultScreen() {
   const practiceAgain = () => {
     startMission();
     router.dismissAll();
-    router.replace('/participant/mission-details');
+    router.replace({ pathname: '/participant/mission-details', params: { assignmentId: details.assignmentId } });
   };
 
   return (
@@ -62,14 +73,14 @@ export default function ParticipantResultScreen() {
             <Ionicons name="image-outline" size={30} color={colors.primary} />
           </View>
           <View style={styles.achievementCopy}>
-            <AppText weight="800">Enviar uma foto</AppText>
+            <AppText weight="800">{details.title}</AppText>
             <AppText variant="small" color={colors.textMuted}>Treino seguro finalizado</AppText>
           </View>
           <Ionicons name="ribbon" size={34} color={colors.warning} />
         </View>
         <View style={styles.divider} />
         <View style={styles.metrics}>
-          <ResultMetric icon="time-outline" value="4 min" label="Seu tempo" />
+          <ResultMetric icon="time-outline" value={`${details.estimatedMinutes} min`} label="Duração estimada" />
           <ResultMetric icon="refresh-outline" value={`${Math.max(1, mission.attempts)}`} label="Tentativas" />
           <ResultMetric icon="trending-up-outline" value="+8%" label="Evolução" />
         </View>
@@ -89,7 +100,7 @@ export default function ParticipantResultScreen() {
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir resultado"
-          message={`Parabéns, Maria. Você concluiu a missão enviar uma foto e avançou para ${participantProgress} por cento da sua trilha.`}
+          message={`Parabéns, ${currentUser?.name || 'participante'}. Você concluiu a missão ${details.title} e avançou para ${participantProgress} por cento da sua trilha.`}
         />
         <Button
           label="Continuar minha trilha"
@@ -105,6 +116,16 @@ export default function ParticipantResultScreen() {
           onPress={practiceAgain}
         />
       </View>
+    </Screen>
+  );
+}
+
+function ResultState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; retry: () => void }) {
+  const router = useRouter();
+  return (
+    <Screen footer={<ParticipantNav active="missions" />}>
+      <DataState kind={kind} title={kind === 'loading' ? 'Carregando resultado' : 'Resultado indisponível'} message="Não foi possível validar a versão desta missão." onRetry={retry} />
+      <Button label="Voltar às missões" onPress={() => router.replace('/participant/missions')} />
     </Screen>
   );
 }

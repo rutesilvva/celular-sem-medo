@@ -1,25 +1,35 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantStuckScreen() {
   const router = useRouter();
+  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
   const { playInstruction, requestMissionHelp } = useApp();
+  const query = useMissionContent(assignmentId ?? null);
 
   useEffect(() => {
     requestMissionHelp();
   }, [requestMissionHelp]);
 
+  if (query.loading) return <HelpState kind="loading" retry={query.retry} />;
+  if (query.error) return <HelpState kind="error" retry={query.retry} />;
+  const content = query.data;
+  const currentStep = content?.steps[1] ?? content?.steps[0];
+  if (!content || !currentStep) return <HelpState kind="empty" retry={query.retry} />;
+
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header title="Onde eu travei" onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/simulator')} />
+      <Header title="Onde eu travei" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/simulator', params: { assignmentId: content.details.assignmentId } })} />
 
       <View accessibilityRole="header" style={styles.hero}>
         <View style={styles.heroIcon}>
@@ -39,8 +49,8 @@ export default function ParticipantStuckScreen() {
         </View>
         <View style={styles.contextCopy}>
           <AppText variant="small" weight="800" color={colors.primary}>PASSO ATUAL</AppText>
-          <AppText weight="800">Encontrar o botão de clipe</AppText>
-          <AppText variant="small" color={colors.textMuted}>Ele fica na parte de baixo da conversa de treino.</AppText>
+          <AppText weight="800">{currentStep.title}</AppText>
+          <AppText variant="small" color={colors.textMuted}>{currentStep.hints[0]}</AppText>
         </View>
       </Card>
 
@@ -49,13 +59,13 @@ export default function ParticipantStuckScreen() {
           icon="mic-outline"
           title="Explicar em voz alta"
           description="Conte com suas palavras o que ficou difícil."
-          onPress={() => playInstruction('Demonstração: nenhuma fala é gravada. Este recurso aceitará sua explicação por voz em uma versão futura.')}
+          onPress={() => playInstruction(currentStep.audioText)}
         />
         <HelpOption
           icon="hand-left-outline"
           title="Mostrar onde tocar"
           description="Veja o botão certo destacado na tela."
-          onPress={() => router.push('/participant/guided-help')}
+          onPress={() => router.push({ pathname: '/participant/guided-help', params: { assignmentId: content.details.assignmentId } })}
         />
       </View>
 
@@ -64,16 +74,26 @@ export default function ParticipantStuckScreen() {
           label="Mostrar onde tocar"
           icon="eye-outline"
           accessibilityHint="Abre uma orientação visual do botão de clipe"
-          onPress={() => router.push('/participant/guided-help')}
+          onPress={() => router.push({ pathname: '/participant/guided-help', params: { assignmentId: content.details.assignmentId } })}
         />
         <Button
           label="Tentar novamente"
           icon="refresh-outline"
           variant="secondary"
           accessibilityHint="Volta para o simulador seguro"
-          onPress={() => router.replace('/participant/simulator')}
+          onPress={() => router.replace({ pathname: '/participant/simulator', params: { assignmentId: content.details.assignmentId } })}
         />
       </View>
+    </Screen>
+  );
+}
+
+function HelpState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; retry: () => void }) {
+  const router = useRouter();
+  return (
+    <Screen footer={<ParticipantNav active="missions" />}>
+      <Header title="Ajuda" onBack={() => router.replace('/participant/missions')} />
+      <DataState kind={kind} title={kind === 'loading' ? 'Carregando ajuda' : 'Ajuda indisponível'} message="Não foi possível acessar este conteúdo publicado." onRetry={retry} />
     </Screen>
   );
 }

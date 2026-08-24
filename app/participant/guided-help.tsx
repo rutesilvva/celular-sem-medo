@@ -1,20 +1,30 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantGuidedHelpScreen() {
   const router = useRouter();
+  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
   const { finishMission } = useApp();
+  const query = useMissionContent(assignmentId ?? null);
+
+  if (query.loading) return <GuidedState kind="loading" retry={query.retry} />;
+  if (query.error) return <GuidedState kind="error" retry={query.retry} />;
+  const content = query.data;
+  const currentStep = content?.steps[1] ?? content?.steps[0];
+  if (!content || !currentStep) return <GuidedState kind="empty" retry={query.retry} />;
 
   const completeWithGuidance = () => {
     finishMission();
-    router.push('/participant/result');
+    router.push({ pathname: '/participant/result', params: { assignmentId: content.details.assignmentId } });
   };
 
   return (
@@ -22,7 +32,7 @@ export default function ParticipantGuidedHelpScreen() {
       <Header
         title="Ajuda passo a passo"
         subtitle="Vamos encontrar o botão juntos."
-        onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/stuck')}
+        onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/stuck', params: { assignmentId: content.details.assignmentId } })}
         audio
       />
 
@@ -40,9 +50,7 @@ export default function ParticipantGuidedHelpScreen() {
           <AppText variant="small" weight="800" color={colors.primary}>PARTE DE BAIXO DA CONVERSA</AppText>
         </View>
         <View style={styles.arrowArea}>
-          <AppText variant="subheading" weight="800" color={colors.primary} style={styles.center}>
-            Este é o botão de clipe
-          </AppText>
+          <AppText variant="subheading" weight="800" color={colors.primary} style={styles.center}>{currentStep.title}</AppText>
           <Ionicons name="arrow-down" size={40} color={colors.warning} />
         </View>
         <View style={styles.composer}>
@@ -59,15 +67,13 @@ export default function ParticipantGuidedHelpScreen() {
       </View>
 
       <View style={styles.instructions}>
-        <Instruction number="1" text="Olhe para a parte de baixo da conversa." />
-        <Instruction number="2" text="Encontre o desenho que parece um clipe de papel." />
-        <Instruction number="3" text="Toque uma vez no clipe para escolher a foto." />
+        {currentStep.hints.map((hint, index) => <Instruction key={hint} number={String(index + 1)} text={hint} />)}
       </View>
 
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir novamente"
-          message="Olhe a parte de baixo da conversa. O clipe fica do lado esquerdo do campo de mensagem. Toque nele uma vez."
+          message={currentStep.audioText}
         />
         <Button
           label="Tentar novamente sozinho"
@@ -80,9 +86,19 @@ export default function ParticipantGuidedHelpScreen() {
           icon="refresh-outline"
           variant="secondary"
           accessibilityHint="Volta para praticar o passo no simulador"
-          onPress={() => router.replace('/participant/simulator')}
+          onPress={() => router.replace({ pathname: '/participant/simulator', params: { assignmentId: content.details.assignmentId } })}
         />
       </View>
+    </Screen>
+  );
+}
+
+function GuidedState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; retry: () => void }) {
+  const router = useRouter();
+  return (
+    <Screen footer={<ParticipantNav active="missions" />}>
+      <Header title="Ajuda passo a passo" onBack={() => router.replace('/participant/missions')} />
+      <DataState kind={kind} title={kind === 'loading' ? 'Carregando ajuda' : 'Ajuda indisponível'} message="Não foi possível acessar este conteúdo publicado." onRetry={retry} />
     </Screen>
   );
 }

@@ -1,72 +1,63 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
-const steps = [
-  { icon: 'chatbubble-ellipses-outline' as const, title: 'Abra uma conversa', copy: 'Use a conversa de treino que aparece na simulação.' },
-  { icon: 'attach-outline' as const, title: 'Toque no clipe', copy: 'Ele abre as opções para anexar um arquivo.' },
-  { icon: 'image-outline' as const, title: 'Escolha a foto', copy: 'A imagem é apenas de exemplo e não será enviada de verdade.' },
-];
+const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
 export default function ParticipantMissionDetailsScreen() {
   const router = useRouter();
+  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
   const { startMission } = useApp();
+  const query = useMissionContent(assignmentId ?? null);
 
+  if (query.loading) return <State kind="loading" onRetry={query.retry} />;
+  if (query.error) return <State kind="error" onRetry={query.retry} />;
+  if (!query.data) return <State kind="empty" onRetry={query.retry} />;
+
+  const { details, steps } = query.data;
   const beginTraining = () => {
     startMission();
-    router.push('/participant/simulator');
+    router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId } });
   };
 
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header
-        title="Enviar uma foto"
-        subtitle="Missão de treino seguro"
-        onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/missions')}
-        audio
-      />
+      <Header title={details.title} subtitle={`Versão ${details.version} publicada`} onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/missions')} audio />
 
       <View style={styles.hero}>
-        <View style={styles.heroIcon}>
-          <Ionicons name="image-outline" size={48} color={colors.primary} />
-        </View>
-        <Tag label="Recomendada" tone="purple" />
-        <AppText variant="heading" weight="800" style={styles.center}>
-          Aprenda a escolher e enviar uma foto
-        </AppText>
-        <AppText color={colors.textMuted} style={styles.center}>
-          Você vai praticar em uma conversa simulada. Pode tocar sem medo: nada sairá deste aplicativo.
-        </AppText>
+        <View style={styles.heroIcon}><Ionicons name="school-outline" size={48} color={colors.primary} /></View>
+        {details.required ? <Tag label="Recomendada" tone="purple" /> : null}
+        <AppText variant="heading" weight="800" style={styles.center}>{details.learningObjective}</AppText>
+        <AppText color={colors.textMuted} style={styles.center}>{details.summary}</AppText>
       </View>
 
       <Card style={styles.summaryCard}>
-        <SummaryItem icon="time-outline" value="5 min" label="Duração" />
+        <SummaryItem icon="time-outline" value={`${details.estimatedMinutes} min`} label="Duração" />
         <View style={styles.verticalDivider} />
-        <SummaryItem icon="leaf-outline" value="Fácil" label="Dificuldade" />
+        <SummaryItem icon="leaf-outline" value={difficultyLabels[details.difficulty]} label="Dificuldade" />
         <View style={styles.verticalDivider} />
-        <SummaryItem icon="shield-checkmark-outline" value="Seguro" label="Ambiente" />
+        <SummaryItem icon="list-outline" value={`${details.stepCount}`} label="Passos" />
       </Card>
 
       <View style={styles.section}>
         <AppText variant="subheading" weight="800">O que você vai fazer</AppText>
         <View style={styles.steps}>
-          {steps.map((step, index) => (
-            <View key={step.title} style={styles.step}>
-              <View style={styles.stepNumber}>
-                <AppText weight="800" color={colors.primary}>{index + 1}</AppText>
-              </View>
-              <View style={styles.stepIcon}>
-                <Ionicons name={step.icon} size={24} color={colors.primary} />
-              </View>
+          {steps.map((step) => (
+            <View key={step.id} style={styles.step}>
+              <View style={styles.stepNumber}><AppText weight="800" color={colors.primary}>{step.position}</AppText></View>
+              <View style={styles.stepIcon}><Ionicons name="footsteps-outline" size={24} color={colors.primary} /></View>
               <View style={styles.stepCopy}>
                 <AppText weight="800">{step.title}</AppText>
-                <AppText variant="small" color={colors.textMuted}>{step.copy}</AppText>
+                <AppText variant="small" color={colors.textMuted}>{step.instruction}</AppText>
+                <AppText variant="caption" color={colors.primary}>Dica: {step.hints[0]}</AppText>
               </View>
             </View>
           ))}
@@ -74,80 +65,52 @@ export default function ParticipantMissionDetailsScreen() {
       </View>
 
       <Card style={styles.reassurance}>
-        <Ionicons name="heart" size={28} color={colors.warning} />
-        <AppText style={styles.reassuranceCopy}>
-          Se ficar em dúvida, você poderá ouvir a instrução, pedir uma dica ou tentar novamente.
-        </AppText>
+        <Ionicons name="shield-checkmark" size={28} color={colors.success} />
+        <AppText style={styles.reassuranceCopy}>{details.safetyNote}</AppText>
       </Card>
 
       <View style={styles.actions}>
-        <AudioButton
-          label="Ouvir explicação"
-          message="Nesta missão, você vai abrir uma conversa de treino, tocar no clipe e escolher uma foto. Nada será enviado de verdade."
-        />
-        <Button
-          label="Começar treino"
-          icon="play"
-          accessibilityHint="Abre o simulador seguro"
-          onPress={beginTraining}
-        />
+        <AudioButton label="Ouvir explicação" message={steps.map((step) => step.audioText).join(' ')} />
+        <Button label="Começar treino" icon="play" accessibilityHint="Abre o simulador seguro" onPress={beginTraining} />
       </View>
     </Screen>
   );
 }
 
-function SummaryItem({ icon, value, label }: {
-  icon: 'time-outline' | 'leaf-outline' | 'shield-checkmark-outline';
-  value: string;
-  label: string;
-}) {
+function State({ kind, onRetry }: { kind: 'loading' | 'error' | 'empty'; onRetry: () => void }) {
+  const router = useRouter();
   return (
-    <View style={styles.summaryItem}>
-      <Ionicons name={icon} size={23} color={colors.primary} />
-      <AppText weight="800" style={styles.center}>{value}</AppText>
-      <AppText variant="caption" color={colors.textMuted} style={styles.center}>{label}</AppText>
-    </View>
+    <Screen footer={<ParticipantNav active="missions" />}>
+      <Header title="Missão" onBack={() => router.replace('/participant/missions')} />
+      <DataState
+        kind={kind}
+        title={kind === 'loading' ? 'Carregando missão' : kind === 'error' ? 'Não foi possível carregar' : 'Missão indisponível'}
+        message={kind === 'empty' ? 'Ela pode ter sido removida, encerrada ou ainda não foi publicada.' : 'Buscando a versão publicada para sua turma.'}
+        onRetry={onRetry}
+      />
+    </Screen>
   );
+}
+
+function SummaryItem({ icon, value, label }: { icon: 'time-outline' | 'leaf-outline' | 'list-outline'; value: string; label: string }) {
+  return <View style={styles.summaryItem}><Ionicons name={icon} size={23} color={colors.primary} /><AppText weight="800" style={styles.center}>{value}</AppText><AppText variant="caption" color={colors.textMuted} style={styles.center}>{label}</AppText></View>;
 }
 
 const styles = StyleSheet.create({
   content: { gap: spacing.xl },
   hero: { alignItems: 'center', gap: spacing.md },
-  heroIcon: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.xl,
-    height: 94,
-    justifyContent: 'center',
-    width: 94,
-  },
+  heroIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.xl, height: 94, justifyContent: 'center', width: 94 },
   center: { textAlign: 'center' },
   summaryCard: { alignItems: 'stretch', flexDirection: 'row', paddingHorizontal: spacing.sm },
   summaryItem: { alignItems: 'center', flex: 1, gap: spacing.xs, paddingHorizontal: spacing.xs },
   verticalDivider: { backgroundColor: colors.border, width: 1 },
   section: { gap: spacing.md },
   steps: { gap: spacing.md },
-  step: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
+  step: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   stepNumber: { alignItems: 'center', justifyContent: 'center', width: 20 },
-  stepIcon: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.round,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
+  stepIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
   stepCopy: { flex: 1, gap: 2 },
-  reassurance: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: '#F1D68C', flexDirection: 'row', gap: spacing.md },
+  reassurance: { alignItems: 'center', backgroundColor: colors.successSoft, flexDirection: 'row', gap: spacing.md },
   reassuranceCopy: { flex: 1 },
   actions: { gap: spacing.md },
 });

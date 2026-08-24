@@ -74,7 +74,7 @@ export default function ParticipantProgressScreen() {
         accessibilityRole="button"
         accessibilityLabel="Praticar novamente a missão Enviar uma foto"
         accessibilityHint="Abre os detalhes da missão"
-        onPress={() => router.push('/participant/mission-details')}
+        onPress={() => router.push('/participant/missions')}
         style={({ pressed }) => [styles.nextMission, pressed && styles.pressed]}
       >
         <View style={styles.nextMissionIcon}>

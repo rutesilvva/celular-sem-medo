@@ -81,6 +81,13 @@ promovidas.
   metadata ou eventos brutos.
 - `get_monitor_participant(class_id, participant_id)` aplica a mesma fronteira e
   não confirma participantes de outra turma.
+- `get_participant_mission_catalog()` projeta apenas atribuições disponíveis da
+  turma ativa, com missão ativa e versão publicada. Rascunhos nunca chegam ao
+  aplicativo.
+- `get_participant_mission_details(assignment_id)` e
+  `get_participant_mission_steps(assignment_id)` reutilizam essa fronteira. IDs
+  inválidos ou pertencentes a outra turma retornam conjunto vazio, sem revelar a
+  existência do conteúdo.
 - criação, listagem e consumo de convites continuam restritos às RPCs seguras,
   com token de uso único e validade máxima de sete dias.
 

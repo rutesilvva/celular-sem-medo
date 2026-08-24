@@ -47,6 +47,7 @@ Contrato mínimo do cliente:
 EXPO_PUBLIC_APP_ENV=development
 EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<valor exibido por supabase status>
+EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS=false
 ```
 
 As variáveis `EXPO_PUBLIC_*` são incorporadas ao bundle e nunca podem conter segredos. A URL do Supabase e a chave publicável são identificadores públicos; a proteção dos dados deve ser feita por autenticação, autorização e Row Level Security (RLS).
@@ -191,6 +192,27 @@ turma/vínculos idempotentes. Ele nunca deve ser executado em production.
 
 Produção recebe apenas dados mínimos de catálogo ou configuração por migração
 revisada, nunca os seeds local ou de staging.
+
+## Conteúdo versionado de missões
+
+O aplicativo consulta catálogo, detalhes e passos pelo backend. Para atualizar
+uma missão sem publicar uma nova versão do aplicativo:
+
+1. crie uma nova linha `draft` em `mission_versions` com número crescente;
+2. cadastre seus `mission_steps`, incluindo instrução, ação esperada, ao menos
+   uma dica, transcrição de áudio e orientação de segurança;
+3. revise e publique a versão no backend;
+4. atribua a versão publicada à turma por `class_mission_assignments`.
+
+Somente versões `published`, missões `active` e atribuições dentro da janela de
+disponibilidade são entregues ao participante. O seed de staging atribui a
+missão sintética à turma marcada depois que as contas Google de teste forem
+provisionadas.
+
+As missões demonstrativas do painel do monitor ficam disponíveis apenas quando
+`EXPO_PUBLIC_APP_ENV=development` e
+`EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS=true`. Essa opção deve permanecer `false`
+em staging e production.
 
 ## Verificações antes de abrir um pull request
 

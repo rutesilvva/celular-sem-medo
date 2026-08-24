@@ -5,6 +5,9 @@ type AppRole = Database['public']['Enums']['app_role'];
 type AttemptEventType = Database['public']['Enums']['attempt_event_type'];
 export type ClassContext = Database['public']['Functions']['get_my_class_contexts']['Returns'][number];
 type MonitorParticipantRow = Database['public']['Functions']['get_monitor_class_participants']['Returns'][number];
+type MissionCatalogRow = Database['public']['Functions']['get_participant_mission_catalog']['Returns'][number];
+type MissionDetailsRow = Database['public']['Functions']['get_participant_mission_details']['Returns'][number];
+type MissionStepRow = Database['public']['Functions']['get_participant_mission_steps']['Returns'][number];
 
 export type ClassParticipant = {
   id: string;
@@ -21,6 +24,63 @@ export type ClassParticipant = {
   difficultyTitle: string;
   difficultyDescription: string;
 };
+
+export type ParticipantMission = {
+  assignmentId: string;
+  classId: string;
+  missionId: string;
+  missionVersionId: string;
+  version: number;
+  title: string;
+  summary: string;
+  category: string;
+  difficulty: Database['public']['Enums']['mission_difficulty'];
+  estimatedMinutes: number;
+  required: boolean;
+};
+
+export type ParticipantMissionDetails = ParticipantMission & {
+  learningObjective: string;
+  safetyNote: string;
+  stepCount: number;
+};
+
+export type ParticipantMissionStep = {
+  id: string;
+  position: number;
+  type: Database['public']['Enums']['mission_step_type'];
+  title: string;
+  instruction: string;
+  audioText: string;
+  safetyNote: string;
+  expectedAction: Json;
+  options: Json;
+  hints: string[];
+  optional: boolean;
+};
+
+export async function getParticipantMissionCatalog(): Promise<ParticipantMission[]> {
+  const { data, error } = await getSupabase().rpc('get_participant_mission_catalog');
+  if (error) throw error;
+  return data.map(mapMission);
+}
+
+export async function getParticipantMissionContent(assignmentId: string): Promise<{
+  details: ParticipantMissionDetails | null;
+  steps: ParticipantMissionStep[];
+}> {
+  const supabase = getSupabase();
+  const [detailsResult, stepsResult] = await Promise.all([
+    supabase.rpc('get_participant_mission_details', { target_assignment_id: assignmentId }),
+    supabase.rpc('get_participant_mission_steps', { target_assignment_id: assignmentId }),
+  ]);
+  if (detailsResult.error) throw detailsResult.error;
+  if (stepsResult.error) throw stepsResult.error;
+  return {
+    details: detailsResult.data[0] ? mapMissionDetails(detailsResult.data[0]) : null,
+    steps: stepsResult.data.map(mapMissionStep),
+  };
+}
 
 export async function getMyClassContexts() {
   const { data, error } = await getSupabase().rpc('get_my_class_contexts');
@@ -107,6 +167,57 @@ function mapParticipant(row: MonitorParticipantRow): ClassParticipant {
     difficultyDescription: progress < 55
       ? 'Consulte as missões recentes e ofereça apoio durante a próxima prática.'
       : 'A pessoa está avançando nas missões atribuídas à turma.',
+  };
+}
+
+function mapMission(row: MissionCatalogRow): ParticipantMission {
+  return {
+    assignmentId: row.assignment_id,
+    classId: row.class_id,
+    missionId: row.mission_id,
+    missionVersionId: row.mission_version_id,
+    version: row.version_number,
+    title: row.title,
+    summary: row.summary,
+    category: row.category,
+    difficulty: row.difficulty,
+    estimatedMinutes: row.estimated_minutes,
+    required: row.is_required,
+  };
+}
+
+function mapMissionDetails(row: MissionDetailsRow): ParticipantMissionDetails {
+  return {
+    assignmentId: row.assignment_id,
+    classId: row.class_id,
+    missionId: row.mission_id,
+    missionVersionId: row.mission_version_id,
+    version: row.version_number,
+    title: row.title,
+    summary: row.summary,
+    category: row.category,
+    difficulty: row.difficulty,
+    estimatedMinutes: row.estimated_minutes,
+    required: row.is_required,
+    learningObjective: row.learning_objective,
+    safetyNote: row.safety_note,
+    stepCount: row.step_count,
+  };
+}
+
+function mapMissionStep(row: MissionStepRow): ParticipantMissionStep {
+  return {
+    id: row.step_id,
+    position: row.step_position,
+    type: row.step_type,
+    title: row.title,
+    instruction: row.instruction,
+    audioText: row.audio_text,
+    safetyNote: row.safety_note,
+    expectedAction: row.expected_action,
+    options: row.options,
+    hints: Array.isArray(row.hints) ? row.hints.filter((hint): hint is string => typeof hint === 'string') : [],
+    optional: row.is_optional,
   };
 }
 

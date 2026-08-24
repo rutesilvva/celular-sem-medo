@@ -3,10 +3,12 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import { useMissionCatalog } from '@/hooks/useMissionData';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 const learningAreas = [
@@ -43,11 +45,14 @@ const learningAreas = [
     background: colors.warningSoft,
   },
 ] as const;
+const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
 export default function ParticipantHomeScreen() {
   const router = useRouter();
   const { mission, participantProgress } = useApp();
   const { currentUser } = useAuth();
+  const missionQuery = useMissionCatalog();
+  const recommendedMission = missionQuery.data?.[0];
   const displayName = currentUser?.name || 'Participante';
   const firstName = displayName.split(/\s+/)[0];
 
@@ -97,11 +102,17 @@ export default function ParticipantHomeScreen() {
         Missão recomendada
       </SectionTitle>
 
-      <Pressable
+      {missionQuery.loading ? (
+        <DataState kind="loading" title="Carregando recomendação" message="Buscando a missão publicada para sua turma." />
+      ) : missionQuery.error ? (
+        <DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={missionQuery.retry} />
+      ) : !recommendedMission ? (
+        <DataState kind="empty" title="Nenhuma missão disponível" message="Sua turma ainda não possui conteúdo publicado." />
+      ) : <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Enviar uma foto, missão recomendada, duração de cinco minutos"
+        accessibilityLabel={`${recommendedMission.title}, missão recomendada, duração de ${recommendedMission.estimatedMinutes} minutos`}
         accessibilityHint="Abre os detalhes da missão"
-        onPress={() => router.push('/participant/mission-details')}
+        onPress={() => router.push({ pathname: '/participant/mission-details', params: { assignmentId: recommendedMission.assignmentId } })}
         style={({ pressed }) => [styles.missionCard, pressed && styles.pressed]}
       >
         <View style={styles.missionTop}>
@@ -111,26 +122,24 @@ export default function ParticipantHomeScreen() {
           <Tag label="Recomendada" tone="purple" />
         </View>
         <View style={styles.missionCopy}>
-          <AppText variant="heading" weight="800">Enviar uma foto</AppText>
-          <AppText color={colors.textMuted}>
-            Pratique como escolher e mandar uma imagem em uma conversa segura.
-          </AppText>
+          <AppText variant="heading" weight="800">{recommendedMission.title}</AppText>
+          <AppText color={colors.textMuted}>{recommendedMission.summary}</AppText>
         </View>
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <Ionicons name="time-outline" size={20} color={colors.iconMuted} />
-            <AppText variant="small" color={colors.textMuted}>5 min</AppText>
+            <AppText variant="small" color={colors.textMuted}>{recommendedMission.estimatedMinutes} min</AppText>
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="leaf-outline" size={20} color={colors.success} />
-            <AppText variant="small" color={colors.textMuted}>Fácil</AppText>
+            <AppText variant="small" color={colors.textMuted}>{difficultyLabels[recommendedMission.difficulty]}</AppText>
           </View>
         </View>
         <View style={styles.missionButton}>
           <AppText weight="800" color={colors.surface}>Ver missão</AppText>
           <Ionicons name="arrow-forward" size={22} color={colors.surface} />
         </View>
-      </Pressable>
+      </Pressable>}
 
       <SectionTitle>Áreas de aprendizagem</SectionTitle>
       <View accessibilityRole="list" style={styles.areaGrid}>

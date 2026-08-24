@@ -7,7 +7,7 @@ import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useMyClass } from '@/hooks/useClassData';
-import { monitorMissions } from '@/data/mock';
+import { developmentMonitorMissions } from '@/data/development-mock';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type ReportPeriod = 7 | 30 | 90;
@@ -118,7 +118,7 @@ export default function ReportsScreen() {
         <AppText variant="small" color={colors.textMuted}>
           Percentual de participantes que concluíram cada atividade.
         </AppText>
-        {monitorMissions.map((mission) => (
+        {developmentMonitorMissions.map((mission) => (
           <View
             accessibilityLabel={`${mission.title}: ${mission.completion}% de conclusão`}
             key={mission.title}

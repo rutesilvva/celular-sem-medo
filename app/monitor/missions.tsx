@@ -6,11 +6,12 @@ import { MonitorNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { monitorMissions } from '@/data/mock';
+import { developmentMonitorMissions } from '@/data/development-mock';
+import type { DevelopmentMonitorMission } from '@/data/development-mock';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type MissionFilter = 'all' | 'active' | 'planned';
-type MonitorMission = (typeof monitorMissions)[number];
+type MonitorMission = DevelopmentMonitorMission;
 
 const filters: readonly { key: MissionFilter; label: string }[] = [
   { key: 'all', label: 'Todas' },
@@ -28,14 +29,14 @@ export default function MonitorMissionsScreen() {
   const [filter, setFilter] = useState<MissionFilter>('all');
   const { showNotice } = useApp();
 
-  const visibleMissions = useMemo(() => monitorMissions.filter((mission) => {
+  const visibleMissions = useMemo(() => developmentMonitorMissions.filter((mission) => {
     if (filter === 'active') return mission.status === 'Ativa';
     if (filter === 'planned') return mission.status === 'Planejada';
     return true;
   }), [filter]);
 
   const averageCompletion = Math.round(
-    monitorMissions.reduce((total, mission) => total + mission.completion, 0) / monitorMissions.length,
+    developmentMonitorMissions.reduce((total, mission) => total + mission.completion, 0) / Math.max(1, developmentMonitorMissions.length),
   );
 
   return (
@@ -43,7 +44,7 @@ export default function MonitorMissionsScreen() {
       <Header title="Missões" subtitle="Acompanhe a prática da turma" audio />
 
       <View style={styles.metrics}>
-        <MetricCard icon="flag-outline" value="2" label="missões ativas" tone="purple" />
+        <MetricCard icon="flag-outline" value={`${developmentMonitorMissions.filter((mission) => mission.status === 'Ativa').length}`} label="missões ativas" tone="purple" />
         <MetricCard icon="trending-up-outline" value={`${averageCompletion}%`} label="conclusão média" tone="green" />
       </View>
 
@@ -109,7 +110,7 @@ export default function MonitorMissionsScreen() {
 }
 
 function MissionCard({ mission, onOpen }: { mission: MonitorMission; onOpen: () => void }) {
-  const icon = missionIcons[mission.title];
+  const icon = missionIcons[mission.title as keyof typeof missionIcons] ?? 'flag-outline';
   const completionTone = mission.completion >= 70 ? colors.success : colors.primary;
   return (
     <Card style={styles.missionCard}>

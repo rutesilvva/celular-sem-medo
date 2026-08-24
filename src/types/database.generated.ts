@@ -612,6 +612,7 @@ export type Database = {
           mission_version_id: string
           options: Json
           position: number
+          safety_note: string
           step_type: Database["public"]["Enums"]["mission_step_type"]
           title: string
           updated_at: string
@@ -627,6 +628,7 @@ export type Database = {
           mission_version_id: string
           options?: Json
           position: number
+          safety_note?: string
           step_type: Database["public"]["Enums"]["mission_step_type"]
           title: string
           updated_at?: string
@@ -642,6 +644,7 @@ export type Database = {
           mission_version_id?: string
           options?: Json
           position?: number
+          safety_note?: string
           step_type?: Database["public"]["Enums"]["mission_step_type"]
           title?: string
           updated_at?: string
@@ -983,6 +986,60 @@ export type Database = {
           class_shift: string
           joined_at: string
           membership_id: string
+        }[]
+      }
+      get_participant_mission_catalog: {
+        Args: never
+        Returns: {
+          assignment_id: string
+          available_from: string
+          category: string
+          class_id: string
+          difficulty: Database["public"]["Enums"]["mission_difficulty"]
+          due_at: string
+          estimated_minutes: number
+          is_required: boolean
+          mission_id: string
+          mission_version_id: string
+          summary: string
+          title: string
+          version_number: number
+        }[]
+      }
+      get_participant_mission_details: {
+        Args: { target_assignment_id: string }
+        Returns: {
+          assignment_id: string
+          category: string
+          class_id: string
+          difficulty: Database["public"]["Enums"]["mission_difficulty"]
+          estimated_minutes: number
+          is_required: boolean
+          learning_objective: string
+          mission_id: string
+          mission_version_id: string
+          safety_note: string
+          step_count: number
+          summary: string
+          title: string
+          version_number: number
+        }[]
+      }
+      get_participant_mission_steps: {
+        Args: { target_assignment_id: string }
+        Returns: {
+          audio_text: string
+          expected_action: Json
+          hints: Json
+          instruction: string
+          is_optional: boolean
+          mission_version_id: string
+          options: Json
+          safety_note: string
+          step_id: string
+          step_position: number
+          step_type: Database["public"]["Enums"]["mission_step_type"]
+          title: string
         }[]
       }
       has_active_class_role: {

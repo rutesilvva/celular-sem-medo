@@ -8,7 +8,7 @@ import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { monitorMissions } from '@/data/mock';
+import { developmentMonitorMissions } from '@/data/development-mock';
 import { useMyClass, useMonitorParticipants } from '@/hooks/useClassData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -117,7 +117,7 @@ export default function MonitorHomeScreen() {
 
       <SectionTitle>Missões da turma</SectionTitle>
       <Card style={styles.missionSummary}>
-        {monitorMissions.slice(0, 2).map((mission, index) => (
+        {developmentMonitorMissions.slice(0, 2).map((mission, index) => (
           <View key={mission.title} style={[styles.missionRow, index > 0 && styles.divider]}>
             <View style={styles.missionIcon}>
               <Ionicons name={index === 0 ? 'image-outline' : 'shield-checkmark-outline'} size={24} color={colors.primary} />
