@@ -15,8 +15,8 @@ Para o monitor, o aplicativo organiza o progresso da turma, o uso dos recursos d
 
 ## Stack
 
-- Expo SDK 54 e React Native 0.81;
-- React 19 e TypeScript em modo estrito;
+- Expo SDK 57 e React Native 0.86;
+- React 19.2 e TypeScript 6 em modo estrito;
 - Expo Router para navegação baseada em arquivos;
 - `@expo/vector-icons` para a iconografia;
 - `react-native-safe-area-context` para respeitar as áreas seguras do aparelho;
@@ -98,10 +98,10 @@ As rotas ficam em `app/`, seguindo as convenções do Expo Router. Regras visuai
 
 ## Pré-requisitos
 
-- Node.js 20 LTS;
+- Node.js 22.13 ou superior;
 - npm 10 ou superior;
 - Docker Desktop, OrbStack, Colima ou runtime Docker equivalente para o backend;
-- para dispositivo físico, Expo Go compatível com o SDK 54;
+- para dispositivo físico, Expo Go compatível com o SDK 57 ou um development build;
 - opcionalmente, Android Studio para emulador Android;
 - opcionalmente, macOS com Xcode para simulador iOS.
 
@@ -129,7 +129,8 @@ A decisão e os contratos técnicos estão documentados em:
 - [ADR-0001 — backend do MVP](docs/adr/0001-backend-mvp.md);
 - [modelo de dados e matriz de acesso](docs/architecture/data-model.md);
 - [ambientes development, staging e production](docs/architecture/environments.md);
-- [guia completo de desenvolvimento](docs/development-setup.md).
+- [guia completo de desenvolvimento](docs/development-setup.md);
+- [política de segurança das dependências](docs/dependency-security.md).
 
 Com o Docker iniciado, prepare uma cópia local da configuração e suba a stack:
 
@@ -167,6 +168,7 @@ homologada em development build/staging.
 | `npm run ios` | Abre o projeto no simulador iOS; requer macOS e Xcode. |
 | `npm run web` | Inicia a versão web para apoio à revisão visual. |
 | `npm run export` | Gera os bundles de Android, iOS e web. |
+| `npm run audit` | Bloqueia dependências com vulnerabilidade moderada ou superior. |
 | `npm run lint` | Executa as regras do ESLint/Expo. |
 | `npm run typecheck` | Valida os tipos TypeScript sem gerar arquivos. |
 | `npm run backend:start` | Inicia Auth, Postgres, API e Studio locais. |
@@ -203,6 +205,7 @@ Antes de entregar uma alteração, execute:
 ```bash
 npm run lint
 npm run typecheck
+npm run audit
 ```
 
 Ainda não há suíte automatizada de testes unitários ou end-to-end; por isso, o percurso manual dos dois perfis faz parte da validação desta base.

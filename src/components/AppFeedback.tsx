@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,29 +9,10 @@ import { colors, radius, spacing } from '@/theme/tokens';
 export function AppFeedback() {
   const { audioMessage, notice } = useApp();
   const insets = useSafeAreaInsets();
-  const [visibleAudioMessage, setVisibleAudioMessage] = useState<string | null>(null);
-  const visualTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!audioMessage) return;
-    if (visualTimer.current) clearTimeout(visualTimer.current);
-
-    setVisibleAudioMessage(audioMessage);
-    visualTimer.current = setTimeout(() => {
-      setVisibleAudioMessage(null);
-      visualTimer.current = null;
-    }, 4200);
-  }, [audioMessage]);
-
-  useEffect(() => () => {
-    if (visualTimer.current) clearTimeout(visualTimer.current);
-  }, []);
-
-  const activeAudioMessage = audioMessage ?? visibleAudioMessage;
-  const message = activeAudioMessage ?? notice;
+  const message = audioMessage ?? notice;
   if (!message) return null;
 
-  const isAudio = Boolean(activeAudioMessage);
+  const isAudio = Boolean(audioMessage);
   const feedbackLabel = isAudio ? 'Áudio de demonstração' : 'Confirmação';
 
   return (

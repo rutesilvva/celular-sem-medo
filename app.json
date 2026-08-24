@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "scheme": "celularsemmedo",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "br.com.celularsemmedo.app"
@@ -18,7 +17,6 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -26,12 +24,19 @@
       "favicon": "./assets/icon.png",
       "output": "static"
     },
-    "splash": {
-      "image": "./assets/logo-celular-sem-medo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FAF8FC"
-    },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo-celular-sem-medo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FAF8FC"
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     }

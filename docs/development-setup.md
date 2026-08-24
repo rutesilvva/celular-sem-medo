@@ -4,9 +4,9 @@ Este documento descreve como executar o aplicativo e a infraestrutura local plan
 
 ## Pré-requisitos
 
-- Node.js 20 LTS;
+- Node.js 22.13 ou superior (a versão recomendada está em `.nvmrc`);
 - npm 10 ou superior;
-- Expo Go compatível com o SDK 54 ou um development build;
+- Expo Go compatível com o SDK 57 ou um development build;
 - Docker Desktop, OrbStack, Colima ou outro runtime compatível com Docker para o Supabase local;
 - Supabase CLI instalada pelo `npm ci` como dependência de desenvolvimento do projeto;
 - Android Studio para emulador Android ou macOS/Xcode para simulador iOS.
@@ -192,6 +192,7 @@ Execute o que já existe no repositório:
 npm run lint
 npm run typecheck
 npm run export
+npm run audit
 ```
 
 Quando testes e Supabase forem integrados, o gate também deve incluir:
