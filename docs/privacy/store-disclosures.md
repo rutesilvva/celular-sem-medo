@@ -10,7 +10,7 @@ ser inventariada antes de entrar no artefato.
 ## Premissas da versão mapeada
 
 - login Google e Supabase conectados;
-- público adulto, acesso provisionado e dois papéis server-side;
+- público adulto, acesso provisionado, dois papéis por turma e um papel de administrador global server-side;
 - sem anúncios, venda, data broker ou tracking entre apps/sites;
 - sem analytics/observabilidade remotos além dos logs mínimos aprovados;
 - sem push, captura de câmera/biblioteca, localização real, dado financeiro real,

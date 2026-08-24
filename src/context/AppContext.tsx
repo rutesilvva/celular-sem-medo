@@ -1,6 +1,8 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-export type Role = 'participant' | 'monitor';
+import { initialManagedUsers, ManagedUser } from '@/data/admin';
+
+export type Role = 'participant' | 'monitor' | 'admin';
 
 export type AccessibilityPreferences = {
   largerText: boolean;
@@ -26,6 +28,8 @@ type AppContextValue = {
   notice: string | null;
   playInstruction: (message?: string) => void;
   showNotice: (message: string) => void;
+  managedUsers: ManagedUser[];
+  removeManagedUser: (userId: string) => boolean;
 };
 
 export type MissionState = {
@@ -50,6 +54,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [mission, setMission] = useState<MissionState>({ completed: false, attempts: 0, usedHelp: false });
   const [audioMessage, setAudioMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [managedUsers, setManagedUsers] = useState(initialManagedUsers);
   const audioTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -109,6 +114,14 @@ export function AppProvider({ children }: PropsWithChildren) {
     noticeTimer.current = setTimeout(() => setNotice(null), 2400);
   }, []);
 
+  const removeManagedUser = useCallback((userId: string) => {
+    const target = managedUsers.find((user) => user.id === userId);
+    if (!target || target.currentUser) return false;
+    if (target.role === 'admin' && managedUsers.filter((user) => user.role === 'admin').length <= 1) return false;
+    setManagedUsers((current) => current.filter((user) => user.id !== userId));
+    return true;
+  }, [managedUsers]);
+
   const value = useMemo(() => ({
     role,
     setRole,
@@ -126,14 +139,18 @@ export function AppProvider({ children }: PropsWithChildren) {
     notice,
     playInstruction,
     showNotice,
+    managedUsers,
+    removeManagedUser,
   }), [
     audioMessage,
     finishMission,
     mission,
+    managedUsers,
     notice,
     playInstruction,
     preferences,
     requestMissionHelp,
+    removeManagedUser,
     role,
     sessionRole,
     setPreference,

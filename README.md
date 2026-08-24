@@ -1,6 +1,6 @@
 # Celular Sem Medo
 
-Base mobile navegável para uma plataforma de letramento digital voltada a pessoas idosas. O produto reúne uma experiência de prática segura para participantes e uma visão de acompanhamento para monitores.
+Base mobile navegável para uma plataforma de letramento digital voltada a pessoas idosas. O produto reúne prática segura para participantes, acompanhamento para monitores e administração global de pessoas e turmas.
 
 Esta entrega combina um protótipo funcional em Expo/React Native com a fundação
 versionada do backend. As telas ainda usam dados locais, mas a arquitetura
@@ -32,7 +32,7 @@ O projeto é mobile-first, em orientação retrato e com tema claro. A versão w
 ### Entrada
 
 1. A tela de abertura apresenta a marca e avança automaticamente para o login; também é possível tocar para continuar.
-2. O login permite alternar entre **Participante** e **Monitor**.
+2. O login demonstrativo permite alternar entre **Participante**, **Monitor** e **Administrador**; a autenticação Google real resolverá esses papéis no servidor.
 3. Os campos vêm preenchidos para facilitar a demonstração. Não há validação de credenciais nesta versão.
 
 ### Participante

@@ -56,6 +56,13 @@ function AppNavigator() {
         <Stack.Screen name="monitor/reports" />
         <Stack.Screen name="monitor/profile" />
       </Stack.Protected>
+
+      <Stack.Protected guard={sessionRole === 'admin'}>
+        <Stack.Screen name="admin/home" />
+        <Stack.Screen name="admin/users" />
+        <Stack.Screen name="admin/classes" />
+        <Stack.Screen name="admin/profile" />
+      </Stack.Protected>
     </Stack>
   );
 }

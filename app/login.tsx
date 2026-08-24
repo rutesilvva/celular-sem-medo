@@ -18,6 +18,7 @@ export default function LoginScreen() {
   useEffect(() => {
     if (sessionRole === 'participant') router.replace('/participant/welcome');
     if (sessionRole === 'monitor') router.replace('/monitor/home');
+    if (sessionRole === 'admin') router.replace('/admin/home');
   }, [router, sessionRole]);
 
   const enter = () => signIn(role);
@@ -77,10 +78,11 @@ export default function LoginScreen() {
             <RoleCard role="participant" selected={role === 'participant'} onPress={() => setRole('participant')} />
             <RoleCard role="monitor" selected={role === 'monitor'} onPress={() => setRole('monitor')} />
           </View>
+          <RoleCard role="admin" selected={role === 'admin'} onPress={() => setRole('admin')} />
         </View>
 
         <Button
-          label={`Entrar como ${role === 'participant' ? 'participante' : 'monitor'}`}
+          label={`Entrar como ${role === 'participant' ? 'participante' : role === 'monitor' ? 'monitor' : 'administrador'}`}
           onPress={enter}
           icon="arrow-forward"
         />
@@ -121,11 +123,16 @@ function Field({ label, icon, value, placeholder, onChangeText, keyboardType }: 
 }
 
 function RoleCard({ role, selected, onPress }: { role: Role; selected: boolean; onPress: () => void }) {
-  const isParticipant = role === 'participant';
+  const labels = {
+    participant: { title: 'Participante', caption: 'Quero praticar', icon: 'person-outline' as const, color: colors.primary },
+    monitor: { title: 'Monitor', caption: 'Acompanho a turma', icon: 'people-outline' as const, color: colors.warning },
+    admin: { title: 'Administrador', caption: 'Gerencio todo o aplicativo', icon: 'shield-checkmark-outline' as const, color: colors.danger },
+  };
+  const content = labels[role];
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityLabel={isParticipant ? 'Participante, sou aluno ou aluna' : 'Monitor, acompanho a turma'}
+      accessibilityLabel={`${content.title}, ${content.caption}`}
       accessibilityState={{ selected }}
       onPress={onPress}
       style={({ pressed }) => [styles.roleCard, selected && styles.roleSelected, pressed && styles.pressed]}
@@ -133,11 +140,11 @@ function RoleCard({ role, selected, onPress }: { role: Role; selected: boolean; 
       {selected ? (
         <View style={styles.check}><Ionicons name="checkmark" size={16} color={colors.surface} /></View>
       ) : null}
-      <View style={[styles.roleIcon, !isParticipant && styles.monitorIcon]}>
-        <Ionicons name={isParticipant ? 'person-outline' : 'people-outline'} size={28} color={isParticipant ? colors.primary : colors.warning} />
+      <View style={[styles.roleIcon, role === 'monitor' && styles.monitorIcon, role === 'admin' && styles.adminIcon]}>
+        <Ionicons name={content.icon} size={28} color={content.color} />
       </View>
-      <AppText variant="small" weight="800" color={colors.primary}>{isParticipant ? 'Participante' : 'Monitor'}</AppText>
-      <AppText variant="caption" color={colors.textMuted}>{isParticipant ? 'Quero praticar' : 'Acompanho a turma'}</AppText>
+      <AppText variant="small" weight="800" color={colors.primary}>{content.title}</AppText>
+      <AppText variant="caption" color={colors.textMuted}>{content.caption}</AppText>
     </Pressable>
   );
 }
@@ -177,6 +184,7 @@ const styles = StyleSheet.create({
   roleSelected: { backgroundColor: '#FBF8FF', borderColor: colors.primary },
   roleIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
   monitorIcon: { backgroundColor: colors.warningSoft },
+  adminIcon: { backgroundColor: colors.dangerSoft },
   check: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 24, justifyContent: 'center', position: 'absolute', right: 8, top: 8, width: 24 },
   pressed: { opacity: 0.72 },
 });

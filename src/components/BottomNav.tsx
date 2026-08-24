@@ -10,6 +10,7 @@ import { colors, spacing } from '@/theme/tokens';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type ParticipantKey = 'home' | 'missions' | 'progress' | 'profile';
 type MonitorKey = 'home' | 'participants' | 'missions' | 'reports' | 'profile';
+type AdminKey = 'home' | 'users' | 'classes' | 'profile';
 
 type NavItem = { key: string; label: string; icon: IconName; activeIcon: IconName; href: Href };
 
@@ -28,12 +29,23 @@ const monitorItems: NavItem[] = [
   { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/monitor/profile' },
 ];
 
+const adminItems: NavItem[] = [
+  { key: 'home', label: 'Visão geral', icon: 'grid-outline', activeIcon: 'grid', href: '/admin/home' },
+  { key: 'users', label: 'Pessoas', icon: 'people-outline', activeIcon: 'people', href: '/admin/users' },
+  { key: 'classes', label: 'Turmas', icon: 'school-outline', activeIcon: 'school', href: '/admin/classes' },
+  { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/admin/profile' },
+];
+
 export function ParticipantNav({ active }: { active: ParticipantKey }) {
   return <BottomNav items={participantItems} active={active} />;
 }
 
 export function MonitorNav({ active }: { active: MonitorKey }) {
   return <BottomNav items={monitorItems} active={active} compact />;
+}
+
+export function AdminNav({ active }: { active: AdminKey }) {
+  return <BottomNav items={adminItems} active={active} />;
 }
 
 function BottomNav({ items, active, compact = false }: { items: NavItem[]; active: string; compact?: boolean }) {

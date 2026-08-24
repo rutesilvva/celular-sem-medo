@@ -34,6 +34,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_events: {
+        Row: {
+          action: Database["public"]["Enums"]["admin_audit_action"]
+          admin_user_id: string | null
+          class_id: string | null
+          id: string
+          occurred_at: string
+          request_id: string
+          target_role: Database["public"]["Enums"]["app_role"] | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["admin_audit_action"]
+          admin_user_id?: string | null
+          class_id?: string | null
+          id?: string
+          occurred_at?: string
+          request_id?: string
+          target_role?: Database["public"]["Enums"]["app_role"] | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["admin_audit_action"]
+          admin_user_id?: string | null
+          class_id?: string | null
+          id?: string
+          occurred_at?: string
+          request_id?: string
+          target_role?: Database["public"]["Enums"]["app_role"] | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_events_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_events_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_events_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      administrators: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["administrator_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["administrator_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["administrator_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "administrators_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attempt_events: {
         Row: {
           attempt_id: string
@@ -748,7 +845,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_revoke_membership: {
+        Args: {
+          target_class_id: string
+          target_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: boolean
+      }
       can_monitor_user: { Args: { target_user_id: string }; Returns: boolean }
+      get_my_access_roles: {
+        Args: never
+        Returns: {
+          access_role: string
+          scope_id: string
+        }[]
+      }
       has_active_class_role: {
         Args: {
           required_role?: Database["public"]["Enums"]["app_role"]
@@ -769,12 +881,20 @@ export type Database = {
         Returns: boolean
       }
       is_class_monitor: { Args: { target_class_id: string }; Returns: boolean }
+      is_global_admin: { Args: never; Returns: boolean }
       is_published_mission_version: {
         Args: { target_version_id: string }
         Returns: boolean
       }
     }
     Enums: {
+      admin_audit_action:
+        | "administrator_granted"
+        | "administrator_revoked"
+        | "membership_revoked"
+        | "account_deactivation_requested"
+        | "class_archived"
+      administrator_status: "active" | "revoked"
       app_role: "participant" | "monitor"
       assignment_status: "scheduled" | "active" | "archived"
       attempt_event_type:
@@ -934,6 +1054,14 @@ export const Constants = {
   },
   public: {
     Enums: {
+      admin_audit_action: [
+        "administrator_granted",
+        "administrator_revoked",
+        "membership_revoked",
+        "account_deactivation_requested",
+        "class_archived",
+      ],
+      administrator_status: ["active", "revoked"],
       app_role: ["participant", "monitor"],
       assignment_status: ["scheduled", "active", "archived"],
       attempt_event_type: [

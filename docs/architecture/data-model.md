@@ -7,8 +7,11 @@ fonte de verdade; este desenho serve para leitura e revisão do domínio.
 ## Princípios
 
 - `auth.users.id` é a identidade estável. E-mail não é chave de autorização.
-- O papel não é global nem informado pelo aplicativo: ele pertence a um vínculo
-  ativo entre pessoa e turma em `memberships`.
+- Os papéis pedagógicos não são globais nem informados pelo aplicativo: pertencem
+  a vínculos ativos em `memberships`. `admin` é o único papel global e existe em
+  `administrators`, separado dos vínculos de turma.
+- Pode haver vários administradores globais ativos. O banco impede a revogação
+  ou exclusão do último, evitando que o ambiente fique sem administração.
 - Uma pessoa pode ser participante em uma turma e monitor em outra, sem duplicar
   a conta Google. Os dois papéis na mesma turma serão proibidos no provisionamento;
   a constraint inicial ainda precisa ser fortalecida para impor essa decisão.
@@ -26,6 +29,8 @@ erDiagram
     AUTH_USERS ||--|| PROFILES : "possui"
     PROFILES ||--|| PREFERENCES : "configura"
     PROFILES ||--o{ MEMBERSHIPS : "participa"
+    PROFILES ||--o| ADMINISTRATORS : "pode administrar"
+    PROFILES ||--o{ ADMIN_AUDIT_EVENTS : "executa"
     CLASSES ||--o{ MEMBERSHIPS : "reune"
     CLASSES ||--o{ INVITATIONS : "oferece"
     PROFILES ||--o{ INVITATIONS : "cria ou aceita"
@@ -51,6 +56,8 @@ erDiagram
 | `preferences` | Acessibilidade, áudio, voz, idioma e onboarding | Uma linha por perfil; o usuário só acessa a própria linha. |
 | `classes` | Turma de aprendizagem | Estado `active` ou `archived`; somente membros ativos leem. |
 | `memberships` | Papel de uma pessoa dentro de uma turma | Único por turma, pessoa e papel; `participant` ou `monitor`; revogação é server-side. |
+| `administrators` | Concessão do papel global de maior privilégio | Vários admins podem estar ativos; o último ativo não pode ser removido; escrita apenas server-side. |
+| `admin_audit_events` | Rastro mínimo de operações administrativas | Registra ator, ação, alvo, turma e horário; não armazena nome, e-mail, token ou conteúdo livre. |
 | `invitations` | Autorização prévia para entrar em uma turma | E-mail normalizado, campo de hash em formato hexadecimal, expiração e consumo único. A migração atual não prova algoritmo/entropia; geração server-side ainda é obrigatória. |
 | `missions` | Identidade estável do item de catálogo | Slug único, categoria, dificuldade, duração e estado. |
 | `mission_versions` | Conteúdo publicável de uma missão | Versão crescente por missão; no máximo uma versão publicada por vez. |
@@ -69,16 +76,16 @@ Antes de production, as policies precisam ser fortalecidas para exigir conta,
 turma e vínculo ativos de forma uniforme e para projetar somente as colunas
 necessárias ao monitor.
 
-| Recurso | Participante | Monitor |
-| --- | --- | --- |
-| Perfil | Lê e atualiza o próprio | Lê o próprio e perfis vinculados às suas turmas |
-| Turma e vínculos | Lê as próprias turmas e vínculos | Lê vínculos das turmas monitoradas |
-| Convites | Sem acesso direto | Cria e lê convites de participante da própria turma |
-| Catálogo | Lê missões ativas e versões publicadas | Mesmo acesso de leitura |
-| Atribuições | Lê as da própria turma | Cria, altera e arquiva nas turmas monitoradas |
-| Tentativas e eventos | Cria e lê somente os próprios | Somente leitura nas turmas monitoradas |
-| Preferências | Lê e altera somente as próprias | Lê e altera somente as próprias |
-| Pedidos de ajuda | Cria e lê somente os próprios | Lê e atende os pedidos das turmas monitoradas |
+| Recurso | Participante | Monitor | Admin global |
+| --- | --- | --- | --- |
+| Perfil | Lê e atualiza o próprio | Lê o próprio e perfis vinculados às suas turmas | Lê perfis para administrar contas; alterações sensíveis são server-side |
+| Turma e vínculos | Lê as próprias turmas e vínculos | Lê vínculos das turmas monitoradas | Lê todas as turmas; revoga vínculos por RPC auditada |
+| Convites | Sem acesso direto | Cria e lê convites de participante da própria turma | Lê todos para suporte operacional |
+| Catálogo | Lê missões ativas e versões publicadas | Mesmo acesso de leitura | Lê todo o catálogo; publicação continua server-side |
+| Atribuições | Lê as da própria turma | Cria, altera e arquiva nas turmas monitoradas | Gerencia em todas as turmas |
+| Tentativas e eventos | Cria e lê somente os próprios | Somente leitura nas turmas monitoradas | Lê para suporte, segurança e operação |
+| Preferências | Lê e altera somente as próprias | Lê e altera somente as próprias | Leitura excepcional para suporte; alteração negada |
+| Pedidos de ajuda | Cria e lê somente os próprios | Lê e atende os pedidos das turmas monitoradas | Lê e atualiza em todas as turmas |
 
 Criação de turma, ativação/revogação de vínculo, consumo de convite e publicação
 de conteúdo não têm policy de escrita para o cliente. Essas operações serão feitas

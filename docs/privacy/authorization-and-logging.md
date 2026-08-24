@@ -10,6 +10,10 @@ pelo cliente são sempre não confiáveis.
   diretamente nas regras de domínio.
 - O papel existe em `memberships`, no contexto de uma turma. Uma mesma conta pode
   ser participante em uma turma e monitor em outra.
+- `admin` é uma concessão global independente em `administrators`. Pode haver
+  vários admins ativos, todos com o mesmo nível máximo; não há subtipos.
+- Conceder ou revogar admin exige função server-side, autenticação recente e
+  auditoria. O banco proíbe remover o último administrador ativo.
 - Toda operação exige conta não bloqueada, turma `active` e vínculo `active`, além
   da regra específica do recurso.
 - Uma pessoa sem vínculo ativo acessa somente login/logout, Central de
@@ -28,24 +32,24 @@ pelo cliente são sempre não confiáveis.
 
 ## Matriz de acesso normativa
 
-| Recurso/operação | Participante com vínculo ativo | Monitor com vínculo ativo | Função server-side |
-| --- | --- | --- | --- |
-| Próprio perfil | Ler; atualizar somente campos permitidos | Ler/atualizar o próprio | Provisionar, bloquear e excluir |
-| Perfil de participante | Negado, salvo o próprio | Ler apresentação mínima de participante na turma monitorada | Exportar/excluir para o titular |
-| E-mail/`sub`/identidade Google | Sem leitura direta no domínio | Negado para terceiros | Auth/provisionamento mínimo |
-| Preferências | Ler/alterar somente as próprias | Ler/alterar somente as próprias; nunca as do participante | Exportar/excluir para o titular |
-| Turma | Ler resumo da própria turma | Ler/alterar turma monitorada nas colunas permitidas | Criar, arquivar e recuperar administrativamente |
-| Vínculos | Ler somente o próprio | Ler o próprio vínculo e vínculos mínimos de participantes da turma; co-monitor não tem perfil exposto por padrão | Criar, mudar papel e revogar |
-| Convites | Sem acesso direto | Criar/listar convite de participante da própria turma por RPC segura, sem hash | Gerar token, consumir, revogar e limpar |
-| Missão publicada | Ler quando atribuída à própria turma | Ler para atribuir/acompanhar turma | Criar, versionar e publicar catálogo |
-| Atribuição | Ler a disponível na própria turma | Criar/alterar na turma monitorada e com versão publicada | Correção administrativa auditada |
-| Tentativa | Criar/ler própria; atualizar apenas progresso permitido | Ler visão pedagógica na turma; nunca alterar | Fechar/reparar de forma auditada |
-| Evento de tentativa | Inserir/listar somente na própria tentativa e com schema permitido | Ler somente evento pedagógico permitido da turma | Processar sync/retention |
-| Pedido de ajuda | Criar/ler/cancelar o próprio nos estados permitidos | Ler/assumir/resolver na turma; campos fechados ficam imutáveis | Correção excepcional auditada |
-| Indicadores/relatórios | Ver somente os próprios | Ver agregados da turma, com limite contra reidentificação | Computar agregado anonimizado |
-| Exportação | Exportar somente a própria pessoa | Exportar somente seus próprios dados, não a turma | Gerar pacote do sujeito da sessão |
-| Exclusão | Excluir somente a própria conta | Excluir somente a própria conta | Executar purga idempotente e retenções |
-| Logs/auditoria | Sem consulta | Sem consulta | Equipe autorizada em sistema separado |
+| Recurso/operação | Participante com vínculo ativo | Monitor com vínculo ativo | Admin global ativo | Função server-side |
+| --- | --- | --- | --- | --- |
+| Próprio perfil | Ler; atualizar somente campos permitidos | Ler/atualizar o próprio | Ler/atualizar o próprio | Provisionar, bloquear e excluir |
+| Perfil de participante | Negado, salvo o próprio | Ler apresentação mínima de participante na turma monitorada | Ler para administração global | Exportar/excluir para o titular |
+| E-mail/`sub`/identidade Google | Sem leitura direta no domínio | Negado para terceiros | Sem acesso direto; usa perfil mínimo | Auth/provisionamento mínimo |
+| Preferências | Ler/alterar somente as próprias | Ler/alterar somente as próprias; nunca as do participante | Ler excepcionalmente para suporte; não alterar | Exportar/excluir para o titular |
+| Turma | Ler resumo da própria turma | Ler/alterar turma monitorada nas colunas permitidas | Ler e administrar todas | Criar e executar correções privilegiadas |
+| Vínculos | Ler somente o próprio | Ler o próprio vínculo e vínculos mínimos da turma | Ler todos; revogar por RPC auditada | Criar, mudar papel e conceder/revogar admin |
+| Convites | Sem acesso direto | Criar/listar convite da própria turma por RPC segura, sem hash | Ler para suporte operacional | Gerar token, consumir, revogar e limpar |
+| Missão publicada | Ler quando atribuída à própria turma | Ler para atribuir/acompanhar turma | Ler todo o catálogo | Criar, versionar e publicar catálogo |
+| Atribuição | Ler a disponível na própria turma | Criar/alterar na turma monitorada e com versão publicada | Gerenciar em todas as turmas | Correção administrativa auditada |
+| Tentativa | Criar/ler própria; atualizar apenas progresso permitido | Ler visão pedagógica na turma; nunca alterar | Ler para operação e suporte | Fechar/reparar de forma auditada |
+| Evento de tentativa | Inserir/listar somente na própria tentativa e com schema permitido | Ler somente evento pedagógico permitido da turma | Ler para operação e suporte | Processar sync/retention |
+| Pedido de ajuda | Criar/ler/cancelar o próprio nos estados permitidos | Ler/assumir/resolver na turma; campos fechados ficam imutáveis | Ler e atualizar em todas as turmas | Correção excepcional auditada |
+| Indicadores/relatórios | Ver somente os próprios | Ver agregados da turma, com limite contra reidentificação | Ver agregados globais | Computar agregado anonimizado |
+| Exportação | Exportar somente a própria pessoa | Exportar somente seus próprios dados, não a turma | Exportar somente os próprios dados, não toda a base | Gerar pacote do sujeito da sessão |
+| Exclusão | Excluir somente a própria conta | Excluir somente a própria conta | Excluir a própria conta somente se outro admin permanecer ativo | Executar purga idempotente e retenções |
+| Logs/auditoria | Sem consulta | Sem consulta | Ler eventos administrativos mínimos | Equipe autorizada em sistema separado |
 
 Views e RPCs devem projetar apenas colunas permitidas. Uma policy RLS que deixa o
 monitor selecionar uma linha inteira não é minimização suficiente.
@@ -63,6 +67,8 @@ monitor selecionar uma linha inteira não é minimização suficiente.
 | `mb` | Monitor ativo somente da turma B |
 | `mr` | Ex-monitor da turma A com vínculo inativo |
 | `dual` | Participante na turma A e monitor na turma B |
+| `ga` | Administrador global ativo |
+| `gb` | Segundo administrador global ativo |
 
 Todos usam dados sintéticos. Cada teste roda pela API pública com JWT do ator,
 nunca diretamente como owner do banco. Para `SELECT`, a negação pode ser lista
@@ -116,6 +122,17 @@ linha/efeito no banco, não apenas conferir uma tela.
 | MON-011 | Turma A é arquivada | Operações normais da turma são negadas; somente rotina administrativa explícita acessa retenção |
 | MON-012 | `ma` solicita exportação pessoal | Pacote traz somente dados de `ma`, nunca participantes da turma |
 | MON-013 | `ma` consulta perfil de outro monitor da turma A | Negado, salvo futura função de colaboração com view/finalidade próprias; o próprio vínculo continua visível |
+
+### Administrador global
+
+| ID | Ação | Resultado esperado |
+| --- | --- | --- |
+| ADM-001 | `ga` lista perfis, turmas e vínculos | Permitido em todo o ambiente para administração operacional |
+| ADM-002 | `ga` revoga vínculo de participante ou monitor | Permitido por RPC; acesso termina imediatamente e um evento de auditoria é criado |
+| ADM-003 | Cliente comum tenta inserir em `administrators` ou declarar `role=admin` | Negado; a concessão existe somente no servidor |
+| ADM-004 | `ga` revoga `gb` após reautenticação | Permitido e auditado enquanto `ga` continua ativo |
+| ADM-005 | Tentativa de revogar ou excluir o último admin ativo | Negada pelo banco |
+| ADM-006 | `ga` solicita exportação pessoal | Retorna somente os dados de `ga`, nunca um dump global |
 
 ### Contextos mistos e operações de privacidade
 

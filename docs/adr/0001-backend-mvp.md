@@ -7,12 +7,12 @@
 
 ## Contexto
 
-O repositório contém hoje um protótipo Expo/React Native com Expo Router. O login é demonstrativo: e-mail e senha não são validados, a pessoa escolhe livremente entre `participant` e `monitor`, e o papel autenticado existe apenas em memória no `AppContext`. As rotas protegidas melhoram a navegação, mas não constituem autorização de segurança. Também não há API, banco de dados, persistência de sessão, configuração de ambientes ou testes de autorização.
+O repositório contém hoje um protótipo Expo/React Native com Expo Router. O login é demonstrativo: e-mail e senha não são validados, a pessoa escolhe livremente entre `participant`, `monitor` e `admin`, e o papel autenticado existe apenas em memória no `AppContext`. As rotas protegidas melhoram a navegação, mas não constituem autorização de segurança.
 
 O produto precisa evoluir para um MVP mobile no qual:
 
-- participantes e monitores entram com uma conta Google;
-- Google comprova a identidade, mas não concede o papel de participante ou monitor;
+- participantes, monitores e administradores entram com uma conta Google;
+- Google comprova a identidade, mas não concede nenhum papel;
 - dados de turmas, participantes, missões, tentativas e progresso têm relações naturais entre si;
 - um monitor só acessa participantes das turmas às quais está vinculado;
 - um participante só acessa seus próprios dados e o conteúdo que lhe foi atribuído;
@@ -207,6 +207,7 @@ Modelo inicial implementado na primeira migração:
 | --- | --- | --- |
 | `profiles`, `preferences` | Identidade de domínio e preferências pessoais | PK/FK para `auth.users.id`; usuário acessa somente seus campos editáveis. |
 | `classes`, `memberships` | Turmas e papéis `participant`/`monitor` por turma | Vínculo ativo é a fonte de autorização; uma conta pode ter os dois papéis em contextos distintos. |
+| `administrators`, `admin_audit_events` | Papel global e trilha de ações privilegiadas | Vários admins podem coexistir; o último ativo é protegido; concessão/revogação ocorre somente no servidor com reautenticação. |
 | `invitations` | Convites prévios por e-mail verificado | Persiste apenas hash do token, expiração e consumo; aceite será uma operação server-side. |
 | `missions`, `mission_versions`, `mission_steps` | Catálogo e conteúdo versionado | Cliente autenticado lê somente missão ativa e versão publicada. |
 | `class_mission_assignments` | Liberação de uma versão para uma turma | Somente monitor da turma gerencia; só versões publicadas são atribuíveis. |
@@ -224,6 +225,8 @@ Para o MVP, papéis não serão copiados para custom claims. As políticas consu
 - Uma pessoa autenticada não insere, altera ou reativa seu próprio convite, papel ou vínculo de turma.
 - Participante lê seu perfil, suas atribuições e suas tentativas; não lista outros participantes.
 - Monitor lê participantes, atribuições e relatórios apenas das turmas em que tem vínculo ativo.
+- Admin global é o único nível administrativo e pode operar todas as contas e
+  turmas. Pode haver mais de um; a última conta admin ativa não pode ser removida.
 - Toda policy checa autenticação, status ativo e escopo de relacionamento; possuir um JWT válido não basta.
 - Grants SQL e policies RLS são configurados em conjunto. Habilitar RLS sem revisar grants não é considerado suficiente.
 - Acesso administrativo que ignora RLS só ocorre dentro de função server-side auditável.

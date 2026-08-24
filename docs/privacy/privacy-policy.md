@@ -41,7 +41,7 @@ No MVP, podemos tratar:
 
 - identidade básica recebida no login Google: identificador da conta, e-mail
   verificado, nome e avatar;
-- perfil no aplicativo, papel de participante ou monitor, turmas e convites;
+- perfil no aplicativo, papel de participante, monitor ou administrador global, turmas e convites;
 - missões atribuídas, tentativas, conclusões, pontuação, passos e uso dos recursos
   de apoio;
 - preferências de idioma, tamanho de texto, contraste, áudio e onboarding;
