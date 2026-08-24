@@ -4,14 +4,14 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { MonitorNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Card, Header, ProgressBar, Tag } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
-import { participants } from '@/data/mock';
+import { useMyClass, useMonitorParticipants } from '@/hooks/useClassData';
+import type { ClassParticipant } from '@/lib/backend';
 import { colors, radius, spacing, type } from '@/theme/tokens';
 
 type FilterKey = 'all' | 'attention' | 'advancing';
-type Participant = (typeof participants)[number];
 
 const filters: readonly { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'Todos' },
@@ -21,26 +21,24 @@ const filters: readonly { key: FilterKey; label: string }[] = [
 
 export default function ParticipantsScreen() {
   const router = useRouter();
-  const { participantProgress } = useApp();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const classQuery = useMyClass('monitor');
+  const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null);
+  const participants = useMemo(() => participantsQuery.data ?? [], [participantsQuery.data]);
 
   const visibleParticipants = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
-    const currentParticipants = participants.map((participant) => participant.id === 'maria'
-      ? { ...participant, progress: participantProgress }
-      : participant);
-
-    return currentParticipants.filter((participant) => {
+    return participants.filter((participant) => {
       const matchesQuery = !normalizedQuery || participant.name.toLocaleLowerCase('pt-BR').includes(normalizedQuery);
       const matchesFilter = filter === 'all'
         || (filter === 'attention' && participant.progress < 55)
         || (filter === 'advancing' && participant.progress >= 55);
       return matchesQuery && matchesFilter;
     }).sort((first, second) => first.name.localeCompare(second.name, 'pt-BR'));
-  }, [filter, participantProgress, query]);
+  }, [filter, participants, query]);
 
-  const openParticipant = (participant: Participant) => {
+  const openParticipant = (participant: ClassParticipant) => {
     router.push({ pathname: '/monitor/participant-details', params: { id: participant.id } });
   };
 
@@ -48,9 +46,27 @@ export default function ParticipantsScreen() {
     <Screen footer={<MonitorNav active="participants" />}>
       <Header
         title="Participantes"
-        subtitle="Turma Conectados • 3 pessoas"
+        subtitle={classQuery.data
+          ? `${classQuery.data.class_name} • ${participants.length} ${participants.length === 1 ? 'pessoa' : 'pessoas'}`
+          : 'Carregando turma…'}
         audio
       />
+
+      {classQuery.loading || (classQuery.data && participantsQuery.loading) ? (
+        <DataState kind="loading" title="Carregando participantes" message="Buscando os vínculos ativos da turma." />
+      ) : classQuery.error || participantsQuery.error ? (
+        <DataState
+          kind="error"
+          title="Não foi possível carregar a turma"
+          message="Verifique sua conexão e tente novamente."
+          onRetry={classQuery.error ? classQuery.retry : participantsQuery.retry}
+        />
+      ) : !classQuery.data ? (
+        <DataState kind="empty" title="Nenhuma turma vinculada" message="Peça à administração para cadastrar seu vínculo de monitor." />
+      ) : participants.length === 0 ? (
+        <DataState kind="empty" title="Turma sem participantes" message="Envie um convite para adicionar a primeira pessoa à turma." />
+      ) : (
+        <>
 
       <View style={styles.searchShell}>
         <Ionicons name="search-outline" size={23} color={colors.iconMuted} />
@@ -133,11 +149,13 @@ export default function ParticipantsScreen() {
           Abra uma pessoa para acompanhar autonomia, apoio em áudio e missões recentes.
         </AppText>
       </Card>
+        </>
+      )}
     </Screen>
   );
 }
 
-function ParticipantCard({ participant, onPress }: { participant: Participant; onPress: () => void }) {
+function ParticipantCard({ participant, onPress }: { participant: ClassParticipant; onPress: () => void }) {
   const needsAttention = participant.progress < 55;
   return (
     <Pressable

@@ -928,6 +928,36 @@ export type Database = {
           status: Database["public"]["Enums"]["attempt_status"]
         }[]
       }
+      get_monitor_class_participants: {
+        Args: { target_class_id: string }
+        Returns: {
+          assigned_missions: number
+          audio_usage_percent: number
+          autonomy_percent: number
+          avatar_url: string
+          average_score: number
+          completed_missions: number
+          display_name: string
+          joined_at: string
+          participant_id: string
+          progress_percent: number
+        }[]
+      }
+      get_monitor_participant: {
+        Args: { target_class_id: string; target_participant_id: string }
+        Returns: {
+          assigned_missions: number
+          audio_usage_percent: number
+          autonomy_percent: number
+          avatar_url: string
+          average_score: number
+          completed_missions: number
+          display_name: string
+          joined_at: string
+          participant_id: string
+          progress_percent: number
+        }[]
+      }
       get_my_access_roles: {
         Args: never
         Returns: {
@@ -942,6 +972,17 @@ export type Database = {
           account_status: Database["public"]["Enums"]["account_status"]
           error_code: string
           user_id: string
+        }[]
+      }
+      get_my_class_contexts: {
+        Args: never
+        Returns: {
+          access_role: Database["public"]["Enums"]["app_role"]
+          class_id: string
+          class_name: string
+          class_shift: string
+          joined_at: string
+          membership_id: string
         }[]
       }
       has_active_class_role: {

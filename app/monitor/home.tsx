@@ -3,26 +3,38 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MonitorNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { monitorMissions, participants } from '@/data/mock';
+import { monitorMissions } from '@/data/mock';
+import { useMyClass, useMonitorParticipants } from '@/hooks/useClassData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function MonitorHomeScreen() {
   const router = useRouter();
-  const { participantProgress, showNotice } = useApp();
+  const { showNotice } = useApp();
   const { currentUser } = useAuth();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Monitor';
-  const currentParticipants = participants.map((participant) => participant.id === 'maria'
-    ? { ...participant, progress: participantProgress }
-    : participant);
+  const classQuery = useMyClass('monitor');
+  const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null);
+  const currentParticipants = participantsQuery.data ?? [];
+
+  if (classQuery.loading || (classQuery.data && participantsQuery.loading)) {
+    return <Screen footer={<MonitorNav active="home" />}><Header title="Visão geral" /><DataState kind="loading" title="Carregando turma" message="Buscando participantes e indicadores." /></Screen>;
+  }
+  if (classQuery.error || participantsQuery.error) {
+    return <Screen footer={<MonitorNav active="home" />}><Header title="Visão geral" /><DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={classQuery.error ? classQuery.retry : participantsQuery.retry} /></Screen>;
+  }
+  if (!classQuery.data) {
+    return <Screen footer={<MonitorNav active="home" />}><Header title="Visão geral" /><DataState kind="empty" title="Nenhuma turma vinculada" message="Peça à administração para cadastrar seu vínculo de monitor." /></Screen>;
+  }
   const averageProgress = Math.round(
-    currentParticipants.reduce((total, participant) => total + participant.progress, 0) / currentParticipants.length,
+    currentParticipants.reduce((total, participant) => total + participant.progress, 0) / Math.max(1, currentParticipants.length),
   );
   const averageAudio = Math.round(
-    currentParticipants.reduce((total, participant) => total + participant.audio, 0) / currentParticipants.length,
+    currentParticipants.reduce((total, participant) => total + participant.audio, 0) / Math.max(1, currentParticipants.length),
   );
   const attentionParticipant = currentParticipants.find((participant) => participant.progress < 50);
 
@@ -30,7 +42,7 @@ export default function MonitorHomeScreen() {
     <Screen footer={<MonitorNav active="home" />}>
       <Header
         title="Visão geral"
-        subtitle="Turma Conectados • manhã"
+        subtitle={`${classQuery.data.class_name}${classQuery.data.class_shift ? ` • ${classQuery.data.class_shift}` : ''}`}
         audio
         action={undefined}
       />

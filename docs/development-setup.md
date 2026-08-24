@@ -1,6 +1,6 @@
 # Configuração do ambiente de desenvolvimento
 
-Este documento descreve como executar o aplicativo e a infraestrutura local planejada para o MVP. A aplicação ainda usa dados em memória; a integração com Supabase e Google deve seguir o contrato abaixo quando for implementada.
+Este documento descreve como executar o aplicativo e a infraestrutura do MVP. Autenticação, perfis, turmas, vínculos, convites e projeções de participantes usam Supabase; missões e algumas métricas visuais ainda possuem superfícies demonstrativas explicitamente identificadas.
 
 ## Pré-requisitos
 
@@ -13,9 +13,10 @@ Este documento descreve como executar o aplicativo e a infraestrutura local plan
 
 O Supabase local é apenas para desenvolvimento. Ele usa credenciais padrão, não oferece TLS nem rate limiting e não deve ser exposto à internet.
 
-## Aplicativo sem backend
+## Aplicativo
 
-O fluxo atual funciona somente com mocks e pode ser iniciado sem variáveis de ambiente:
+As validações estáticas podem ser executadas sem o backend. Login e dados de
+turma exigem as variáveis públicas do ambiente:
 
 ```bash
 npm ci
@@ -182,7 +183,14 @@ Regras:
 - manter seeds idempotentes quando forem usados fora do reset local;
 - não executar o seed de demonstração em produção.
 
-Staging deve usar fixtures próprias e contas Google controladas. Produção recebe apenas dados mínimos de catálogo ou configuração por migração revisada, nunca o seed local completo.
+Staging usa `supabase/seeds/staging.sql`. Antes da execução, uma pessoa autorizada
+marca as contas Google sintéticas em `auth.users.raw_app_meta_data` com
+`csm_staging_role` e `csm_staging_class`, sem registrar e-mail no arquivo. O seed
+falha se não encontrar ao menos monitor e participante, ativa seus perfis e cria
+turma/vínculos idempotentes. Ele nunca deve ser executado em production.
+
+Produção recebe apenas dados mínimos de catálogo ou configuração por migração
+revisada, nunca os seeds local ou de staging.
 
 ## Verificações antes de abrir um pull request
 

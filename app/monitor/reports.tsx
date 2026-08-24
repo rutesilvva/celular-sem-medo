@@ -6,6 +6,7 @@ import { MonitorNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
+import { useMyClass } from '@/hooks/useClassData';
 import { monitorMissions } from '@/data/mock';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -50,13 +51,14 @@ const timelineData: Record<ReportPeriod, readonly { label: string; value: number
 export default function ReportsScreen() {
   const [period, setPeriod] = useState<ReportPeriod>(30);
   const { showNotice } = useApp();
+  const classQuery = useMyClass('monitor');
   const data = reportData[period];
 
   return (
     <Screen footer={<MonitorNav active="reports" />}>
       <Header
         title="Relatórios"
-        subtitle="Evolução da Turma Conectados"
+        subtitle={classQuery.data ? `Evolução de ${classQuery.data.class_name}` : 'Evolução da turma'}
         action={<AudioButton compact label="Ouvir resumo do relatório" message={`Reproduzindo relatório dos últimos ${period} dias…`} />}
       />
 

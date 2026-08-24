@@ -9,6 +9,7 @@ import { AppText, AudioButton, Button, Card, Header, SectionTitle, SwitchRow, Ta
 import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import { useMyClass } from '@/hooks/useClassData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type ReportPeriod = 7 | 30 | 90;
@@ -18,6 +19,7 @@ export default function MonitorProfileScreen() {
   const router = useRouter();
   const { preferences, setPreference, showNotice } = useApp();
   const { currentUser, signOut } = useAuth();
+  const classQuery = useMyClass('monitor');
   const displayName = currentUser?.name || 'Monitor';
   const [showAudioMetrics, setShowAudioMetrics] = useState(true);
   const [period, setPeriod] = useState<ReportPeriod>(30);
@@ -65,8 +67,10 @@ export default function MonitorProfileScreen() {
           <Ionicons name="people-outline" size={29} color={colors.primary} />
         </View>
         <View style={styles.flexCopy}>
-          <AppText weight="800">Turma Conectados</AppText>
-          <AppText variant="small" color={colors.textMuted}>Turno da manhã • 3 participantes</AppText>
+          <AppText weight="800">{classQuery.data?.class_name ?? 'Nenhuma turma vinculada'}</AppText>
+          <AppText variant="small" color={colors.textMuted}>
+            {classQuery.loading ? 'Carregando vínculo…' : classQuery.data?.class_shift ? `Turno: ${classQuery.data.class_shift}` : 'Turno não informado'}
+          </AppText>
         </View>
         <Tag label="Ativa" tone="green" />
       </Card>

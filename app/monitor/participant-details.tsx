@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { MonitorNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
-import { MissionState, useApp } from '@/context/AppContext';
-import { participants } from '@/data/mock';
+import { useApp } from '@/context/AppContext';
+import { useMyClass, useMonitorParticipant } from '@/hooks/useClassData';
+import type { ClassParticipant } from '@/lib/backend';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type DetailTab = 'summary' | 'performance' | 'resources' | 'history';
-type Participant = (typeof participants)[number];
 
 const tabs: readonly { key: DetailTab; label: string }[] = [
   { key: 'summary', label: 'Resumo' },
@@ -24,10 +25,28 @@ export default function ParticipantDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [activeTab, setActiveTab] = useState<DetailTab>('summary');
-  const { mission, participantProgress } = useApp();
-  const matchedParticipant = participants.find((item) => item.id === id);
+  const classQuery = useMyClass('monitor');
+  const participantQuery = useMonitorParticipant(classQuery.data?.class_id ?? null, id ?? null);
 
-  if (!matchedParticipant) {
+  if (classQuery.loading || participantQuery.loading) {
+    return (
+      <Screen footer={<MonitorNav active="participants" />}>
+        <Header title="Detalhes" onBack={() => router.replace('/monitor/participants')} />
+        <DataState kind="loading" title="Carregando participante" message="Consultando o vínculo e o progresso permitido." />
+      </Screen>
+    );
+  }
+
+  if (classQuery.error || participantQuery.error) {
+    return (
+      <Screen footer={<MonitorNav active="participants" />}>
+        <Header title="Detalhes" onBack={() => router.replace('/monitor/participants')} />
+        <DataState kind="error" title="Não foi possível carregar" message="O acesso pode ter mudado ou a conexão está indisponível." onRetry={classQuery.error ? classQuery.retry : participantQuery.retry} />
+      </Screen>
+    );
+  }
+
+  if (!classQuery.data || !participantQuery.data) {
     return (
       <Screen footer={<MonitorNav active="participants" />}>
         <Header title="Participante não encontrado" onBack={() => router.replace('/monitor/participants')} />
@@ -41,13 +60,7 @@ export default function ParticipantDetailsScreen() {
     );
   }
 
-  const participant = matchedParticipant.id === 'maria'
-    ? {
-      ...matchedParticipant,
-      progress: participantProgress,
-      completedMissions: mission.completed ? 4 : matchedParticipant.completedMissions,
-    }
-    : matchedParticipant;
+  const participant = participantQuery.data;
 
   return (
     <Screen footer={<MonitorNav active="participants" />}>
@@ -64,7 +77,7 @@ export default function ParticipantDetailsScreen() {
         )}
       />
 
-      <ParticipantHero participant={participant} />
+      <ParticipantHero className={classQuery.data.class_name} classShift={classQuery.data.class_shift} participant={participant} />
 
       <ScrollView
         accessibilityLabel="Seções dos detalhes"
@@ -97,14 +110,14 @@ export default function ParticipantDetailsScreen() {
       </ScrollView>
 
       {activeTab === 'summary' ? <SummaryTab participant={participant} /> : null}
-      {activeTab === 'performance' ? <PerformanceTab mission={mission} participant={participant} /> : null}
+      {activeTab === 'performance' ? <PerformanceTab participant={participant} /> : null}
       {activeTab === 'resources' ? <ResourcesTab participant={participant} /> : null}
-      {activeTab === 'history' ? <HistoryTab mission={mission} participant={participant} /> : null}
+      {activeTab === 'history' ? <HistoryTab participant={participant} /> : null}
     </Screen>
   );
 }
 
-function ParticipantHero({ participant }: { participant: Participant }) {
+function ParticipantHero({ className, classShift, participant }: { className: string; classShift: string | null; participant: ClassParticipant }) {
   const needsAttention = participant.progress < 55;
   return (
     <Card style={styles.hero}>
@@ -115,14 +128,14 @@ function ParticipantHero({ participant }: { participant: Participant }) {
       </View>
       <View style={styles.heroCopy}>
         <AppText variant="subheading" weight="800">{participant.name}</AppText>
-        <AppText variant="small" color={colors.textMuted}>Turma Conectados • manhã</AppText>
+        <AppText variant="small" color={colors.textMuted}>{className}{classShift ? ` • ${classShift}` : ''}</AppText>
         <Tag label={needsAttention ? 'Acompanhamento recomendado' : 'Avançando bem'} tone={needsAttention ? 'yellow' : 'green'} />
       </View>
     </Card>
   );
 }
 
-function SummaryTab({ participant }: { participant: Participant }) {
+function SummaryTab({ participant }: { participant: ClassParticipant }) {
   return (
     <View style={styles.tabContent}>
       <View style={styles.metricGrid}>
@@ -138,7 +151,7 @@ function SummaryTab({ participant }: { participant: Participant }) {
       <Card style={styles.progressCard}>
         <View style={styles.rowBetween}>
           <View>
-            <AppText weight="800">{participant.completedMissions} de 6 missões</AppText>
+            <AppText weight="800">{participant.completedMissions} de {participant.assignedMissions} missões</AppText>
             <AppText variant="small" color={colors.textMuted}>
               {Math.max(1, participant.completedMissions - 2)} concluídas sem ajuda
             </AppText>
@@ -164,41 +177,31 @@ function SummaryTab({ participant }: { participant: Participant }) {
   );
 }
 
-function PerformanceTab({ participant, mission }: { participant: Participant; mission: MissionState }) {
-  const photoValue = participant.id === 'maria' && !mission.completed
-    ? 0
-    : Math.min(96, participant.progress + 16);
-  const photoSupport = participant.id !== 'maria'
-    ? 'Concluída sem ajuda'
-    : !mission.completed
-      ? 'Ainda não concluída nesta sessão'
-      : mission.usedHelp
-        ? 'Concluída após prática guiada'
-        : 'Concluída com autonomia';
+function PerformanceTab({ participant }: { participant: ClassParticipant }) {
   const missionPerformance = [
     {
-      name: 'Enviar uma foto',
-      value: photoValue,
-      support: photoSupport,
+      name: 'Progresso das atribuições',
+      value: participant.progress,
+      support: `${participant.completedMissions} de ${participant.assignedMissions} missões concluídas`,
       tone: colors.success,
     },
     {
-      name: 'Conferir um Pix',
-      value: Math.max(28, participant.progress - 16),
-      support: participant.id === 'ana' ? 'Precisou de 3 orientações' : 'Precisou de 1 orientação',
+      name: 'Autonomia nas conclusões',
+      value: participant.autonomy,
+      support: 'Conclusões sem dica ou pedido de ajuda',
       tone: colors.warning,
     },
     {
-      name: 'Compartilhar localização',
-      value: Math.max(18, participant.progress - 29),
-      support: participant.id === 'jose' ? 'Prática recomendada' : 'Em andamento',
+      name: 'Uso de apoio em áudio',
+      value: participant.audio,
+      support: 'Tentativas com evento de áudio registrado',
       tone: colors.primary,
     },
   ] as const;
 
   return (
     <View style={styles.tabContent}>
-      <SectionTitle>Desempenho por missão</SectionTitle>
+      <SectionTitle>Indicadores agregados</SectionTitle>
       <Card style={styles.listCard}>
         {missionPerformance.map((mission, index) => (
           <View key={mission.name} style={[styles.missionItem, index > 0 && styles.divider]}>
@@ -215,9 +218,9 @@ function PerformanceTab({ participant, mission }: { participant: Participant; mi
       <Card style={styles.insightCard}>
         <Ionicons name="sparkles-outline" size={26} color={colors.primary} />
         <View style={styles.flexCopy}>
-          <AppText weight="800">Evolução nas últimas 4 semanas</AppText>
+          <AppText weight="800">Resumo dos registros disponíveis</AppText>
           <AppText variant="small" color={colors.textMuted}>
-            {participant.name} ganhou 18 pontos de autonomia e pede menos ajuda após ouvir instruções.
+            {participant.name} concluiu {participant.completedMissions} das {participant.assignedMissions} missões atribuídas.
           </AppText>
         </View>
       </Card>
@@ -225,7 +228,7 @@ function PerformanceTab({ participant, mission }: { participant: Participant; mi
   );
 }
 
-function ResourcesTab({ participant }: { participant: Participant }) {
+function ResourcesTab({ participant }: { participant: ClassParticipant }) {
   const { showNotice } = useApp();
   return (
     <View style={styles.tabContent}>
@@ -235,14 +238,14 @@ function ResourcesTab({ participant }: { participant: Participant }) {
         <ResourceRow
           icon="hand-left-outline"
           title="Mostrar onde tocar"
-          value={`${participant.progress < 55 ? 5 : 2} vezes nesta semana`}
+          value={`${100 - participant.autonomy}% das conclusões precisaram de apoio`}
           tone="purple"
           divider
         />
         <ResourceRow
           icon="bulb-outline"
           title="Dicas passo a passo"
-          value={`${participant.audio > 80 ? 3 : 1} vezes nesta semana`}
+          value="Incluídas no indicador de autonomia"
           tone="yellow"
           divider
         />
@@ -290,33 +293,17 @@ function ResourceRow({ icon, title, value, tone, divider = false }: {
   );
 }
 
-function HistoryTab({ participant, mission }: { participant: Participant; mission: MissionState }) {
-  const photoEvent = participant.id === 'maria'
-    ? mission.completed
-      ? {
-        date: 'Agora',
-        title: 'Concluiu “Enviar uma foto”',
-        detail: `${mission.usedHelp ? 'Concluiu após receber apoio' : 'Concluiu com autonomia'} ${attemptText(mission.attempts)}.`,
-        icon: 'checkmark-circle-outline' as const,
-      }
-      : {
-        date: 'Próxima prática',
-        title: '“Enviar uma foto” disponível',
-        detail: 'Missão ainda não concluída nesta sessão.',
-        icon: 'image-outline' as const,
-      }
-    : {
-      date: 'Ontem, 15:15',
-      title: 'Concluiu “Enviar uma foto”',
-      detail: participant.id === 'jose'
-        ? 'Concluiu com autonomia na primeira tentativa.'
-        : 'Concluiu após ouvir novamente a instrução.',
-      icon: 'checkmark-circle-outline' as const,
-    };
+function HistoryTab({ participant }: { participant: ClassParticipant }) {
+  const photoEvent = {
+    date: 'Dados atuais',
+    title: participant.completedMissions ? 'Possui missões concluídas' : 'Ainda sem conclusão registrada',
+    detail: `${participant.completedMissions} de ${participant.assignedMissions} atribuições concluídas.`,
+    icon: participant.completedMissions ? 'checkmark-circle-outline' as const : 'time-outline' as const,
+  };
   const events = [
     photoEvent,
-    { date: 'Hoje, 09:40', title: 'Praticou “Conferir um Pix”', detail: 'Usou áudio e pediu para mostrar onde tocar.', icon: 'shield-checkmark-outline' as const },
-    { date: '18 ago, 10:30', title: 'Atualizou acessibilidade', detail: 'Ativou instruções automáticas em áudio.', icon: 'options-outline' as const },
+    { date: 'Uso agregado', title: 'Apoio em áudio', detail: `Usado em ${participant.audio}% das tentativas registradas.`, icon: 'volume-high-outline' as const },
+    { date: 'Uso agregado', title: 'Autonomia', detail: `${participant.autonomy}% das conclusões ocorreram sem dica ou pedido de ajuda.`, icon: 'hand-left-outline' as const },
   ];
   return (
     <View style={styles.tabContent}>
@@ -341,10 +328,6 @@ function HistoryTab({ participant, mission }: { participant: Participant; missio
       </AppText>
     </View>
   );
-}
-
-function attemptText(attempts: number) {
-  return attempts <= 1 ? 'na primeira tentativa' : `em ${attempts} tentativas`;
 }
 
 const resourceTones = {

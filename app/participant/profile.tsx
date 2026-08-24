@@ -8,12 +8,14 @@ import { AppText, Button, Card, Header, SwitchRow, Tag } from '@/components/ui';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import { useMyClass } from '@/hooks/useClassData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantProfileScreen() {
   const router = useRouter();
   const { preferences, setPreference, showNotice } = useApp();
   const { currentUser, signOut } = useAuth();
+  const classQuery = useMyClass('participant');
   const displayName = currentUser?.name || 'Participante';
 
   const logout = async () => {
@@ -35,7 +37,9 @@ export default function ParticipantProfileScreen() {
         <View style={styles.profileCopy}>
           <AppText variant="subheading" weight="800">{displayName}</AppText>
           <AppText variant="small" color={colors.textMuted}>{currentUser?.email || 'E-mail não informado'}</AppText>
-          <AppText variant="small" color={colors.textMuted}>Participante · Turma Manhã</AppText>
+          <AppText variant="small" color={colors.textMuted}>
+            Participante{classQuery.data ? ` · ${classQuery.data.class_name}` : ''}
+          </AppText>
           <Tag label="Nível 3" tone="purple" />
         </View>
       </Card>

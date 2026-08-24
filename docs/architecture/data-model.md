@@ -1,8 +1,8 @@
 # Modelo de dados inicial do MVP
 
 Este documento apresenta o esquema criado pelas migrações em
-`supabase/migrations/`, incluindo o endurecimento de autorização da migração
-`202608230003_harden_role_authorization.sql`. O Postgres é a
+`supabase/migrations/`, incluindo o endurecimento de autorização e as projeções
+persistidas da migração `202608240002_persisted_class_context.sql`. O Postgres é a
 fonte de verdade; este desenho serve para leitura e revisão do domínio.
 
 ## Princípios
@@ -66,6 +66,23 @@ erDiagram
 | `attempts` | Execução de uma missão por participante | Vínculo, turma, versão e atribuição coerentes por FKs compostas; só uma tentativa em andamento por atribuição. |
 | `attempt_events` | Linha do tempo append-only da tentativa | RPC deriva autoria, valida a janela temporal e oferece retry idempotente sem atualizar a linha. |
 | `help_requests` | Pedido contextual de ajuda ao monitor | Pertence à mesma turma/tentativa; estados `open`, `in_progress`, `resolved` ou `cancelled`. |
+
+No domínio do produto, `memberships` representa os **class memberships**. O nome
+físico existente foi preservado para evitar renomear FKs e migrações já
+promovidas.
+
+## Projeções para o aplicativo
+
+- `get_my_class_contexts()` retorna somente turmas ativas e vínculos ativos da
+  identidade autenticada. Uma identidade Google pode aparecer em mais de uma
+  turma e possuir papéis diferentes sem duplicar `profiles`.
+- `get_monitor_class_participants(class_id)` exige vínculo ativo de monitor na
+  turma informada e retorna perfil mínimo e métricas agregadas; não expõe e-mail,
+  metadata ou eventos brutos.
+- `get_monitor_participant(class_id, participant_id)` aplica a mesma fronteira e
+  não confirma participantes de outra turma.
+- criação, listagem e consumo de convites continuam restritos às RPCs seguras,
+  com token de uso único e validade máxima de sete dias.
 
 ## Autorização inicial
 
