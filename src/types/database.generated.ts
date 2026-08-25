@@ -379,6 +379,55 @@ export type Database = {
           },
         ]
       }
+      help_request_history: {
+        Row: {
+          actor_id: string
+          from_status: Database["public"]["Enums"]["help_request_status"] | null
+          help_request_id: string
+          id: number
+          occurred_at: string
+          resolution_code: string | null
+          to_status: Database["public"]["Enums"]["help_request_status"]
+        }
+        Insert: {
+          actor_id: string
+          from_status?:
+            | Database["public"]["Enums"]["help_request_status"]
+            | null
+          help_request_id: string
+          id?: never
+          occurred_at?: string
+          resolution_code?: string | null
+          to_status: Database["public"]["Enums"]["help_request_status"]
+        }
+        Update: {
+          actor_id?: string
+          from_status?:
+            | Database["public"]["Enums"]["help_request_status"]
+            | null
+          help_request_id?: string
+          id?: never
+          occurred_at?: string
+          resolution_code?: string | null
+          to_status?: Database["public"]["Enums"]["help_request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_request_history_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_request_history_help_request_id_fkey"
+            columns: ["help_request_id"]
+            isOneToOne: false
+            referencedRelation: "help_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_requests: {
         Row: {
           acknowledged_at: string | null
@@ -392,7 +441,9 @@ export type Database = {
           mission_version_id: string | null
           participant_id: string
           participant_role: Database["public"]["Enums"]["app_role"]
+          reason_code: string
           requested_at: string
+          resolution_code: string | null
           resolution_note: string | null
           resolved_at: string | null
           status: Database["public"]["Enums"]["help_request_status"]
@@ -411,7 +462,9 @@ export type Database = {
           mission_version_id?: string | null
           participant_id: string
           participant_role?: Database["public"]["Enums"]["app_role"]
+          reason_code?: string
           requested_at?: string
+          resolution_code?: string | null
           resolution_note?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["help_request_status"]
@@ -430,7 +483,9 @@ export type Database = {
           mission_version_id?: string | null
           participant_id?: string
           participant_role?: Database["public"]["Enums"]["app_role"]
+          reason_code?: string
           requested_at?: string
+          resolution_code?: string | null
           resolution_note?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["help_request_status"]
@@ -855,6 +910,101 @@ export type Database = {
         }
         Relationships: []
       }
+      push_devices: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          expo_push_token: string
+          id: string
+          last_seen_at: string
+          platform: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          expo_push_token: string
+          id?: string
+          last_seen_at?: string
+          platform: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          expo_push_token?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_outbox: {
+        Row: {
+          attempts: number
+          body: string
+          created_at: string
+          event_type: string
+          help_request_id: string
+          id: number
+          last_error: string | null
+          processed_at: string | null
+          recipient_id: string
+          route: string
+          title: string
+        }
+        Insert: {
+          attempts?: number
+          body?: string
+          created_at?: string
+          event_type: string
+          help_request_id: string
+          id?: never
+          last_error?: string | null
+          processed_at?: string | null
+          recipient_id: string
+          route: string
+          title?: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          created_at?: string
+          event_type?: string
+          help_request_id?: string
+          id?: never
+          last_error?: string | null
+          processed_at?: string | null
+          recipient_id?: string
+          route?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_outbox_help_request_id_fkey"
+            columns: ["help_request_id"]
+            isOneToOne: false
+            referencedRelation: "help_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_outbox_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -884,6 +1034,10 @@ export type Database = {
         }[]
       }
       can_monitor_user: { Args: { target_user_id: string }; Returns: boolean }
+      cancel_my_help_request: {
+        Args: { target_help_request_id: string }
+        Returns: Database["public"]["Enums"]["help_request_status"]
+      }
       consume_class_invitation: {
         Args: { plain_token: string }
         Returns: {
@@ -901,6 +1055,18 @@ export type Database = {
           expires_at: string
           invitation_id: string
           invitation_token: string
+        }[]
+      }
+      create_help_request: {
+        Args: {
+          requested_id: string
+          target_attempt_id: string
+          target_reason_code?: string
+          target_step_id: string
+        }
+        Returns: {
+          help_request_id: string
+          request_status: Database["public"]["Enums"]["help_request_status"]
         }[]
       }
       expire_invitation_secrets: { Args: never; Returns: number }
@@ -966,6 +1132,22 @@ export type Database = {
           completion_percent: number
           difficulty_percent: number
           participant_count: number
+        }[]
+      }
+      get_monitor_help_requests: {
+        Args: { target_class_id: string }
+        Returns: {
+          acknowledged_at: string
+          help_request_id: string
+          mission_title: string
+          participant_id: string
+          participant_name: string
+          reason_code: string
+          requested_at: string
+          resolution_code: string
+          resolved_at: string
+          status: Database["public"]["Enums"]["help_request_status"]
+          step_title: string
         }[]
       }
       get_monitor_mission_progress: {
@@ -1117,6 +1299,20 @@ export type Database = {
           membership_id: string
         }[]
       }
+      get_my_help_requests: {
+        Args: never
+        Returns: {
+          acknowledged_at: string
+          help_request_id: string
+          mission_title: string
+          reason_code: string
+          requested_at: string
+          resolution_code: string
+          resolved_at: string
+          status: Database["public"]["Enums"]["help_request_status"]
+          step_title: string
+        }[]
+      }
       get_participant_category_progress: {
         Args: never
         Returns: {
@@ -1240,6 +1436,10 @@ export type Database = {
         }[]
       }
       purge_closed_invitation_personal_data: { Args: never; Returns: number }
+      register_push_device: {
+        Args: { target_platform: string; target_token: string }
+        Returns: string
+      }
       set_mission_attempt_progress: {
         Args: {
           mark_completed?: boolean
@@ -1259,6 +1459,18 @@ export type Database = {
           used_help: boolean
           used_hint: boolean
         }[]
+      }
+      unregister_push_device: {
+        Args: { target_token: string }
+        Returns: boolean
+      }
+      update_help_request: {
+        Args: {
+          target_help_request_id: string
+          target_resolution_code?: string
+          target_status: Database["public"]["Enums"]["help_request_status"]
+        }
+        Returns: Database["public"]["Enums"]["help_request_status"]
       }
     }
     Enums: {

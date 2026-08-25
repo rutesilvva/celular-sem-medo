@@ -13,7 +13,7 @@ ser inventariada antes de entrar no artefato.
 - público adulto, acesso provisionado, dois papéis por turma e um papel de administrador global server-side;
 - sem anúncios, venda, data broker ou tracking entre apps/sites;
 - sem analytics/observabilidade remotos além dos logs mínimos aprovados;
-- sem push, captura de câmera/biblioteca, localização real, dado financeiro real,
+- push opcional com token técnico e mensagem genérica, sem conteúdo do pedido; sem captura de câmera/biblioteca, localização real, dado financeiro real,
   contatos do aparelho, microfone ou transcrição; o avatar Google é a única foto
   recebida;
 - simulações permanecem locais e não executam ação real;

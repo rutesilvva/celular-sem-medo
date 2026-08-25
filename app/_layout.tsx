@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppFeedback } from '@/components/AppFeedback';
+import { NotificationRouter } from '@/components/NotificationRouter';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { canAccessRole } from '@/features/auth/authorization';
@@ -15,6 +16,7 @@ export default function RootLayout() {
       <AuthProvider>
         <AppProvider>
           <AppNavigator />
+          <NotificationRouter />
           <StatusBar style="dark" />
           <AppFeedback />
         </AppProvider>
@@ -61,6 +63,7 @@ function AppNavigator() {
         <Stack.Screen name="participant/result" />
         <Stack.Screen name="participant/progress" />
         <Stack.Screen name="participant/profile" />
+        <Stack.Screen name="participant/help-requests" />
       </Stack.Protected>
 
       <Stack.Protected guard={canAccessRole(status, sessionRole, 'monitor')}>
@@ -70,6 +73,7 @@ function AppNavigator() {
         <Stack.Screen name="monitor/missions" />
         <Stack.Screen name="monitor/reports" />
         <Stack.Screen name="monitor/profile" />
+        <Stack.Screen name="monitor/help-requests" />
       </Stack.Protected>
 
       <Stack.Protected guard={canAccessRole(status, sessionRole, 'admin')}>

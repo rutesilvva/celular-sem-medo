@@ -6,7 +6,6 @@ import { MonitorNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMyClass, useMonitorParticipants } from '@/hooks/useClassData';
 import { useMonitorProgress } from '@/hooks/useProgressData';
@@ -14,7 +13,6 @@ import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function MonitorHomeScreen() {
   const router = useRouter();
-  const { showNotice } = useApp();
   const { currentUser } = useAuth();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Monitor';
   const classQuery = useMyClass('monitor');
@@ -52,7 +50,7 @@ export default function MonitorHomeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Abrir notificações"
-          onPress={() => showNotice('Você não tem novas notificações.')}
+          onPress={() => router.push('/monitor/help-requests')}
           style={({ pressed }) => [styles.notification, pressed && styles.pressed]}
         >
           <Ionicons name="notifications-outline" size={25} color={colors.primary} />

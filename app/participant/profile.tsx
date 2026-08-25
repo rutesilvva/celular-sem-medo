@@ -106,7 +106,7 @@ export default function ParticipantProfileScreen() {
           <MenuRow
             icon="chatbubble-ellipses-outline"
             label="Falar com meu monitor"
-            onPress={() => showNotice('Demonstração: nenhum pedido de ajuda foi enviado.')}
+            onPress={() => router.push('/participant/help-requests')}
           />
           <View style={styles.divider} />
           <MenuRow

@@ -92,14 +92,15 @@ Os fornecedores previstos são:
 - **Google**, para autenticar a identidade;
 - **Apple Identity**, se Sign in with Apple for exigido na versão iOS;
 - **Supabase**, para autenticação, sessão, banco, funções e backup;
-- **Expo/EAS**, apenas para construir e distribuir o aplicativo, salvo ativação
-  futura e documentada de outro serviço;
+- **Expo/EAS**, para construir e distribuir o aplicativo e, somente após sua
+  permissão, entregar avisos genéricos sobre pedidos de ajuda;
 - **Apple e Google Play**, para distribuir o aplicativo e operar as respectivas
   lojas.
 
 Eles só podem receber o necessário para sua função e devem estar cobertos pelos
-contratos e configurações aplicáveis. Novos fornecedores, como observabilidade,
-notificação ou transcrição, exigem atualização prévia desta política e do
+contratos e configurações aplicáveis. A notificação não contém nome, missão,
+passo ou resposta. Novos fornecedores, como observabilidade ou transcrição,
+exigem atualização prévia desta política e do
 inventário.
 
 O monitor vê somente dados necessários dos participantes das turmas em que tem

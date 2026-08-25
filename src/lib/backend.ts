@@ -13,6 +13,10 @@ export type ParticipantProgress = Database['public']['Functions']['get_participa
 export type ParticipantCategoryProgress = Database['public']['Functions']['get_participant_category_progress']['Returns'][number];
 export type MonitorClassProgress = Database['public']['Functions']['get_monitor_class_progress']['Returns'][number];
 export type MonitorMissionProgress = Database['public']['Functions']['get_monitor_mission_progress']['Returns'][number];
+export type ParticipantHelpRequest = Database['public']['Functions']['get_my_help_requests']['Returns'][number];
+export type MonitorHelpRequest = Database['public']['Functions']['get_monitor_help_requests']['Returns'][number];
+export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
+export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_monitor';
 export type MonitorParticipantHistory = Database['public']['Functions']['get_monitor_participant_history']['Returns'][number];
 export type MonitorClassEvolution = Database['public']['Functions']['get_monitor_class_evolution']['Returns'][number];
 export type MonitorParticipantFilter = 'all' | 'attention' | 'advancing';
@@ -265,6 +269,55 @@ export async function setMissionAttemptProgress(input: {
   });
   if (error) throw error;
   return data;
+}
+
+export async function createHelpRequest(input: { attemptId: string; stepId: string; reason: HelpReason }) {
+  const { data, error } = await getSupabase().rpc('create_help_request', {
+    requested_id: createUuid(), target_attempt_id: input.attemptId,
+    target_step_id: input.stepId, target_reason_code: input.reason,
+  });
+  if (error || !data?.[0]) throw error ?? new Error('HELP_REQUEST_NOT_CREATED');
+  return data[0];
+}
+
+export async function getMyHelpRequests(): Promise<ParticipantHelpRequest[]> {
+  const { data, error } = await getSupabase().rpc('get_my_help_requests');
+  if (error) throw error;
+  return data;
+}
+
+export async function getMonitorHelpRequests(classId: string): Promise<MonitorHelpRequest[]> {
+  const { data, error } = await getSupabase().rpc('get_monitor_help_requests', { target_class_id: classId });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateHelpRequest(id: string, status: 'in_progress' | 'resolved', resolution?: HelpResolution) {
+  const { data, error } = await getSupabase().rpc('update_help_request', {
+    target_help_request_id: id, target_status: status,
+    target_resolution_code: resolution,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelMyHelpRequest(id: string) {
+  const { data, error } = await getSupabase().rpc('cancel_my_help_request', { target_help_request_id: id });
+  if (error) throw error;
+  return data;
+}
+
+export async function registerPushDevice(token: string, platform: 'android' | 'ios') {
+  const { error } = await getSupabase().rpc('register_push_device', { target_token: token, target_platform: platform });
+  if (error) throw error;
+}
+
+function createUuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 function mapParticipant(row: MonitorParticipantRow): ClassParticipant {
