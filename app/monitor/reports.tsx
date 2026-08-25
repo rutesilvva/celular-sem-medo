@@ -20,6 +20,10 @@ export default function ReportsScreen() {
   const classQuery = useMyClass('monitor');
   const progress = useMonitorProgress(classQuery.data?.class_id ?? null, period);
   const data = progress.summary.data;
+  const loading = classQuery.loading || progress.summary.loading || progress.missions.loading || progress.evolution.loading;
+  const failed = classQuery.error || progress.summary.error || progress.missions.error || progress.evolution.error;
+  const hasActivity = (data?.active_participants ?? 0) > 0;
+  const updatedAt = progress.summary.updatedAt;
 
   return (
     <Screen footer={<MonitorNav active="reports" />}>
@@ -57,6 +61,13 @@ export default function ReportsScreen() {
         </View>
       </View>
 
+      {loading ? <DataState kind="loading" title="Calculando relatório" message="Consolidando tentativas e eventos da turma." /> : failed ? (
+        <DataState kind="error" title="Não foi possível calcular" message="Tente carregar os dados novamente." onRetry={() => { classQuery.retry(); progress.summary.retry(); progress.missions.retry(); progress.evolution.retry(); }} />
+      ) : !classQuery.data ? (
+        <DataState kind="empty" title="Nenhuma turma vinculada" message="Você não possui uma turma ativa para consultar." />
+      ) : !hasActivity ? (
+        <DataState kind="empty" title="Turma sem atividade no período" message={`Não existem tentativas registradas nos últimos ${period} dias. Nenhuma métrica foi estimada.`} />
+      ) : <>
       <View style={styles.metricGrid}>
         <MetricCard icon="checkmark-done-outline" value={`${data?.completed_missions ?? 0}`} label="missões concluídas" tone="green" />
         <MetricCard icon="trending-up-outline" value={`${data?.completion_percent ?? 0}%`} label="conclusão da turma" tone="purple" />
@@ -74,10 +85,23 @@ export default function ReportsScreen() {
           <AppText weight="800">Resumo calculado no backend</AppText>
           <AppText variant="small" color={colors.textMuted}>{data?.active_participants ?? 0} participantes praticaram nos últimos {period} dias.</AppText>
         </View>
-        <Tag label="Tendência positiva" tone="green" />
+        <Tag label={`${period} dias`} tone="green" />
       </Card>
 
-      {progress.summary.loading || progress.missions.loading ? <DataState kind="loading" title="Calculando relatório" message="Consolidando tentativas e eventos da turma." /> : progress.summary.error || progress.missions.error ? <DataState kind="error" title="Não foi possível calcular" message="Tente carregar os dados novamente." onRetry={() => { progress.summary.retry(); progress.missions.retry(); }} /> : null}
+      <AppText variant="caption" color={colors.textMuted}>Última atualização: {formatUpdatedAt(updatedAt)}</AppText>
+
+      <SectionTitle>Evolução da atividade</SectionTitle>
+      <Card style={styles.chartCard}>
+        {progress.evolution.data.filter((day) => day.attempt_count > 0).slice(-14).map((day) => (
+          <View key={day.activity_date} style={styles.barRow} accessibilityLabel={`${formatDay(day.activity_date)}: ${day.attempt_count} tentativas`}>
+            <View style={styles.barHeading}>
+              <AppText variant="small" weight="700">{formatDay(day.activity_date)}</AppText>
+              <AppText variant="small" weight="800" color={colors.primary}>{day.attempt_count} tentativas · {day.completed_attempts} concluídas</AppText>
+            </View>
+            <ProgressBar value={Math.round(100 * day.attempt_count / Math.max(...progress.evolution.data.map((item) => item.attempt_count), 1))} />
+          </View>
+        ))}
+      </Card>
 
       <SectionTitle>Conclusão por missão</SectionTitle>
       <Card style={styles.chartCard}>
@@ -127,8 +151,17 @@ export default function ReportsScreen() {
           onPress={() => showNotice('Relatório pronto para exportação.')}
         />
       </Card>
+      </>}
     </Screen>
   );
+}
+
+function formatUpdatedAt(value: Date | null) {
+  return value ? value.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'aguardando dados';
+}
+
+function formatDay(value: string) {
+  return new Date(`${value}T12:00:00Z`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
 function DifficultyRow({ label, value, icon, divider = false }: {

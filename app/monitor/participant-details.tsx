@@ -8,11 +8,12 @@ import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { useMyClass, useMonitorParticipant } from '@/hooks/useClassData';
-import type { ClassParticipant } from '@/lib/backend';
+import { useMyClass, useMonitorParticipant, useMonitorParticipantHistory } from '@/hooks/useClassData';
+import type { ClassParticipant, MonitorParticipantHistory } from '@/lib/backend';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type DetailTab = 'summary' | 'performance' | 'resources' | 'history';
+type DetailPeriod = 7 | 30 | 90;
 
 const tabs: readonly { key: DetailTab; label: string }[] = [
   { key: 'summary', label: 'Resumo' },
@@ -25,8 +26,10 @@ export default function ParticipantDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [activeTab, setActiveTab] = useState<DetailTab>('summary');
+  const [period, setPeriod] = useState<DetailPeriod>(30);
   const classQuery = useMyClass('monitor');
-  const participantQuery = useMonitorParticipant(classQuery.data?.class_id ?? null, id ?? null);
+  const participantQuery = useMonitorParticipant(classQuery.data?.class_id ?? null, id ?? null, period);
+  const historyQuery = useMonitorParticipantHistory(classQuery.data?.class_id ?? null, id ?? null, period);
 
   if (classQuery.loading || participantQuery.loading) {
     return (
@@ -79,6 +82,15 @@ export default function ParticipantDetailsScreen() {
 
       <ParticipantHero className={classQuery.data.class_name} classShift={classQuery.data.class_shift} participant={participant} />
 
+      <View accessibilityLabel="Período dos detalhes" style={styles.periods}>
+        {([7, 30, 90] as const).map((item) => (
+          <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: period === item }} onPress={() => setPeriod(item)} style={[styles.period, period === item && styles.periodSelected]}>
+            <AppText variant="small" weight="800" color={period === item ? colors.surface : colors.textMuted}>{item} dias</AppText>
+          </Pressable>
+        ))}
+      </View>
+      <AppText variant="caption" color={colors.textMuted}>Última atualização: {formatDateTime(participantQuery.updatedAt)}</AppText>
+
       <ScrollView
         accessibilityLabel="Seções dos detalhes"
         contentContainerStyle={styles.tabs}
@@ -112,13 +124,13 @@ export default function ParticipantDetailsScreen() {
       {activeTab === 'summary' ? <SummaryTab participant={participant} /> : null}
       {activeTab === 'performance' ? <PerformanceTab participant={participant} /> : null}
       {activeTab === 'resources' ? <ResourcesTab participant={participant} /> : null}
-      {activeTab === 'history' ? <HistoryTab participant={participant} /> : null}
+      {activeTab === 'history' ? <HistoryTab participant={participant} history={historyQuery.data ?? []} loading={historyQuery.loading} error={historyQuery.error} retry={historyQuery.retry} /> : null}
     </Screen>
   );
 }
 
 function ParticipantHero({ className, classShift, participant }: { className: string; classShift: string | null; participant: ClassParticipant }) {
-  const needsAttention = participant.progress < 55;
+  const needsAttention = participant.attemptCount > 0 && participant.progress < 55;
   return (
     <Card style={styles.hero}>
       <View style={[styles.avatar, needsAttention && styles.avatarAttention]}>
@@ -129,7 +141,7 @@ function ParticipantHero({ className, classShift, participant }: { className: st
       <View style={styles.heroCopy}>
         <AppText variant="subheading" weight="800">{participant.name}</AppText>
         <AppText variant="small" color={colors.textMuted}>{className}{classShift ? ` • ${classShift}` : ''}</AppText>
-        <Tag label={needsAttention ? 'Acompanhamento recomendado' : 'Avançando bem'} tone={needsAttention ? 'yellow' : 'green'} />
+        <Tag label={participant.attemptCount === 0 ? 'Sem atividade no período' : needsAttention ? 'Acompanhamento recomendado' : 'Avançando bem'} tone={needsAttention ? 'yellow' : participant.attemptCount === 0 ? 'gray' : 'green'} />
       </View>
     </Card>
   );
@@ -152,9 +164,7 @@ function SummaryTab({ participant }: { participant: ClassParticipant }) {
         <View style={styles.rowBetween}>
           <View>
             <AppText weight="800">{participant.completedMissions} de {participant.assignedMissions} missões</AppText>
-            <AppText variant="small" color={colors.textMuted}>
-              {Math.max(1, participant.completedMissions - 2)} concluídas sem ajuda
-            </AppText>
+            <AppText variant="small" color={colors.textMuted}>{participant.completedAttemptCount} tentativas concluídas no período</AppText>
           </View>
           <AppText variant="subheading" weight="800" color={colors.primary}>{participant.progress}%</AppText>
         </View>
@@ -258,7 +268,7 @@ function ResourcesTab({ participant }: { participant: ClassParticipant }) {
           </View>
           <View style={styles.flexCopy}>
             <AppText weight="800">Orientação sugerida</AppText>
-            <AppText variant="small" color={colors.textMuted}>Reforce a etapa de conferência antes de confirmar.</AppText>
+            <AppText variant="small" color={colors.textMuted}>{participant.difficultyDescription}</AppText>
           </View>
         </View>
         <Button
@@ -293,32 +303,30 @@ function ResourceRow({ icon, title, value, tone, divider = false }: {
   );
 }
 
-function HistoryTab({ participant }: { participant: ClassParticipant }) {
-  const photoEvent = {
-    date: 'Dados atuais',
-    title: participant.completedMissions ? 'Possui missões concluídas' : 'Ainda sem conclusão registrada',
-    detail: `${participant.completedMissions} de ${participant.assignedMissions} atribuições concluídas.`,
-    icon: participant.completedMissions ? 'checkmark-circle-outline' as const : 'time-outline' as const,
-  };
-  const events = [
-    photoEvent,
-    { date: 'Uso agregado', title: 'Apoio em áudio', detail: `Usado em ${participant.audio}% das tentativas registradas.`, icon: 'volume-high-outline' as const },
-    { date: 'Uso agregado', title: 'Autonomia', detail: `${participant.autonomy}% das conclusões ocorreram sem dica ou pedido de ajuda.`, icon: 'hand-left-outline' as const },
-  ];
+function HistoryTab({ participant, history, loading, error, retry }: {
+  participant: ClassParticipant;
+  history: MonitorParticipantHistory[];
+  loading: boolean;
+  error: boolean;
+  retry: () => void;
+}) {
+  if (loading) return <DataState kind="loading" title="Carregando histórico" message="Buscando as tentativas recentes." />;
+  if (error) return <DataState kind="error" title="Não foi possível carregar o histórico" message="Tente novamente." onRetry={retry} />;
+  if (!history.length) return <DataState kind="empty" title="Nenhuma atividade no período" message={`${participant.name} ainda não iniciou uma missão neste período.`} />;
   return (
     <View style={styles.tabContent}>
       <SectionTitle>Atividades recentes</SectionTitle>
       <Card style={styles.timeline}>
-        {events.map((event, index) => (
-          <View key={event.date} style={styles.timelineRow}>
+        {history.map((event, index) => (
+          <View key={event.attempt_id} style={styles.timelineRow}>
             <View style={styles.timelineRail}>
-              <View style={styles.timelineDot}><Ionicons name={event.icon} size={18} color={colors.primary} /></View>
-              {index < events.length - 1 ? <View style={styles.timelineLine} /> : null}
+              <View style={styles.timelineDot}><Ionicons name={event.attempt_status === 'completed' ? 'checkmark-circle-outline' : 'time-outline'} size={18} color={colors.primary} /></View>
+              {index < history.length - 1 ? <View style={styles.timelineLine} /> : null}
             </View>
             <View style={styles.timelineCopy}>
-              <AppText variant="caption" weight="700" color={colors.primary}>{event.date}</AppText>
-              <AppText weight="800">{event.title}</AppText>
-              <AppText variant="small" color={colors.textMuted}>{event.detail}</AppText>
+              <AppText variant="caption" weight="700" color={colors.primary}>{formatDateTime(new Date(event.last_activity_at))}</AppText>
+              <AppText weight="800">{event.mission_title}</AppText>
+              <AppText variant="small" color={colors.textMuted}>{historyDescription(event)}</AppText>
             </View>
           </View>
         ))}
@@ -328,6 +336,16 @@ function HistoryTab({ participant }: { participant: ClassParticipant }) {
       </AppText>
     </View>
   );
+}
+
+function historyDescription(event: MonitorParticipantHistory) {
+  const support = [event.used_audio ? 'áudio' : null, event.used_hint ? 'dica' : null, event.requested_help ? 'ajuda' : null].filter(Boolean);
+  const status = event.attempt_status === 'completed' ? 'Concluída' : event.attempt_status === 'abandoned' ? 'Interrompida' : 'Em andamento';
+  return `${status}. ${event.error_count} ${event.error_count === 1 ? 'erro registrado' : 'erros registrados'}${support.length ? `; recursos usados: ${support.join(', ')}` : ''}.`;
+}
+
+function formatDateTime(value: Date | null) {
+  return value ? value.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'aguardando dados';
 }
 
 const resourceTones = {
@@ -343,6 +361,9 @@ const styles = StyleSheet.create({
   avatarAttention: { backgroundColor: colors.warningSoft },
   heroCopy: { flex: 1, gap: spacing.xs },
   tabs: { gap: spacing.sm, paddingRight: spacing.lg },
+  periods: { flexDirection: 'row', gap: spacing.sm },
+  period: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flex: 1, minHeight: 42, justifyContent: 'center' },
+  periodSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   tab: {
     alignItems: 'center',
     backgroundColor: colors.surface,

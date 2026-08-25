@@ -18,26 +18,22 @@ export default function MonitorHomeScreen() {
   const { currentUser } = useAuth();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Monitor';
   const classQuery = useMyClass('monitor');
-  const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null);
+  const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null, { limit: 5, sort: 'progress_asc' });
   const progressQuery = useMonitorProgress(classQuery.data?.class_id ?? null, 30);
-  const currentParticipants = participantsQuery.data ?? [];
+  const currentParticipants = participantsQuery.data?.items ?? [];
 
-  if (classQuery.loading || (classQuery.data && participantsQuery.loading)) {
+  if (classQuery.loading || (classQuery.data && (participantsQuery.loading || progressQuery.summary.loading || progressQuery.missions.loading))) {
     return <Screen footer={<MonitorNav active="home" />}><Header title="Visão geral" /><DataState kind="loading" title="Carregando turma" message="Buscando participantes e indicadores." /></Screen>;
   }
-  if (classQuery.error || participantsQuery.error) {
-    return <Screen footer={<MonitorNav active="home" />}><Header title="Visão geral" /><DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={classQuery.error ? classQuery.retry : participantsQuery.retry} /></Screen>;
+  if (classQuery.error || participantsQuery.error || progressQuery.summary.error || progressQuery.missions.error) {
+    return <Screen footer={<MonitorNav active="home" />}><Header title="Visão geral" /><DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={() => { classQuery.retry(); participantsQuery.retry(); progressQuery.summary.retry(); progressQuery.missions.retry(); }} /></Screen>;
   }
   if (!classQuery.data) {
     return <Screen footer={<MonitorNav active="home" />}><Header title="Visão geral" /><DataState kind="empty" title="Nenhuma turma vinculada" message="Peça à administração para cadastrar seu vínculo de monitor." /></Screen>;
   }
-  const averageProgress = Math.round(
-    currentParticipants.reduce((total, participant) => total + participant.progress, 0) / Math.max(1, currentParticipants.length),
-  );
-  const averageAudio = Math.round(
-    currentParticipants.reduce((total, participant) => total + participant.audio, 0) / Math.max(1, currentParticipants.length),
-  );
-  const attentionParticipant = currentParticipants.find((participant) => participant.progress < 50);
+  const summary = progressQuery.summary.data;
+  const attentionParticipant = currentParticipants.find((participant) => participant.attemptCount > 0 && participant.progress < 55);
+  const updatedAt = progressQuery.summary.updatedAt ?? participantsQuery.updatedAt;
 
   return (
     <Screen footer={<MonitorNav active="home" />}>
@@ -64,13 +60,19 @@ export default function MonitorHomeScreen() {
       </View>
 
       <View style={styles.metricGrid}>
-        <MetricCard icon="people-outline" value={`${currentParticipants.length}`} label="participantes ativos" tone="purple" />
-        <MetricCard icon="trending-up-outline" value={`${averageProgress}%`} label="progresso médio" tone="green" />
+        <MetricCard icon="people-outline" value={`${summary?.participant_count ?? participantsQuery.data?.total ?? 0}`} label="participantes vinculados" tone="purple" />
+        <MetricCard icon="trending-up-outline" value={`${summary?.completion_percent ?? 0}%`} label="conclusão da turma" tone="green" />
       </View>
       <View style={styles.metricGrid}>
-        <MetricCard icon="volume-high-outline" value={`${progressQuery.summary.data?.audio_usage_percent ?? averageAudio}%`} label="usaram apoio em áudio" tone="blue" />
-        <MetricCard icon="flag-outline" value={`${progressQuery.summary.data?.assigned_missions ?? 0}`} label="missões em andamento" tone="yellow" />
+        <MetricCard icon="volume-high-outline" value={`${summary?.audio_usage_percent ?? 0}%`} label="usaram apoio em áudio" tone="blue" />
+        <MetricCard icon="flag-outline" value={`${summary?.assigned_missions ?? 0}`} label="missões em andamento" tone="yellow" />
       </View>
+
+      <AppText variant="caption" color={colors.textMuted}>Última atualização: {formatUpdatedAt(updatedAt)}</AppText>
+
+      {summary && summary.active_participants === 0 ? (
+        <DataState kind="empty" title="Turma sem atividade no período" message="Ainda não há tentativas registradas nos últimos 30 dias." />
+      ) : null}
 
       <SectionTitle
         action={(
@@ -102,7 +104,7 @@ export default function MonitorHomeScreen() {
               </View>
               <View style={styles.personCopy}>
                 <AppText weight="800">{attentionParticipant.name}</AppText>
-                <AppText variant="small" color={colors.textMuted}>Precisa de apoio em “Conferir um Pix”</AppText>
+                <AppText variant="small" color={colors.textMuted}>{attentionParticipant.difficultyDescription}</AppText>
               </View>
               <Ionicons name="chevron-forward" size={23} color={colors.iconMuted} />
             </View>
@@ -156,6 +158,10 @@ export default function MonitorHomeScreen() {
       </View>
     </Screen>
   );
+}
+
+function formatUpdatedAt(value: Date | null) {
+  return value ? value.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'aguardando dados';
 }
 
 const styles = StyleSheet.create({

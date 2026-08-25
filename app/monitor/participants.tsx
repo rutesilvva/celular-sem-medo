@@ -1,14 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { MonitorNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
-import { AppText, Card, Header, ProgressBar, Tag } from '@/components/ui';
+import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
 import { useMyClass, useMonitorParticipants } from '@/hooks/useClassData';
-import type { ClassParticipant } from '@/lib/backend';
+import type { ClassParticipant, MonitorParticipantSort } from '@/lib/backend';
 import { colors, radius, spacing, type } from '@/theme/tokens';
 
 type FilterKey = 'all' | 'attention' | 'advancing';
@@ -18,25 +18,27 @@ const filters: readonly { key: FilterKey; label: string }[] = [
   { key: 'attention', label: 'Precisam de atenção' },
   { key: 'advancing', label: 'Avançando bem' },
 ];
+const sorts: readonly { key: MonitorParticipantSort; label: string }[] = [
+  { key: 'name', label: 'Nome' },
+  { key: 'progress_asc', label: 'Menor progresso' },
+  { key: 'progress_desc', label: 'Maior progresso' },
+  { key: 'recent', label: 'Atividade recente' },
+];
+const pageSize = 20;
 
 export default function ParticipantsScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [sort, setSort] = useState<MonitorParticipantSort>('name');
+  const [page, setPage] = useState(0);
+  const deferredQuery = useDeferredValue(query);
   const classQuery = useMyClass('monitor');
-  const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null);
-  const participants = useMemo(() => participantsQuery.data ?? [], [participantsQuery.data]);
-
-  const visibleParticipants = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
-    return participants.filter((participant) => {
-      const matchesQuery = !normalizedQuery || participant.name.toLocaleLowerCase('pt-BR').includes(normalizedQuery);
-      const matchesFilter = filter === 'all'
-        || (filter === 'attention' && participant.progress < 55)
-        || (filter === 'advancing' && participant.progress >= 55);
-      return matchesQuery && matchesFilter;
-    }).sort((first, second) => first.name.localeCompare(second.name, 'pt-BR'));
-  }, [filter, participants, query]);
+  const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null, {
+    search: deferredQuery, filter, sort, limit: pageSize, offset: page * pageSize,
+  });
+  const participants = participantsQuery.data?.items ?? [];
+  const total = participantsQuery.data?.total ?? 0;
 
   const openParticipant = (participant: ClassParticipant) => {
     router.push({ pathname: '/monitor/participant-details', params: { id: participant.id } });
@@ -47,7 +49,7 @@ export default function ParticipantsScreen() {
       <Header
         title="Participantes"
         subtitle={classQuery.data
-          ? `${classQuery.data.class_name} • ${participants.length} ${participants.length === 1 ? 'pessoa' : 'pessoas'}`
+          ? `${classQuery.data.class_name} • ${total} ${total === 1 ? 'pessoa' : 'pessoas'}`
           : 'Carregando turma…'}
         audio
       />
@@ -63,8 +65,6 @@ export default function ParticipantsScreen() {
         />
       ) : !classQuery.data ? (
         <DataState kind="empty" title="Nenhuma turma vinculada" message="Peça à administração para cadastrar seu vínculo de monitor." />
-      ) : participants.length === 0 ? (
-        <DataState kind="empty" title="Turma sem participantes" message="Envie um convite para adicionar a primeira pessoa à turma." />
       ) : (
         <>
 
@@ -73,7 +73,7 @@ export default function ParticipantsScreen() {
         <TextInput
           accessibilityLabel="Buscar participante pelo nome"
           autoCapitalize="words"
-          onChangeText={setQuery}
+          onChangeText={(value) => { setQuery(value); setPage(0); }}
           placeholder="Buscar participante"
           placeholderTextColor={colors.placeholder}
           returnKeyType="search"
@@ -85,7 +85,7 @@ export default function ParticipantsScreen() {
             accessibilityRole="button"
             accessibilityLabel="Limpar busca"
             hitSlop={8}
-            onPress={() => setQuery('')}
+            onPress={() => { setQuery(''); setPage(0); }}
             style={({ pressed }) => pressed && styles.pressed}
           >
             <Ionicons name="close-circle" size={24} color={colors.iconMuted} />
@@ -102,7 +102,7 @@ export default function ParticipantsScreen() {
               accessibilityLabel={`Filtro ${item.label}`}
               accessibilityState={{ selected }}
               key={item.key}
-              onPress={() => setFilter(item.key)}
+              onPress={() => { setFilter(item.key); setPage(0); }}
               style={({ pressed }) => [styles.filter, selected && styles.filterSelected, pressed && styles.pressed]}
             >
               {selected ? <Ionicons name="checkmark" size={17} color={colors.surface} /> : null}
@@ -118,30 +118,51 @@ export default function ParticipantsScreen() {
         })}
       </View>
 
+      <View accessibilityLabel="Ordenar participantes" style={styles.filters}>
+        {sorts.map((item) => (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: sort === item.key }}
+            key={item.key}
+            onPress={() => { setSort(item.key); setPage(0); }}
+            style={({ pressed }) => [styles.sort, sort === item.key && styles.sortSelected, pressed && styles.pressed]}
+          >
+            <AppText variant="caption" weight="700" color={sort === item.key ? colors.primary : colors.textMuted}>{item.label}</AppText>
+          </Pressable>
+        ))}
+      </View>
+
       <View style={styles.resultHeading}>
         <AppText variant="subheading" weight="800">
-          {visibleParticipants.length === 1 ? '1 participante' : `${visibleParticipants.length} participantes`}
+          {total === 1 ? '1 participante' : `${total} participantes`}
         </AppText>
-        <AppText variant="small" color={colors.textMuted}>Ordenados por nome</AppText>
+        <AppText variant="small" color={colors.textMuted}>Página {page + 1} · Atualizado {formatUpdatedAt(participantsQuery.updatedAt)}</AppText>
       </View>
 
       <View style={styles.list}>
-        {visibleParticipants.map((participant) => (
+        {participants.map((participant) => (
           <ParticipantCard key={participant.id} participant={participant} onPress={() => openParticipant(participant)} />
         ))}
 
-        {visibleParticipants.length === 0 ? (
+        {participants.length === 0 ? (
           <Card style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Ionicons name="search-outline" size={29} color={colors.primary} />
             </View>
-            <AppText weight="800" style={styles.center}>Nenhum participante encontrado</AppText>
+            <AppText weight="800" style={styles.center}>{query || filter !== 'all' ? 'Nenhum participante encontrado' : 'Turma sem participantes'}</AppText>
             <AppText variant="small" color={colors.textMuted} style={styles.center}>
-              Tente outro nome ou selecione um filtro diferente.
+              {query || filter !== 'all' ? 'Tente outro nome ou selecione um filtro diferente.' : 'A turma ainda não possui participantes ativos.'}
             </AppText>
           </Card>
         ) : null}
       </View>
+
+      {total > pageSize ? (
+        <View style={styles.pagination}>
+          <Button label="Página anterior" variant="secondary" disabled={page === 0} onPress={() => setPage((value) => Math.max(0, value - 1))} />
+          <Button label="Próxima página" variant="secondary" disabled={(page + 1) * pageSize >= total} onPress={() => setPage((value) => value + 1)} />
+        </View>
+      ) : null}
 
       <Card style={styles.tip}>
         <Ionicons name="information-circle-outline" size={25} color={colors.blue} />
@@ -155,8 +176,12 @@ export default function ParticipantsScreen() {
   );
 }
 
+function formatUpdatedAt(value: Date | null) {
+  return value ? value.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'agora';
+}
+
 function ParticipantCard({ participant, onPress }: { participant: ClassParticipant; onPress: () => void }) {
-  const needsAttention = participant.progress < 55;
+  const needsAttention = participant.attemptCount > 0 && participant.progress < 55;
   return (
     <Pressable
       accessibilityRole="button"
@@ -173,8 +198,8 @@ function ParticipantCard({ participant, onPress }: { participant: ClassParticipa
           <View style={styles.personCopy}>
             <AppText weight="800">{participant.name}</AppText>
             <View style={styles.tagRow}>
-              <Tag label={needsAttention ? 'Acompanhar' : 'Avançando bem'} tone={needsAttention ? 'yellow' : 'green'} />
-              <Tag label={`Nota ${participant.score}`} tone="gray" />
+              <Tag label={participant.attemptCount === 0 ? 'Sem atividade' : needsAttention ? 'Acompanhar' : 'Avançando bem'} tone={needsAttention ? 'yellow' : participant.attemptCount === 0 ? 'gray' : 'green'} />
+              {participant.completedAttemptCount > 0 ? <Tag label={`Nota ${participant.score}`} tone="gray" /> : null}
             </View>
           </View>
           <Ionicons name="chevron-forward" size={24} color={colors.iconMuted} />
@@ -225,9 +250,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   filterSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  sort: { borderBottomColor: colors.border, borderBottomWidth: 2, minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.sm },
+  sortSelected: { borderBottomColor: colors.primary },
   pressed: { opacity: 0.68 },
   resultHeading: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between' },
   list: { gap: spacing.md },
+  pagination: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   participantCard: { gap: spacing.md },
   cardPressed: { opacity: 0.72, transform: [{ scale: 0.992 }] },
   personRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },

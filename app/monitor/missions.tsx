@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MonitorNav } from '@/components/BottomNav';
+import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
@@ -37,9 +38,20 @@ export default function MonitorMissionsScreen() {
     missions.reduce((total, mission) => total + mission.completion, 0) / Math.max(1, missions.length),
   );
 
+  if (classQuery.loading || progressQuery.missions.loading) {
+    return <Screen footer={<MonitorNav active="missions" />}><Header title="Missões" /><DataState kind="loading" title="Carregando missões" message="Calculando os dados reais da turma." /></Screen>;
+  }
+  if (classQuery.error || progressQuery.missions.error) {
+    return <Screen footer={<MonitorNav active="missions" />}><Header title="Missões" /><DataState kind="error" title="Não foi possível carregar" message="Verifique a conexão e tente novamente." onRetry={classQuery.error ? classQuery.retry : progressQuery.missions.retry} /></Screen>;
+  }
+  if (!classQuery.data) {
+    return <Screen footer={<MonitorNav active="missions" />}><Header title="Missões" /><DataState kind="empty" title="Nenhuma turma vinculada" message="Você não possui uma turma ativa para consultar." /></Screen>;
+  }
+
   return (
     <Screen footer={<MonitorNav active="missions" />}>
       <Header title="Missões" subtitle="Acompanhe a prática da turma" audio />
+      <AppText variant="caption" color={colors.textMuted}>Última atualização: {formatUpdatedAt(progressQuery.missions.updatedAt)}</AppText>
 
       <View style={styles.metrics}>
         <MetricCard icon="flag-outline" value={`${missions.length}`} label="missões ativas" tone="purple" />
@@ -93,6 +105,7 @@ export default function MonitorMissionsScreen() {
           />
         ))}
       </View>
+      {!visibleMissions.length ? <DataState kind="empty" title="Nenhuma missão neste filtro" message="A turma não possui missões correspondentes no período." /> : null}
 
       <Card style={styles.legend}>
         <View style={styles.legendHeading}>
@@ -105,6 +118,10 @@ export default function MonitorMissionsScreen() {
       </Card>
     </Screen>
   );
+}
+
+function formatUpdatedAt(value: Date | null) {
+  return value ? value.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'aguardando dados';
 }
 
 function MissionCard({ mission, onOpen }: { mission: MonitorMission; onOpen: () => void }) {

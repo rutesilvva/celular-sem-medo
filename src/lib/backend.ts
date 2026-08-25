@@ -5,7 +5,7 @@ import type { AccessibilityPreferences } from '@/context/AppContext';
 type AppRole = Database['public']['Enums']['app_role'];
 type AttemptEventType = Database['public']['Enums']['attempt_event_type'];
 export type ClassContext = Database['public']['Functions']['get_my_class_contexts']['Returns'][number];
-type MonitorParticipantRow = Database['public']['Functions']['get_monitor_class_participants']['Returns'][number];
+type MonitorParticipantRow = Database['public']['Functions']['get_monitor_participant_metrics']['Returns'][number];
 type MissionCatalogRow = Database['public']['Functions']['get_participant_mission_catalog']['Returns'][number];
 type MissionDetailsRow = Database['public']['Functions']['get_participant_mission_details']['Returns'][number];
 type MissionStepRow = Database['public']['Functions']['get_participant_mission_steps']['Returns'][number];
@@ -13,6 +13,10 @@ export type ParticipantProgress = Database['public']['Functions']['get_participa
 export type ParticipantCategoryProgress = Database['public']['Functions']['get_participant_category_progress']['Returns'][number];
 export type MonitorClassProgress = Database['public']['Functions']['get_monitor_class_progress']['Returns'][number];
 export type MonitorMissionProgress = Database['public']['Functions']['get_monitor_mission_progress']['Returns'][number];
+export type MonitorParticipantHistory = Database['public']['Functions']['get_monitor_participant_history']['Returns'][number];
+export type MonitorClassEvolution = Database['public']['Functions']['get_monitor_class_evolution']['Returns'][number];
+export type MonitorParticipantFilter = 'all' | 'attention' | 'advancing';
+export type MonitorParticipantSort = 'name' | 'progress_asc' | 'progress_desc' | 'recent';
 
 export type ClassParticipant = {
   id: string;
@@ -24,10 +28,22 @@ export type ClassParticipant = {
   score: string;
   initials: string;
   autonomy: number;
+  difficulty: number;
+  attemptCount: number;
+  completedAttemptCount: number;
+  helpedAttemptCount: number;
+  lastActivityAt: string | null;
   completedMissions: number;
   assignedMissions: number;
   difficultyTitle: string;
   difficultyDescription: string;
+};
+
+export type MonitorParticipantsPage = {
+  items: ClassParticipant[];
+  total: number;
+  limit: number;
+  offset: number;
 };
 
 export type ParticipantMission = {
@@ -128,20 +144,61 @@ export async function saveParticipantPreferences(userId: string, preferences: Ac
 }
 
 export async function getMonitorClassParticipants(classId: string): Promise<ClassParticipant[]> {
-  const { data, error } = await getSupabase().rpc('get_monitor_class_participants', {
-    target_class_id: classId,
-  });
-  if (error) throw error;
-  return data.map(mapParticipant);
+  return (await getMonitorParticipantsPage({ classId })).items;
 }
 
-export async function getMonitorParticipant(classId: string, participantId: string): Promise<ClassParticipant | null> {
-  const { data, error } = await getSupabase().rpc('get_monitor_participant', {
+export async function getMonitorParticipantsPage(input: {
+  classId: string;
+  periodDays?: 7 | 30 | 90;
+  search?: string;
+  filter?: MonitorParticipantFilter;
+  sort?: MonitorParticipantSort;
+  limit?: number;
+  offset?: number;
+}): Promise<MonitorParticipantsPage> {
+  const limit = input.limit ?? 20;
+  const offset = input.offset ?? 0;
+  const { data, error } = await getSupabase().rpc('get_monitor_participants_page', {
+    target_class_id: input.classId,
+    period_days: input.periodDays ?? 30,
+    search_text: input.search ?? '',
+    progress_filter: input.filter ?? 'all',
+    sort_by: input.sort ?? 'name',
+    page_size: limit,
+    page_offset: offset,
+  });
+  if (error) throw error;
+  return { items: data.map(mapParticipant), total: data[0]?.total_count ?? 0, limit, offset };
+}
+
+export async function getMonitorParticipant(classId: string, participantId: string, periodDays: 7 | 30 | 90 = 30): Promise<ClassParticipant | null> {
+  const { data, error } = await getSupabase().rpc('get_monitor_participant_report', {
     target_class_id: classId,
     target_participant_id: participantId,
+    period_days: periodDays,
   });
   if (error) throw error;
   return data[0] ? mapParticipant(data[0]) : null;
+}
+
+export async function getMonitorParticipantHistory(classId: string, participantId: string, periodDays: 7 | 30 | 90 = 30) {
+  const { data, error } = await getSupabase().rpc('get_monitor_participant_history', {
+    target_class_id: classId,
+    target_participant_id: participantId,
+    period_days: periodDays,
+    result_limit: 50,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function getMonitorClassEvolution(classId: string, periodDays: 7 | 30 | 90) {
+  const { data, error } = await getSupabase().rpc('get_monitor_class_evolution', {
+    target_class_id: classId,
+    period_days: periodDays,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function createClassInvitation(classId: string, email: string, role: AppRole = 'participant') {
@@ -223,12 +280,19 @@ function mapParticipant(row: MonitorParticipantRow): ClassParticipant {
     score: (score / 20).toFixed(1).replace('.', ','),
     initials: initials(row.display_name),
     autonomy: row.autonomy_percent,
+    difficulty: row.difficulty_percent,
+    attemptCount: row.attempt_count,
+    completedAttemptCount: row.completed_attempt_count,
+    helpedAttemptCount: row.helped_attempt_count,
+    lastActivityAt: row.last_activity_at || null,
     completedMissions: row.completed_missions,
     assignedMissions: row.assigned_missions,
-    difficultyTitle: progress < 55 ? 'Acompanhamento recomendado' : 'Progresso em andamento',
-    difficultyDescription: progress < 55
-      ? 'Consulte as missões recentes e ofereça apoio durante a próxima prática.'
-      : 'A pessoa está avançando nas missões atribuídas à turma.',
+    difficultyTitle: row.attempt_count === 0
+      ? 'Sem atividade no período'
+      : row.difficulty_percent > 0 ? 'Apoio registrado' : 'Sem dificuldade registrada',
+    difficultyDescription: row.attempt_count === 0
+      ? 'Ainda não existem tentativas para analisar neste período.'
+      : `${row.difficulty_percent}% das tentativas tiveram erro, dica ou pedido de ajuda.`,
   };
 }
 

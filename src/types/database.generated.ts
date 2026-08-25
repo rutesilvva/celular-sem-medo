@@ -931,6 +931,15 @@ export type Database = {
           status: Database["public"]["Enums"]["attempt_status"]
         }[]
       }
+      get_monitor_class_evolution: {
+        Args: { period_days?: number; target_class_id: string }
+        Returns: {
+          active_participants: number
+          activity_date: string
+          attempt_count: number
+          completed_attempts: number
+        }[]
+      }
       get_monitor_class_participants: {
         Args: { target_class_id: string }
         Returns: {
@@ -985,6 +994,100 @@ export type Database = {
           joined_at: string
           participant_id: string
           progress_percent: number
+        }[]
+      }
+      get_monitor_participant_history: {
+        Args: {
+          period_days?: number
+          result_limit?: number
+          target_class_id: string
+          target_participant_id: string
+        }
+        Returns: {
+          assignment_id: string
+          attempt_id: string
+          attempt_status: Database["public"]["Enums"]["attempt_status"]
+          completed_at: string
+          error_count: number
+          last_activity_at: string
+          mission_title: string
+          requested_help: boolean
+          started_at: string
+          used_audio: boolean
+          used_hint: boolean
+        }[]
+      }
+      get_monitor_participant_metrics: {
+        Args: { period_days?: number; target_class_id: string }
+        Returns: {
+          assigned_missions: number
+          attempt_count: number
+          audio_usage_percent: number
+          autonomy_percent: number
+          avatar_url: string
+          average_score: number
+          completed_attempt_count: number
+          completed_missions: number
+          difficulty_percent: number
+          display_name: string
+          helped_attempt_count: number
+          joined_at: string
+          last_activity_at: string
+          participant_id: string
+          progress_percent: number
+        }[]
+      }
+      get_monitor_participant_report: {
+        Args: {
+          period_days?: number
+          target_class_id: string
+          target_participant_id: string
+        }
+        Returns: {
+          assigned_missions: number
+          attempt_count: number
+          audio_usage_percent: number
+          autonomy_percent: number
+          avatar_url: string
+          average_score: number
+          completed_attempt_count: number
+          completed_missions: number
+          difficulty_percent: number
+          display_name: string
+          helped_attempt_count: number
+          joined_at: string
+          last_activity_at: string
+          participant_id: string
+          progress_percent: number
+        }[]
+      }
+      get_monitor_participants_page: {
+        Args: {
+          page_offset?: number
+          page_size?: number
+          period_days?: number
+          progress_filter?: string
+          search_text?: string
+          sort_by?: string
+          target_class_id: string
+        }
+        Returns: {
+          assigned_missions: number
+          attempt_count: number
+          audio_usage_percent: number
+          autonomy_percent: number
+          avatar_url: string
+          average_score: number
+          completed_attempt_count: number
+          completed_missions: number
+          difficulty_percent: number
+          display_name: string
+          helped_attempt_count: number
+          joined_at: string
+          last_activity_at: string
+          participant_id: string
+          progress_percent: number
+          total_count: number
         }[]
       }
       get_my_access_roles: {
@@ -1202,6 +1305,7 @@ export type Database = {
     }
   }
 }
+
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
