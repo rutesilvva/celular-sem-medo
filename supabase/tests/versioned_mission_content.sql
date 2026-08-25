@@ -30,12 +30,26 @@ values
   ('82000000-0000-4000-8000-000000000001', '81000000-0000-4000-8000-000000000002', 'monitor'),
   ('82000000-0000-4000-8000-000000000002', '81000000-0000-4000-8000-000000000003', 'participant');
 
+insert into public.mission_versions (
+  id, mission_id, version, status, title, description, learning_objective, content_language
+)
+values (
+  '84000000-0000-4000-8000-000000000001',
+  '10000000-0000-4000-8000-000000000002',
+  2,
+  'draft',
+  'Conferir um Pix — revisão futura',
+  'Rascunho sintético usado para provar que conteúdo ainda não publicado permanece oculto.',
+  'Validar a fronteira entre conteúdo publicado e rascunho.',
+  'pt-BR'
+);
+
 insert into public.class_mission_assignments (
   id, class_id, mission_version_id, assigned_by, status, available_from
 )
 values
   ('83000000-0000-4000-8000-000000000001', '82000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '81000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour'),
-  ('83000000-0000-4000-8000-000000000002', '82000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000002', '81000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour');
+  ('83000000-0000-4000-8000-000000000002', '82000000-0000-4000-8000-000000000001', '84000000-0000-4000-8000-000000000001', '81000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated"}', true);

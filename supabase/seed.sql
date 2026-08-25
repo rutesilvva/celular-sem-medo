@@ -49,7 +49,11 @@ set
   category = excluded.category,
   difficulty = excluded.difficulty,
   estimated_minutes = excluded.estimated_minutes,
-  status = excluded.status;
+  status = excluded.status
+where public.missions.id not in (
+  '10000000-0000-4000-8000-000000000002',
+  '10000000-0000-4000-8000-000000000003'
+);
 
 insert into public.mission_versions (
   id,
@@ -110,7 +114,11 @@ set
   learning_objective = excluded.learning_objective,
   content_language = excluded.content_language,
   changelog = excluded.changelog,
-  published_at = excluded.published_at;
+  published_at = excluded.published_at
+where public.mission_versions.id not in (
+  '20000000-0000-4000-8000-000000000002',
+  '20000000-0000-4000-8000-000000000003'
+);
 
 insert into public.mission_steps (
   id,
@@ -243,6 +251,10 @@ set
   audio_text = excluded.audio_text,
   expected_action = excluded.expected_action,
   options = excluded.options,
-  hints = excluded.hints;
+  hints = excluded.hints
+where public.mission_steps.mission_version_id not in (
+  '20000000-0000-4000-8000-000000000002',
+  '20000000-0000-4000-8000-000000000003'
+);
 
 commit;
