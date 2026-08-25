@@ -16,6 +16,7 @@ type AuthContextValue = {
   sessionRole: Role | null;
   availableRoles: Role[];
   currentUser: AuthenticatedUser | null;
+  authenticatedPreferences: AccessibilityPreferences | null;
   participantOnboardingCompleted: boolean;
   acceptAuthenticatedAccount: (account: AuthenticatedAccount) => void;
   selectSessionRole: (role: Role) => boolean;
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [sessionRole, setSessionRole] = useState<Role | null>(null);
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
+  const [authenticatedPreferences, setAuthenticatedPreferences] = useState<AccessibilityPreferences | null>(null);
   const [participantOnboardingCompleted, setParticipantOnboardingCompleted] = useState(false);
   const refreshPromise = useRef<Promise<'refreshed' | 'offline' | 'invalid'> | null>(null);
   const mounted = useRef(true);
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setSessionRole(null);
     setAvailableRoles([]);
     setCurrentUser(null);
+    setAuthenticatedPreferences(null);
     setParticipantOnboardingCompleted(false);
     setErrorCode(nextError);
     setStatus('anonymous');
@@ -52,6 +55,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (!mounted.current) return;
     setAvailableRoles(account.roles);
     setCurrentUser(account.user);
+    setAuthenticatedPreferences(account.preferences);
     setParticipantOnboardingCompleted(account.participantOnboardingCompleted);
     setErrorCode(null);
     if (account.roles.length === 1) setSessionRole(account.roles[0]!);
@@ -140,6 +144,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       onboarding_completed_at: new Date().toISOString(),
     }).eq('user_id', currentUser.id);
     if (error) return false;
+    setAuthenticatedPreferences(preferences);
     setParticipantOnboardingCompleted(true);
     return true;
   }, [availableRoles, currentUser]);
@@ -175,6 +180,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     sessionRole,
     availableRoles,
     currentUser,
+    authenticatedPreferences,
     participantOnboardingCompleted,
     acceptAuthenticatedAccount,
     selectSessionRole,
@@ -186,6 +192,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     availableRoles,
     completeParticipantOnboarding,
     currentUser,
+    authenticatedPreferences,
     errorCode,
     participantOnboardingCompleted,
     restoreSession,
@@ -202,6 +209,10 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used inside AuthProvider');
   return context;
+}
+
+export function useOptionalAuth() {
+  return useContext(AuthContext);
 }
 
 function isNetworkError(error: unknown) {

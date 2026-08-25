@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
-import { AppText, Button, Card, Header, SwitchRow, Tag } from '@/components/ui';
+import { AppText, Button, Card, Header, SwitchRow } from '@/components/ui';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -13,7 +13,7 @@ import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantProfileScreen() {
   const router = useRouter();
-  const { preferences, setPreference, showNotice } = useApp();
+  const { preferences, preferencesSyncStatus, retryPreferencesSync, setPreference, showNotice } = useApp();
   const { currentUser, signOut } = useAuth();
   const classQuery = useMyClass('participant');
   const displayName = currentUser?.name || 'Participante';
@@ -40,7 +40,6 @@ export default function ParticipantProfileScreen() {
           <AppText variant="small" color={colors.textMuted}>
             Participante{classQuery.data ? ` · ${classQuery.data.class_name}` : ''}
           </AppText>
-          <Tag label="Nível 3" tone="purple" />
         </View>
       </Card>
 
@@ -68,7 +67,7 @@ export default function ParticipantProfileScreen() {
           <View style={styles.divider} />
           <SwitchRow
             title="Preferência de áudio automático"
-            description="Configuração demonstrativa; o áudio real entra depois."
+            description="Reproduz automaticamente as instruções disponíveis."
             icon="volume-high-outline"
             value={preferences.autoAudio}
             onValueChange={(value) => setPreference('autoAudio', value)}
@@ -76,12 +75,20 @@ export default function ParticipantProfileScreen() {
           <View style={styles.divider} />
           <SwitchRow
             title="Preferência de resposta por voz"
-            description="Configuração demonstrativa; nenhuma fala é gravada."
+            description="Prepara atividades compatíveis com resposta por voz. Nenhuma fala é gravada agora."
             icon="mic-outline"
             value={preferences.voiceResponse}
             onValueChange={(value) => setPreference('voiceResponse', value)}
           />
         </Card>
+        {preferencesSyncStatus === 'saving' ? (
+          <AppText accessibilityLiveRegion="polite" variant="small" color={colors.textMuted}>Salvando preferências…</AppText>
+        ) : preferencesSyncStatus === 'error' ? (
+          <View accessibilityLiveRegion="polite" style={styles.syncError}>
+            <AppText variant="small" color={colors.danger}>Não foi possível sincronizar. Sua última configuração continua neste aparelho.</AppText>
+            <Button label="Tentar sincronizar novamente" variant="secondary" onPress={retryPreferencesSync} />
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -156,4 +163,5 @@ const styles = StyleSheet.create({
   menuIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
   menuLabel: { flex: 1 },
   pressed: { opacity: 0.62 },
+  syncError: { gap: spacing.sm },
 });

@@ -12,7 +12,7 @@ jest.mock('@/components/Screen', () => {
   const { View } = require('react-native');
   return { Screen: ({ children }: { children: React.ReactNode }) => React.createElement(View, null, children) };
 });
-jest.mock('@/context/AuthContext', () => ({ useAuth: jest.fn() }));
+jest.mock('@/context/AuthContext', () => ({ useAuth: jest.fn(), useOptionalAuth: () => mockedAuth() }));
 jest.mock('@/lib/google-auth', () => ({ ...jest.requireActual('@/lib/google-auth'), signInWithGoogle: jest.fn() }));
 
 const mockedAuth = jest.mocked(useAuth);
@@ -57,6 +57,16 @@ describe('Google login screen', () => {
     mockedAuth.mockReturnValue(authState({ status: 'authenticated', sessionRole: role, participantOnboardingCompleted: true }) as never);
     render(<AppProvider><LoginScreen /></AppProvider>);
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith(destination));
+  });
+
+  it('shows onboarding only while the participant has not completed it', async () => {
+    mockedAuth.mockReturnValue(authState({ status: 'authenticated', sessionRole: 'participant', participantOnboardingCompleted: false }) as never);
+    const screen = render(<AppProvider><LoginScreen /></AppProvider>);
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/participant/welcome'));
+    mockReplace.mockClear();
+    mockedAuth.mockReturnValue(authState({ status: 'authenticated', sessionRole: 'participant', participantOnboardingCompleted: true }) as never);
+    screen.rerender(<AppProvider><LoginScreen /></AppProvider>);
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/participant/home'));
   });
 });
 

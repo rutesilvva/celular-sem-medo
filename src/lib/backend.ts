@@ -1,5 +1,6 @@
 import type { Database, Json } from '@/types/database.generated';
 import { getSupabase } from '@/lib/supabase';
+import type { AccessibilityPreferences } from '@/context/AppContext';
 
 type AppRole = Database['public']['Enums']['app_role'];
 type AttemptEventType = Database['public']['Enums']['attempt_event_type'];
@@ -114,6 +115,16 @@ export async function getMyClassContexts() {
   const { data, error } = await getSupabase().rpc('get_my_class_contexts');
   if (error) throw error;
   return data;
+}
+
+export async function saveParticipantPreferences(userId: string, preferences: AccessibilityPreferences) {
+  const { error } = await getSupabase().from('preferences').update({
+    larger_text: preferences.largerText,
+    high_contrast: preferences.highContrast,
+    auto_audio: preferences.autoAudio,
+    voice_response: preferences.voiceResponse,
+  }).eq('user_id', userId);
+  if (error) throw error;
 }
 
 export async function getMonitorClassParticipants(classId: string): Promise<ClassParticipant[]> {

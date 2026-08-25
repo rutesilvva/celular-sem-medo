@@ -21,7 +21,12 @@ function supabaseMock(options: { roles?: string[]; errorCode?: string | null; oa
       signOut,
     },
     rpc: jest.fn().mockResolvedValue({ data: [{ access_roles: options.roles ?? ['participant'], error_code: options.errorCode ?? null }], error: null }),
-    from: jest.fn((table: string) => ({ select: () => ({ eq: () => ({ maybeSingle: jest.fn().mockResolvedValue({ data: table === 'profiles' ? { display_name: 'Pessoa Persistida', avatar_url: null } : { onboarding_completed_at: null } }) }) }) })),
+    from: jest.fn((table: string) => ({ select: () => ({ eq: () => ({ maybeSingle: jest.fn().mockResolvedValue({
+      data: table === 'profiles'
+        ? { display_name: 'Pessoa Persistida', avatar_url: null }
+        : { larger_text: false, high_contrast: true, auto_audio: false, voice_response: true, onboarding_completed_at: '2026-01-01T00:00:00Z' },
+      error: null,
+    }) }) }) })),
   };
   mockedGetSupabase.mockReturnValue(client as never);
   return client;
@@ -36,7 +41,12 @@ describe('Google authentication', () => {
   it('exchanges a successful callback and returns only server roles', async () => {
     const client = supabaseMock({ roles: ['participant', 'monitor'] });
     mockedBrowser.mockResolvedValue({ type: 'success', url: 'celularsemmedo://auth/callback?code=valid' } as never);
-    await expect(signInWithGoogle()).resolves.toMatchObject({ roles: ['participant', 'monitor'], user: { name: 'Pessoa Persistida' } });
+    await expect(signInWithGoogle()).resolves.toMatchObject({
+      roles: ['participant', 'monitor'],
+      user: { name: 'Pessoa Persistida' },
+      preferences: { largerText: false, highContrast: true, autoAudio: false, voiceResponse: true },
+      participantOnboardingCompleted: true,
+    });
     expect(client.auth.exchangeCodeForSession).toHaveBeenCalledWith('valid');
   });
 

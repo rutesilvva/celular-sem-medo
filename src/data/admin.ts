@@ -13,7 +13,7 @@ export const initialManagedUsers: ManagedUser[] = [
   { id: 'admin-patricia', name: 'Patrícia Souza', email: 'patricia@exemplo.com', role: 'admin', scope: 'Acesso global', currentUser: true },
   { id: 'admin-rafael', name: 'Rafael Lima', email: 'rafael@exemplo.com', role: 'admin', scope: 'Acesso global' },
   { id: 'monitor-helena', name: 'Helena Martins', email: 'helena@exemplo.com', role: 'monitor', scope: 'Turma Conectados' },
-  { id: 'participant-maria', name: 'Maria da Silva', email: 'maria@exemplo.com', role: 'participant', scope: 'Turma Conectados' },
+  { id: 'participant-example', name: 'Participante de exemplo', email: 'participante@exemplo.com', role: 'participant', scope: 'Turma Conectados' },
   { id: 'participant-joao', name: 'João Pereira', email: 'joao@exemplo.com', role: 'participant', scope: 'Turma Conectados' },
 ];
 

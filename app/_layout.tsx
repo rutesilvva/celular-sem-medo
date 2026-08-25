@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppFeedback } from '@/components/AppFeedback';
-import { AppProvider } from '@/context/AppContext';
+import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { canAccessRole } from '@/features/auth/authorization';
 import { colors } from '@/theme/tokens';
@@ -25,8 +25,9 @@ export default function RootLayout() {
 
 function AppNavigator() {
   const { sessionRole, status } = useAuth();
+  const { preferencesReady } = useApp();
 
-  if (status === 'bootstrapping' || status === 'refreshing') {
+  if (status === 'bootstrapping' || status === 'refreshing' || (status === 'authenticated' && !preferencesReady)) {
     return (
       <View accessibilityLabel="Verificando sessão segura" style={styles.boot}>
         <ActivityIndicator color={colors.primary} size="large" />

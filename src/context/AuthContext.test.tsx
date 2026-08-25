@@ -18,6 +18,7 @@ jest.mock('expo-web-browser', () => ({ dismissAuthSession: jest.fn() }));
 const account = {
   roles: ['participant'] as const,
   user: { id: 'user-1', name: 'Pessoa', email: 'person@test.invalid', avatarUrl: null },
+  preferences: { largerText: true, highContrast: false, autoAudio: true, voiceResponse: false },
   participantOnboardingCompleted: false,
 };
 const wrapper = ({ children }: PropsWithChildren) => <AuthProvider>{children}</AuthProvider>;

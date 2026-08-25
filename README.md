@@ -223,7 +223,7 @@ npm run typecheck
 npm run audit
 ```
 
-Ainda não há suíte automatizada de testes unitários ou end-to-end; por isso, o percurso manual dos dois perfis faz parte da validação desta base.
+Os testes automatizados, cobertura, export multiplataforma, banco e varredura de segredos rodam no quality gate descrito em `docs/quality/automated-testing.md`.
 
 ## Acessibilidade
 
@@ -237,25 +237,21 @@ A interface foi desenhada para leitura e toque confortáveis em telas pequenas:
 - navegação inferior com estado de aba selecionada;
 - transições curtas, de aproximadamente 200 ms;
 - botões de áudio com resposta visual temporária, inclusive ondas e mensagem de reprodução;
-- opções demonstrativas para texto maior, alto contraste, áudio automático e resposta por voz.
+- preferências persistidas por conta para texto maior, alto contraste, áudio automático e resposta por voz.
 
-As preferências de letras maiores e contraste reforçado são aplicadas pelos componentes de texto compartilhados. Áudio automático e resposta por voz permanecem identificados como demonstração: a base ainda não integra leitor de voz, reconhecimento de fala ou persistência das configurações.
+As preferências são carregadas do backend após a autenticação, aplicadas pelos componentes compartilhados e mantidas em cache seguro por usuário. A base ainda não captura voz; a preferência apenas prepara a experiência para recursos futuros sujeitos aos controles de privacidade.
 
 ## Dados mockados e limitações
 
-Os dados de participantes, missões e indicadores estão centralizados em `src/data/mock.ts`. O `AppContext` mantém o papel autenticado localmente, preferências, conclusão da missão, tentativas, uso de ajuda e feedbacks temporários enquanto o app está aberto. Ao concluir a prática, o progresso de Maria é atualizado também nas telas do monitor.
+Identidade, vínculos, missões, tentativas, progresso e preferências do participante vêm do Supabase. Mocks restantes são limitados às áreas administrativas ainda não migradas e ao modo explícito de desenvolvimento.
 
 Nesta versão da interface:
 
-- login e senha não são autenticados; o guard de rotas separa os dois perfis apenas dentro da sessão local;
-- a fundação do banco existe, mas o aplicativo ainda não está conectado à API,
-  à autenticação nem ao armazenamento persistente;
-- recarregar o aplicativo restaura os valores iniciais;
+- o Google OAuth ainda depende dos clientes nativos e fingerprints da issue de configuração por ambiente;
 - áudio e fala são representados por feedback visual, sem reprodução ou captura real;
 - o simulador não envia mensagens, fotos, localização ou transações;
 - filtros, notificações, exportação e algumas opções de perfil são demonstrativos;
-- métricas e gráficos usam valores estáticos ou cálculos feitos sobre os mocks;
-- a interface não deve ser usada como fonte de dados reais sobre participantes.
+- algumas ações administrativas ainda usam dados demonstrativos explícitos.
 
 Para evoluir esta base para produção, os próximos passos são integrar o cliente
 Supabase, configurar Google OAuth, persistir a sessão com armazenamento seguro,

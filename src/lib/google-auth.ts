@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
-import type { Role } from '@/context/AppContext';
+import type { AccessibilityPreferences, Role } from '@/context/AppContext';
 import { getSupabase } from '@/lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -26,6 +26,7 @@ export type AuthenticatedUser = {
 export type AuthenticatedAccount = {
   roles: Role[];
   user: AuthenticatedUser;
+  preferences: AccessibilityPreferences;
   participantOnboardingCompleted: boolean;
 };
 
@@ -95,10 +96,13 @@ export async function loadAuthenticatedAccount(): Promise<AuthenticatedAccount> 
   }
 
   const authUser = sessionData.session.user;
-  const [{ data: profile }, { data: preferences }] = await Promise.all([
+  const [profileResult, preferencesResult] = await Promise.all([
     supabase.from('profiles').select('display_name, avatar_url').eq('id', authUser.id).maybeSingle(),
-    supabase.from('preferences').select('onboarding_completed_at').eq('user_id', authUser.id).maybeSingle(),
+    supabase.from('preferences').select('larger_text, high_contrast, auto_audio, voice_response, onboarding_completed_at').eq('user_id', authUser.id).maybeSingle(),
   ]);
+  if (profileResult.error || preferencesResult.error) throw profileResult.error ?? preferencesResult.error;
+  const profile = profileResult.data;
+  const preferences = preferencesResult.data;
   const metadata = authUser.user_metadata;
   const metadataName = typeof metadata.full_name === 'string' ? metadata.full_name : null;
   const metadataAvatar = typeof metadata.avatar_url === 'string' ? metadata.avatar_url : null;
@@ -110,6 +114,12 @@ export async function loadAuthenticatedAccount(): Promise<AuthenticatedAccount> 
       name: profile?.display_name || metadataName || 'Pessoa usuária',
       email: authUser.email ?? '',
       avatarUrl: profile?.avatar_url || metadataAvatar,
+    },
+    preferences: {
+      largerText: preferences?.larger_text ?? true,
+      highContrast: preferences?.high_contrast ?? false,
+      autoAudio: preferences?.auto_audio ?? true,
+      voiceResponse: preferences?.voice_response ?? false,
     },
     participantOnboardingCompleted: Boolean(preferences?.onboarding_completed_at),
   };

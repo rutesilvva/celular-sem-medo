@@ -9,6 +9,7 @@ module.exports = {
     'src/features/mission-engine/executor.ts',
     'src/lib/env.ts',
     'src/lib/google-auth.ts',
+    'src/lib/preferences-cache.ts',
   ],
   coverageThreshold: {
     global: { branches: 70, functions: 70, lines: 70, statements: 70 },

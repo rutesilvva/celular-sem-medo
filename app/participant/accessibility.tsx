@@ -69,7 +69,7 @@ export default function ParticipantAccessibilityScreen() {
         <View style={styles.divider} />
         <SwitchRow
           title="Preferência de áudio automático"
-          description="Configuração demonstrativa; o áudio real será integrado depois."
+          description="Reproduz automaticamente as instruções disponíveis."
           icon="volume-high-outline"
           value={preferences.autoAudio}
           onValueChange={(value) => setPreference('autoAudio', value)}
@@ -77,7 +77,7 @@ export default function ParticipantAccessibilityScreen() {
         <View style={styles.divider} />
         <SwitchRow
           title="Preferência de resposta por voz"
-          description="Configuração demonstrativa; nenhuma fala é gravada nesta versão."
+          description="Prepara atividades compatíveis com resposta por voz. Nenhuma fala é gravada nesta versão."
           icon="mic-outline"
           value={preferences.voiceResponse}
           onValueChange={(value) => setPreference('voiceResponse', value)}
