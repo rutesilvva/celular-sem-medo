@@ -15,15 +15,16 @@ insert into public.memberships (class_id, user_id, role) values
 insert into public.class_mission_assignments (id, class_id, mission_version_id, assigned_by, status, available_from)
 values
   ('93000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000004', '91000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour'),
-  ('93000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '91000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour');
+  ('93000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '91000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour'),
+  ('93000000-0000-4000-8000-000000000003', '92000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000006', '91000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour');
 
-select is((select count(*) from public.missions where slug in ('pedir-um-uber', 'baixar-um-aplicativo')), 2::bigint, 'new safe missions exist');
-select is((select count(*) from public.mission_steps where mission_version_id in ('20000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000005')), 6::bigint, 'new missions are data-driven');
-select is((select count(*) from public.mission_steps where mission_version_id in ('20000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000005') and safety_note ~* '(não|nenhum|nada)'), 6::bigint, 'every new step documents absence of real effects');
+select is((select count(*) from public.missions where slug in ('pedir-um-uber', 'baixar-um-aplicativo', 'simular-compra-shopee')), 3::bigint, 'new safe missions exist');
+select is((select count(*) from public.mission_steps where mission_version_id in ('20000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000005', '20000000-0000-4000-8000-000000000006')), 10::bigint, 'new missions are data-driven');
+select is((select count(*) from public.mission_steps where mission_version_id in ('20000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000005', '20000000-0000-4000-8000-000000000006') and safety_note ~* '(não|nenhum|nada)'), 10::bigint, 'every new step documents absence of real effects');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
-select is((select count(*) from public.get_participant_mission_catalog()), 2::bigint, 'participant receives both assigned missions');
+select is((select count(*) from public.get_participant_mission_catalog()), 3::bigint, 'participant receives all assigned missions');
 select is((select attempt_id from public.start_or_resume_mission_attempt('93000000-0000-4000-8000-000000000001', '94000000-0000-4000-8000-000000000001')), '94000000-0000-4000-8000-000000000001'::uuid, 'executor starts requested idempotent attempt id');
 select is((select current_step_id from public.start_or_resume_mission_attempt('93000000-0000-4000-8000-000000000001', '94000000-0000-4000-8000-000000000002')), '30000000-0000-4000-8000-000000000010'::uuid, 'resume restores persisted current step');
 select is((select attempt_id from public.start_or_resume_mission_attempt('93000000-0000-4000-8000-000000000001', '94000000-0000-4000-8000-000000000002')), '94000000-0000-4000-8000-000000000001'::uuid, 'resume does not create a parallel attempt');

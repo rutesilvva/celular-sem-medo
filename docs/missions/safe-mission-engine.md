@@ -2,8 +2,8 @@
 
 O executor interpreta `mission_steps` e não conhece jornadas específicas. Cada
 passo informa instrução, ação esperada, opções, dicas, áudio e aviso de segurança.
-O mesmo componente executa Enviar uma foto, Pedir um Uber, Baixar um aplicativo
-e novas definições compatíveis.
+O mesmo componente executa Enviar uma foto, Pedir um Uber, Baixar um aplicativo,
+Simular uma compra na Shopee e novas definições compatíveis.
 
 ## Garantia de ausência de efeitos reais
 

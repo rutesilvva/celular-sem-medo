@@ -24,6 +24,7 @@ const missionIcons = {
   'Enviar uma foto': 'image-outline',
   'Conferir um Pix': 'shield-checkmark-outline',
   'Compartilhar localização': 'location-outline',
+  'Simular uma compra na Shopee': 'cart-outline',
 } as const;
 
 export default function MonitorMissionsScreen() {
