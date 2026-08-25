@@ -25,6 +25,10 @@ Os testes Google usam somente mocks. Não precisam de conta, client secret ou
 conectividade com o Google e cobrem sucesso, cancelamento, acesso negado, falta
 de configuração, conta sem vínculo, conta bloqueada, expiração e indisponibilidade.
 
+O `.npmrc` mantém `npm install` e `npm ci` com a mesma resolução de peers. Isso
+é necessário enquanto os peers opcionais de `expo-modules-core` e
+`react-native-worklets` do Expo 57 publicam intervalos incompatíveis entre si.
+
 ## Pull requests
 
 `.github/workflows/quality.yml` executa três checks independentes:
