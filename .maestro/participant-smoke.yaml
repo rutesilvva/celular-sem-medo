@@ -1,0 +1,24 @@
+appId: br.com.celularsemmedo.app
+name: Participante conclui uma missão segura
+tags:
+  - smoke
+  - participant
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Sua trilha está avançando"
+- tapOn: "Missões"
+- assertVisible: "Escolher missão"
+- tapOn:
+    text: ".*Enviar uma foto.*"
+- tapOn: "Começar treino"
+- assertVisible: "Simulação segura"
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Continuar|Tocar no clipe|Flores"
+          optional: true
+- assertVisible: "Você conseguiu!"
+- tapOn: "Continuar minha trilha"
+- assertVisible: "Meu progresso"

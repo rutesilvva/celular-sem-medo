@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppFeedback } from '@/components/AppFeedback';
 import { AppProvider } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { canAccessRole } from '@/features/auth/authorization';
 import { colors } from '@/theme/tokens';
 
 export default function RootLayout() {
@@ -47,7 +48,7 @@ function AppNavigator() {
       <Stack.Screen name="auth/callback" />
       <Stack.Screen name="+not-found" />
 
-      <Stack.Protected guard={status === 'authenticated' && sessionRole === 'participant'}>
+      <Stack.Protected guard={canAccessRole(status, sessionRole, 'participant')}>
         <Stack.Screen name="participant/welcome" />
         <Stack.Screen name="participant/accessibility" />
         <Stack.Screen name="participant/home" />
@@ -61,7 +62,7 @@ function AppNavigator() {
         <Stack.Screen name="participant/profile" />
       </Stack.Protected>
 
-      <Stack.Protected guard={status === 'authenticated' && sessionRole === 'monitor'}>
+      <Stack.Protected guard={canAccessRole(status, sessionRole, 'monitor')}>
         <Stack.Screen name="monitor/home" />
         <Stack.Screen name="monitor/participants" />
         <Stack.Screen name="monitor/participant-details" />
@@ -70,7 +71,7 @@ function AppNavigator() {
         <Stack.Screen name="monitor/profile" />
       </Stack.Protected>
 
-      <Stack.Protected guard={status === 'authenticated' && sessionRole === 'admin'}>
+      <Stack.Protected guard={canAccessRole(status, sessionRole, 'admin')}>
         <Stack.Screen name="admin/home" />
         <Stack.Screen name="admin/users" />
         <Stack.Screen name="admin/classes" />

@@ -5,6 +5,7 @@ node_modules/
 .expo/
 dist/
 web-build/
+coverage/
 expo-env.d.ts
 supabase/.branches/
 supabase/.temp/

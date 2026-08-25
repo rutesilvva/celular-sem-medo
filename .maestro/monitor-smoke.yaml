@@ -1,0 +1,16 @@
+appId: br.com.celularsemmedo.app
+name: Monitor acessa somente sua turma
+tags:
+  - smoke
+  - monitor
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Visão geral"
+- tapOn: "Participantes"
+- assertVisible: "Buscar participante pelo nome"
+- tapOn: "Relatórios"
+- assertVisible: "Relatórios"
+- assertVisible: "Resumo calculado no backend"
+- tapOn: "Missões"
+- assertVisible: "Acompanhe a prática da turma"

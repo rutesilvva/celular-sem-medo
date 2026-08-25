@@ -3,6 +3,7 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 import { Platform } from 'react-native';
 
 import type { AccessibilityPreferences, Role } from '@/context/AppContext';
+import { canSelectRole } from '@/features/auth/authorization';
 import { GoogleAuthError, loadAuthenticatedAccount } from '@/lib/google-auth';
 import type { AuthenticatedAccount, AuthenticatedUser, GoogleAuthErrorCode } from '@/lib/google-auth';
 import { clearStoredSession, getSupabase } from '@/lib/supabase';
@@ -124,7 +125,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [acceptAuthenticatedAccount, clearAuthState, restoreSession]);
 
   const selectSessionRole = useCallback((nextRole: Role) => {
-    if (status !== 'authenticated' || !availableRoles.includes(nextRole)) return false;
+    if (!canSelectRole(status, availableRoles, nextRole)) return false;
     setSessionRole(nextRole);
     return true;
   }, [availableRoles, status]);
@@ -145,12 +146,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signOut = useCallback(async () => {
     const supabase = getSupabase();
+    let timeout: ReturnType<typeof setTimeout> | null = null;
     try {
       await Promise.race([
         supabase.auth.signOut({ scope: 'global' }),
-        new Promise((resolve) => setTimeout(resolve, logoutTimeoutMs)),
+        new Promise((resolve) => { timeout = setTimeout(resolve, logoutTimeoutMs); }),
       ]);
+    } catch {
+      // O logout local permanece obrigatório mesmo sem rede ou backend.
     } finally {
+      if (timeout) clearTimeout(timeout);
       supabase.auth.stopAutoRefresh();
       await clearStoredSession();
       if (Platform.OS !== 'web') {

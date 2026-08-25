@@ -7,9 +7,19 @@ export type PublicConfig = {
 };
 
 export function getPublicConfig(): PublicConfig {
-  const appEnvironment = process.env.EXPO_PUBLIC_APP_ENV;
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  return parsePublicConfig({
+    appEnvironment: process.env.EXPO_PUBLIC_APP_ENV,
+    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    supabasePublishableKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  });
+}
+
+export function parsePublicConfig(input: {
+  appEnvironment?: string;
+  supabaseUrl?: string;
+  supabasePublishableKey?: string;
+}): PublicConfig {
+  const { appEnvironment, supabaseUrl, supabasePublishableKey } = input;
 
   if (!['development', 'staging', 'production'].includes(appEnvironment ?? '')) {
     throw new Error('APP_ENV_INVALID');

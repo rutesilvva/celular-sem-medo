@@ -1,0 +1,78 @@
+name: Quality gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: App / lint, types, tests and export
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+      EXPO_PUBLIC_APP_ENV: development
+      EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS: "false"
+      EXPO_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_only
+      EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID: ci.apps.googleusercontent.com
+      EXPO_PUBLIC_GOOGLE_AUTH_ANDROID_CLIENT_ID: ci.apps.googleusercontent.com
+      EXPO_PUBLIC_GOOGLE_AUTH_IOS_CLIENT_ID: ci.apps.googleusercontent.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:ci
+      - run: npm run export
+      - run: npm audit --audit-level=high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+
+  database:
+    name: Database / migrations, RLS and auth
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx supabase start
+      - run: npx supabase db lint --local --level error
+      - run: npx supabase test db
+      - run: npm run backend:test:auth
+      - if: always()
+        run: npx supabase stop --no-backup
+
+  secrets:
+    name: Security / secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
