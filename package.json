@@ -19,6 +19,7 @@
     "submit:production": "eas submit --profile production --platform all",
     "update:preview": "eas update --channel preview",
     "update:production": "eas update --channel production",
+    "release:check": "node scripts/validate-release.mjs",
     "export": "expo export --platform all",
     "audit": "npm audit --audit-level=moderate",
     "lint": "expo lint",

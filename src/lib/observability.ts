@@ -15,20 +15,26 @@ export type SafeDiagnostic = {
   errorCode: string;
   timestamp: string;
   environment: string;
+  anonymousId?: string;
 };
 
 export type SafeUsageEvent = {
   event: UsageEventName;
   timestamp: string;
   environment: string;
+  anonymousId?: string;
   missionId?: string;
   completed?: boolean;
 };
 
 export type ObservabilityTransport = (diagnostic: SafeDiagnostic | SafeUsageEvent) => void | Promise<void>;
 let transport: ObservabilityTransport | null = null;
+let optedOut = false;
+let anonymousId: string | undefined;
 
 export function configureObservability(next: ObservabilityTransport | null) { transport = next; }
+export function configureObservabilityOptOut(next: boolean) { optedOut = next; }
+export function configureObservabilityIdentity(next: string | undefined) { anonymousId = next; }
 
 export function sanitizeError(error: unknown): string {
   const source = error instanceof Error ? `${error.name}:${error.message}` : typeof error === 'string' ? error : 'unknown';
@@ -65,11 +71,12 @@ export function captureUsageEvent<T extends Record<string, unknown>>(event: Usag
     event,
     timestamp: new Date().toISOString(),
     environment: process.env.EXPO_PUBLIC_APP_ENV ?? 'unknown',
+    ...(anonymousId ? { anonymousId } : {}),
     missionId: typeof payload.missionId === 'string' ? payload.missionId : undefined,
     completed: typeof payload.completed === 'boolean' ? payload.completed : undefined,
   };
   const sanitized = sanitizeEventPayload(safe as Record<string, unknown>) as SafeUsageEvent;
-  if (process.env.EXPO_PUBLIC_OBSERVABILITY_ENABLED === 'true') void transport?.(sanitized);
+  if (!optedOut && process.env.EXPO_PUBLIC_OBSERVABILITY_ENABLED === 'true') void transport?.(sanitized);
   return sanitized;
 }
 
@@ -79,7 +86,8 @@ export function captureTechnicalError(event: TechnicalEvent, error: unknown) {
     errorCode: sanitizeError(error),
     timestamp: new Date().toISOString(),
     environment: process.env.EXPO_PUBLIC_APP_ENV ?? 'unknown',
+    ...(anonymousId ? { anonymousId } : {}),
   };
-  if (process.env.EXPO_PUBLIC_OBSERVABILITY_ENABLED === 'true') void transport?.(diagnostic);
+  if (!optedOut && process.env.EXPO_PUBLIC_OBSERVABILITY_ENABLED === 'true') void transport?.(diagnostic);
   return diagnostic;
 }

@@ -17,3 +17,7 @@ Se outro aparelho já possuir uma tentativa ativa para a mesma missão, `start_o
 ## Isolamento de conta
 
 Todas as chaves incluem o UUID do proprietário, cada registro repete `ownerId` e o sincronizador ignora qualquer fila cujo proprietário difira da sessão. Logout remove a identidade criptografada, mas preserva filas sob a chave anterior; uma conta diferente não consegue lê-las nem enviá-las.
+
+## Recuperação e retenção local
+
+A tela **Perfil → Atividades salvas no aparelho** mostra tentativas, passo restaurável, horário, eventos pendentes e ações de sincronização individual ou total. Registros inválidos ou JSON corrompido são descartados sem bloquear as demais filas. Tentativas sincronizadas sem pendências expiram após 90 dias; uma tentativa com qualquer operação pendente nunca é removida automaticamente.

@@ -7,6 +7,7 @@ import { AppFeedback } from '@/components/AppFeedback';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { NotificationRouter } from '@/components/NotificationRouter';
 import { OfflineSyncManager } from '@/components/OfflineSyncManager';
+import { ObservabilityManager } from '@/components/ObservabilityManager';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { canAccessRole } from '@/features/auth/authorization';
@@ -34,6 +35,7 @@ export default function RootLayout() {
             <AppNavigator />
             <NotificationRouter />
             <OfflineSyncManager />
+            <ObservabilityManager />
             <StatusBar style="dark" />
             <AppFeedback />
           </AppProvider>
@@ -125,6 +127,7 @@ function AppNavigator() {
         <Stack.Screen name="participant/progress" />
         <Stack.Screen name="participant/profile" />
         <Stack.Screen name="participant/help-requests" />
+        <Stack.Screen name="participant/offline-activities" />
       </Stack.Protected>
 
       <Stack.Protected guard={canAccessRole(status, sessionRole, 'admin')}>

@@ -68,6 +68,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const speechGeneration = useRef(0);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preferenceMutation = useRef(0);
+  const audioOwnerId = useRef(userId);
 
   useEffect(() => {
     let active = true;
@@ -97,6 +98,18 @@ export function AppProvider({ children }: PropsWithChildren) {
     void Speech.stop();
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
   }, []);
+
+  useEffect(() => {
+    if (audioOwnerId.current === userId) return;
+    audioOwnerId.current = userId;
+    speechGeneration.current += 1;
+    void Speech.stop();
+    queueMicrotask(() => {
+      setAudioStatus('idle');
+      setAudioMessage(null);
+      setAudioError(null);
+    });
+  }, [userId]);
 
   const persistPreferences = useCallback((next: AccessibilityPreferences) => {
     if (!userId) return;

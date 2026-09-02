@@ -18,6 +18,13 @@ export function VoiceResponseRecorder() {
   const [message, setMessage] = useState('A gravação só começa quando você tocar no botão.');
 
   useEffect(() => () => { player.pause(); if (recordingUri) void FileSystem.deleteAsync(recordingUri, { idempotent: true }); }, [player, recordingUri]);
+  useEffect(() => () => {
+    player.pause();
+    void recorder.stop().catch(() => undefined).then(() => {
+      if (recorder.uri) return FileSystem.deleteAsync(recorder.uri, { idempotent: true });
+      return undefined;
+    });
+  }, [player, recorder]);
 
   const start = async () => {
     try {

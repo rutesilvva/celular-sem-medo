@@ -13,6 +13,7 @@ Os perfis apontam, respectivamente, para os ambientes EAS `development`, `previe
 ## Checklist de promoção
 
 1. A árvore Git deve estar limpa e os testes, typecheck, lint e Expo Doctor devem passar.
+   Execute `npm run release:check`; no CI de cada ambiente use `RELEASE_ENV=staging npm run release:check` ou `RELEASE_ENV=production npm run release:check` para exigir as variáveis correspondentes sem imprimir seus valores.
 2. Rode `npm run build:preview:android` e `npm run build:preview:ios` e instale ambos em aparelhos limpos.
 3. Valide login, logout, sessão expirada, aluno, administrador, modo avião, TTS, microfone negado e deep link de ajuda.
 4. Registre commit, números dos builds, backend e clientes OAuth usados.

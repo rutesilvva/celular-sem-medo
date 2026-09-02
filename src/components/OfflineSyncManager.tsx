@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { listOfflineAttempts, syncBackoffMs } from '@/lib/offline-store';
+import { cleanupOfflineAttempts, listOfflineAttempts, syncBackoffMs } from '@/lib/offline-store';
 import { synchronizeOfflineAttempt } from '@/lib/offline-sync';
 import { synchronizeAssessments } from '@/lib/offline-assessments';
 
@@ -21,6 +21,7 @@ export function OfflineSyncManager() {
       if (!network.isConnected || network.isInternetReachable === false) return;
       let sent = 0;
       try {
+        await cleanupOfflineAttempts(currentUser.id);
         for (const attempt of await listOfflineAttempts(currentUser.id)) {
           if (attempt.ownerId !== currentUser.id || !attempt.pending.length) continue;
           const before = attempt.pending.length;

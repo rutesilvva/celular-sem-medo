@@ -48,8 +48,22 @@ export async function writeOfflineAttempt(attempt: OfflineAttempt) {
   await AsyncStorage.setItem(key(attempt.ownerId, `attempt:${attempt.assignmentId}`), JSON.stringify(attempt));
 }
 export async function listOfflineAttempts(ownerId: string): Promise<OfflineAttempt[]> {
-  const prefix=`${namespace}:${ownerId}:attempt:`;
-  try { const keys=(await AsyncStorage.getAllKeys()).filter(item=>item.startsWith(prefix));const pairs=await AsyncStorage.multiGet(keys);return pairs.flatMap(([,value])=>{if(!value)return[];try{const parsed=JSON.parse(value) as OfflineAttempt;return parsed.ownerId===ownerId?[parsed]:[]}catch{return[]}}); } catch { return []; }
+  const prefix = `${namespace}:${ownerId}:attempt:`;
+  try {
+    const keys = (await AsyncStorage.getAllKeys()).filter((item) => item.startsWith(prefix));
+    const pairs = await AsyncStorage.multiGet(keys);
+    const valid: OfflineAttempt[] = [];
+    const corrupted: string[] = [];
+    for (const [storageKey, value] of pairs) {
+      try {
+        const parsed = value ? JSON.parse(value) as unknown : null;
+        if (isOfflineAttempt(parsed, ownerId)) valid.push(parsed);
+        else corrupted.push(storageKey);
+      } catch { corrupted.push(storageKey); }
+    }
+    if (corrupted.length) await AsyncStorage.multiRemove(corrupted);
+    return valid.sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
+  } catch { return []; }
 }
 export async function removeOfflineAttempt(ownerId: string, assignmentId: string) {
   await AsyncStorage.removeItem(key(ownerId, `attempt:${assignmentId}`));
@@ -62,6 +76,33 @@ export function markOfflineEventSynced(attempt: OfflineAttempt, operationId: str
   return { ...attempt, remoteAttemptId, remoteNextSequence: nextSequence, pending: attempt.pending.filter((item) => item.operationId !== operationId), syncedOperationIds: [...attempt.syncedOperationIds, operationId].slice(-200), updatedAt: new Date().toISOString() };
 }
 export function syncBackoffMs(retryCount: number) { return Math.min(30_000, 1_000 * (2 ** Math.max(0, retryCount - 1))); }
+export async function cleanupOfflineAttempts(ownerId: string, now = Date.now(), retentionMs = 90 * 24 * 60 * 60 * 1000) {
+  const attempts = await listOfflineAttempts(ownerId);
+  const expired = attempts.filter((attempt) => !attempt.pending.length && now - Date.parse(attempt.updatedAt) > retentionMs);
+  await Promise.all(expired.map((attempt) => removeOfflineAttempt(ownerId, attempt.assignmentId)));
+  return { removed: expired.length, retained: attempts.length - expired.length };
+}
+export async function getOfflineQueueSummary(ownerId: string) {
+  const attempts = await listOfflineAttempts(ownerId);
+  return {
+    attempts,
+    pendingAttempts: attempts.filter((attempt) => attempt.pending.length > 0).length,
+    pendingEvents: attempts.reduce((total, attempt) => total + attempt.pending.length, 0),
+  };
+}
 async function readJson<T>(storageKey: string): Promise<T | null> {
   try { const value = await AsyncStorage.getItem(storageKey); return value ? JSON.parse(value) as T : null; } catch { return null; }
+}
+
+function isOfflineAttempt(value: unknown, ownerId: string): value is OfflineAttempt {
+  if (!value || typeof value !== 'object') return false;
+  const attempt = value as Partial<OfflineAttempt>;
+  return attempt.ownerId === ownerId
+    && typeof attempt.assignmentId === 'string'
+    && typeof attempt.localAttemptId === 'string'
+    && typeof attempt.updatedAt === 'string'
+    && Number.isFinite(Date.parse(attempt.updatedAt))
+    && Boolean(attempt.run && typeof attempt.run.stepIndex === 'number')
+    && Array.isArray(attempt.pending)
+    && Array.isArray(attempt.syncedOperationIds);
 }

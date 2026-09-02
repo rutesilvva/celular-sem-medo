@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
@@ -10,6 +11,7 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMyClass } from '@/hooks/useClassData';
 import { colors, radius, spacing } from '@/theme/tokens';
+import { initializeObservabilityPreference, setObservabilityOptOut } from '@/lib/observability-preferences';
 
 export default function ParticipantProfileScreen() {
   const router = useRouter();
@@ -17,6 +19,8 @@ export default function ParticipantProfileScreen() {
   const { currentUser, signOut } = useAuth();
   const classQuery = useMyClass('participant');
   const displayName = currentUser?.name || 'Participante';
+  const [diagnosticsOptOut, setDiagnosticsOptOut] = useState(false);
+  useEffect(() => { void initializeObservabilityPreference().then((value) => setDiagnosticsOptOut(value.optedOut)); }, []);
 
   const logout = async () => {
     try {
@@ -75,7 +79,7 @@ export default function ParticipantProfileScreen() {
           <View style={styles.divider} />
           <SwitchRow
             title="Preferência de resposta por voz"
-            description="Prepara atividades compatíveis com resposta por voz. Nenhuma fala é gravada agora."
+            description="Permite gravar, revisar e apagar uma resposta local após sua autorização."
             icon="mic-outline"
             value={preferences.voiceResponse}
             onValueChange={(value) => setPreference('voiceResponse', value)}
@@ -114,6 +118,11 @@ export default function ParticipantProfileScreen() {
             label="Privacidade e segurança"
             onPress={() => showNotice('Seus treinos são simulações seguras')}
           />
+          <View style={styles.divider} />
+          <MenuRow icon="cloud-offline-outline" label="Atividades salvas no aparelho" onPress={() => router.push('/participant/offline-activities')} />
+        </Card>
+        <Card>
+          <SwitchRow title="Não enviar diagnósticos anônimos" description="Desativa eventos técnicos sem nome, e-mail ou conteúdo." icon="analytics-outline" value={diagnosticsOptOut} onValueChange={(value) => { setDiagnosticsOptOut(value); void setObservabilityOptOut(value); }} />
         </Card>
       </View>
 
@@ -129,7 +138,7 @@ export default function ParticipantProfileScreen() {
 }
 
 function MenuRow({ icon, label, onPress }: {
-  icon: 'help-circle-outline' | 'chatbubble-ellipses-outline' | 'shield-checkmark-outline';
+  icon: 'help-circle-outline' | 'chatbubble-ellipses-outline' | 'shield-checkmark-outline' | 'cloud-offline-outline';
   label: string;
   onPress: () => void;
 }) {

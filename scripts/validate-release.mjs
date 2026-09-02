@@ -1,0 +1,39 @@
+import { readFile } from 'node:fs/promises';
+
+const failures = [];
+const [appConfig, easConfigText, packageText] = await Promise.all([
+  readFile(new URL('../app.config.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../eas.json', import.meta.url), 'utf8'),
+  readFile(new URL('../package.json', import.meta.url), 'utf8'),
+]);
+const eas = JSON.parse(easConfigText);
+const pkg = JSON.parse(packageText);
+
+for (const expected of ["scheme: 'celularsemmedo'", "bundleIdentifier: 'br.com.celularsemmedo.app'", "package: 'br.com.celularsemmedo.app'"]) {
+  if (!appConfig.includes(expected)) failures.push(`Identidade nativa ausente: ${expected}`);
+}
+for (const profile of ['development', 'preview', 'production']) {
+  if (!eas.build?.[profile]) failures.push(`Perfil EAS ausente: ${profile}`);
+}
+if (eas.cli?.requireCommit !== true) failures.push('EAS deve exigir árvore Git commitada.');
+if (!eas.build?.production?.autoIncrement) failures.push('Build production deve incrementar a versão nativa.');
+for (const script of ['test:ci', 'build:preview:android', 'build:preview:ios', 'build:production', 'submit:production']) {
+  if (!pkg.scripts?.[script]) failures.push(`Script obrigatório ausente: ${script}`);
+}
+
+const target = process.env.RELEASE_ENV;
+if (target) {
+  const required = ['EXPO_PUBLIC_APP_ENV', 'EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID'];
+  for (const name of required) if (!process.env[name]) failures.push(`Variável ausente para ${target}: ${name}`);
+  if (process.env.EXPO_PUBLIC_APP_ENV !== target) failures.push(`EXPO_PUBLIC_APP_ENV deve ser ${target}.`);
+  for (const name of Object.keys(process.env)) {
+    if (name.startsWith('EXPO_PUBLIC_') && /SECRET|PASSWORD|SERVICE_ROLE|PRIVATE_KEY|ACCESS_TOKEN/i.test(name)) failures.push(`Segredo não pode ser público: ${name}`);
+  }
+}
+
+if (failures.length) {
+  console.error(failures.map((failure) => `- ${failure}`).join('\n'));
+  process.exitCode = 1;
+} else {
+  console.log(`Configuração de release válida${target ? ` para ${target}` : ''}.`);
+}
