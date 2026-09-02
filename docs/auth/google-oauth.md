@@ -5,7 +5,7 @@ os projetos Google/Supabase e as contas de teste.
 
 ## Contrato do fluxo
 
-Participante, monitor e administrador usam o mesmo botão **Continuar com Google**.
+Aluno e administrador usam o mesmo botão **Continuar com Google**.
 O navegador seguro abre o consentimento, retorna ao aplicativo e o Supabase troca
 o código PKCE por uma sessão. Só então `get_my_access_roles()` devolve os papéis
 autorizados; o cliente nunca cria papel.
@@ -112,7 +112,7 @@ Execute por plataforma e ambiente suportado:
    credencial de conta de teste.
 
 Staging deve possuir duas contas Google sintéticas, uma com vínculo `participant`
-e outra `monitor`. Senhas não entram em Git, issues ou documentação; ficam no
+e outra com concessão global `admin`. Senhas não entram em Git, issues ou documentação; ficam no
 cofre da equipe com MFA e recuperação controlada.
 
 ## Pendências externas para fechar o aceite
