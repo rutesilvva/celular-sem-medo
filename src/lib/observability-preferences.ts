@@ -3,12 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { configureObservabilityIdentity, configureObservabilityOptOut } from '@/lib/observability';
 
 const optOutKey = 'csm-observability-opt-out-v1';
-const identityKey = 'csm-observability-pseudonym-v1';
+const diagnosticIdSlot = '@csm/diag/id';
 
 export async function initializeObservabilityPreference() {
-  const [storedOptOut, storedIdentity] = await Promise.all([AsyncStorage.getItem(optOutKey), AsyncStorage.getItem(identityKey)]);
+  const [storedOptOut, storedIdentity] = await Promise.all([AsyncStorage.getItem(optOutKey), AsyncStorage.getItem(diagnosticIdSlot)]);
   const identity = storedIdentity ?? createUuid();
-  if (!storedIdentity) await AsyncStorage.setItem(identityKey, identity);
+  if (!storedIdentity) await AsyncStorage.setItem(diagnosticIdSlot, identity);
   const optedOut = storedOptOut === 'true';
   configureObservabilityIdentity(identity);
   configureObservabilityOptOut(optedOut);
