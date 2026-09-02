@@ -9,8 +9,8 @@ insert into auth.users (
 )
 values
   ('a0000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'participant-a@test.invalid', '', now(), now(), now(), '{}', '{"name":"Participante A"}'),
-  ('a0000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'monitor-a@test.invalid', '', now(), now(), now(), '{}', '{"name":"Monitor A"}'),
-  ('a0000000-0000-4000-8000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'monitor-b@test.invalid', '', now(), now(), now(), '{}', '{"name":"Monitor B"}'),
+  ('a0000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin-a@test.invalid', '', now(), now(), now(), '{}', '{"name":"Admin A"}'),
+  ('a0000000-0000-4000-8000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin-b@test.invalid', '', now(), now(), now(), '{}', '{"name":"Admin B"}'),
   ('a0000000-0000-4000-8000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'orphan@test.invalid', '', now(), now(), now(), '{}', '{"name":"Sem vínculo"}');
 
 update public.profiles
@@ -30,8 +30,8 @@ values
 insert into public.memberships (class_id, user_id, role)
 values
   ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'participant'),
-  ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000002', 'monitor'),
-  ('b0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000003', 'monitor'),
+  ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000002', 'admin'),
+  ('b0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000003', 'admin'),
   ('b0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'participant');
 
 insert into public.class_mission_assignments (
@@ -80,30 +80,30 @@ select is((select count(*) from public.attempts), 1::bigint, 'participant reads 
 select is((select error_code from public.get_my_auth_context()), null, 'provisioned account has no auth error');
 select is((select access_roles from public.get_my_auth_context()), array['participant']::text[], 'account receives only server-side role');
 
-select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"monitor"}}', true);
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin"}}', true);
 select throws_ok(
-  $$select * from public.get_monitor_attempt_summaries('b0000000-0000-4000-8000-000000000001')$$,
+  $$select * from public.get_admin_attempt_summaries('b0000000-0000-4000-8000-000000000001')$$,
   '42501',
-  'monitor access required',
-  'forged monitor claim does not grant monitor access'
+  'admin access required',
+  'forged admin claim does not grant admin access'
 );
 
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
-select is((select count(*) from public.attempts), 0::bigint, 'monitor cannot select raw attempts');
-select is((select count(*) from public.get_monitor_attempt_summaries('b0000000-0000-4000-8000-000000000001')), 1::bigint, 'monitor reads safe attempt summary for own class');
-select isnt(public.can_monitor_user('a0000000-0000-4000-8000-000000000002'), true, 'monitor cannot read another monitor through participant helper');
+select is((select count(*) from public.attempts), 0::bigint, 'admin cannot select raw attempts');
+select is((select count(*) from public.get_admin_attempt_summaries('b0000000-0000-4000-8000-000000000001')), 1::bigint, 'admin reads safe attempt summary for own class');
+select isnt(public.can_admin_user('a0000000-0000-4000-8000-000000000002'), true, 'admin cannot read another admin through participant helper');
 
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000003","role":"authenticated"}', true);
 select throws_ok(
-  $$select * from public.get_monitor_attempt_summaries('b0000000-0000-4000-8000-000000000001')$$,
+  $$select * from public.get_admin_attempt_summaries('b0000000-0000-4000-8000-000000000001')$$,
   '42501',
-  'monitor access required',
-  'monitor cannot request another class summary'
+  'admin access required',
+  'admin cannot request another class summary'
 );
 
 reset role;
 select throws_ok(
-  $$insert into public.memberships (class_id, user_id, role) values ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'monitor')$$,
+  $$insert into public.memberships (class_id, user_id, role) values ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'admin')$$,
   '23505',
   null,
   'one user cannot hold two roles in the same class'
@@ -116,7 +116,7 @@ where id = 'a0000000-0000-4000-8000-000000000002';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
 select isnt(public.is_account_active(), true, 'blocked account is not active');
-select is((select count(*) from public.classes), 0::bigint, 'blocked monitor loses operational access immediately');
+select is((select count(*) from public.classes), 0::bigint, 'blocked admin loses operational access immediately');
 select is((select error_code from public.get_my_auth_context()), 'ACCOUNT_BLOCKED', 'blocked account receives explicit code');
 select is((select cardinality(access_roles) from public.get_my_auth_context()), 0, 'blocked account receives no roles');
 

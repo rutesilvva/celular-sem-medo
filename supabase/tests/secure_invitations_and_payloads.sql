@@ -9,7 +9,7 @@ insert into auth.users (
 )
 values
   ('f0000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'participant@secure.test', '', now(), now(), now(), '{}', '{"name":"Participante"}'),
-  ('f0000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'monitor@secure.test', '', now(), now(), now(), '{}', '{"name":"Monitor"}'),
+  ('f0000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@secure.test', '', now(), now(), now(), '{}', '{"name":"Admin"}'),
   ('f0000000-0000-4000-8000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'invited@secure.test', '', now(), now(), now(), '{}', '{"name":"Convidada"}'),
   ('f0000000-0000-4000-8000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'other@secure.test', '', now(), now(), now(), '{}', '{"name":"Outra pessoa"}');
 
@@ -20,9 +20,10 @@ insert into public.classes (id, name, slug)
 values ('f1000000-0000-4000-8000-000000000001', 'Turma segura', 'teste-turma-segura');
 
 insert into public.memberships (class_id, user_id, role)
-values
-  ('f1000000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000001', 'participant'),
-  ('f1000000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000002', 'monitor');
+values ('f1000000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000001', 'participant');
+
+insert into public.administrators(user_id,status)
+values ('f0000000-0000-4000-8000-000000000002','active');
 
 insert into public.class_mission_assignments (
   id, class_id, mission_version_id, assigned_by, status, available_from
@@ -57,7 +58,7 @@ select * from public.create_class_invitation(
 );
 
 select is((select char_length(invitation_token) from test_invitation), 64, 'server creates a 256-bit hexadecimal token');
-select is((select count(*) from public.list_class_invitations('f1000000-0000-4000-8000-000000000001')), 1::bigint, 'monitor lists invitation through safe RPC');
+select is((select count(*) from public.list_class_invitations('f1000000-0000-4000-8000-000000000001')), 1::bigint, 'admin lists invitation through safe RPC');
 select throws_ok(
   $$select token_hash from public.invitations$$,
   '42501', null,
@@ -69,9 +70,9 @@ select throws_ok(
   'authenticated client cannot provide invitation hash'
 );
 select throws_ok(
-  $$select * from public.create_class_invitation('f1000000-0000-4000-8000-000000000001', 'x@secure.test', 'monitor')$$,
-  '42501', 'monitor can only invite participants',
-  'monitor cannot create monitor invitation'
+  $$select * from public.create_class_invitation('f1000000-0000-4000-8000-000000000001', 'x@secure.test', 'admin')$$,
+  '22023', 'INVITATION_ROLE_INVALID',
+  'admin cannot create admin invitation'
 );
 
 reset role;

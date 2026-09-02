@@ -12,12 +12,12 @@ select is((select count(*) from public.mission_steps where mission_version_id = 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)
 values
   ('b1000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','content-participant@test.invalid','',now(),now(),now(),'{}','{"name":"Participante Conteúdo"}'),
-  ('b1000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','content-monitor@test.invalid','',now(),now(),now(),'{}','{"name":"Monitor Conteúdo"}');
+  ('b1000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','content-admin@test.invalid','',now(),now(),now(),'{}','{"name":"Admin Conteúdo"}');
 update public.profiles set account_status = 'active' where id::text like 'b1000000-%';
 insert into public.classes (id,name,slug) values ('b2000000-0000-4000-8000-000000000001','Turma Conteúdo','turma-conteudo-pix-localizacao');
 insert into public.memberships (class_id,user_id,role) values
   ('b2000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001','participant'),
-  ('b2000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000002','monitor');
+  ('b2000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000002','admin');
 insert into public.class_mission_assignments (id,class_id,mission_version_id,assigned_by,status,available_from) values
   ('b3000000-0000-4000-8000-000000000001','b2000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000002','b1000000-0000-4000-8000-000000000002','active',now()-interval '1 hour'),
   ('b3000000-0000-4000-8000-000000000002','b2000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000003','b1000000-0000-4000-8000-000000000002','active',now()-interval '1 hour');

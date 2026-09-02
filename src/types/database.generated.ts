@@ -316,6 +316,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "class_mission_assignments_assigned_by_profile_fk"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "class_mission_assignments_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
@@ -328,13 +335,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mission_versions"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "class_mission_assignments_monitor_membership_fk"
-            columns: ["class_id", "assigned_by", "assigned_by_role"]
-            isOneToOne: false
-            referencedRelation: "memberships"
-            referencedColumns: ["class_id", "user_id", "role"]
           },
         ]
       }
@@ -431,8 +431,8 @@ export type Database = {
       help_requests: {
         Row: {
           acknowledged_at: string | null
-          assigned_monitor_id: string | null
-          assigned_monitor_role: Database["public"]["Enums"]["app_role"]
+          assigned_admin_id: string | null
+          assigned_admin_role: Database["public"]["Enums"]["app_role"]
           attempt_id: string | null
           class_id: string
           created_at: string
@@ -452,8 +452,8 @@ export type Database = {
         }
         Insert: {
           acknowledged_at?: string | null
-          assigned_monitor_id?: string | null
-          assigned_monitor_role?: Database["public"]["Enums"]["app_role"]
+          assigned_admin_id?: string | null
+          assigned_admin_role?: Database["public"]["Enums"]["app_role"]
           attempt_id?: string | null
           class_id: string
           created_at?: string
@@ -473,8 +473,8 @@ export type Database = {
         }
         Update: {
           acknowledged_at?: string | null
-          assigned_monitor_id?: string | null
-          assigned_monitor_role?: Database["public"]["Enums"]["app_role"]
+          assigned_admin_id?: string | null
+          assigned_admin_role?: Database["public"]["Enums"]["app_role"]
           attempt_id?: string | null
           class_id?: string
           created_at?: string
@@ -494,15 +494,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "help_requests_assigned_monitor_membership_fk"
-            columns: [
-              "class_id",
-              "assigned_monitor_id",
-              "assigned_monitor_role",
-            ]
+            foreignKeyName: "help_requests_assigned_admin_profile_fk_v2"
+            columns: ["assigned_admin_id"]
             isOneToOne: false
-            referencedRelation: "memberships"
-            referencedColumns: ["class_id", "user_id", "role"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "help_requests_attempt_scope_fk"
@@ -1033,7 +1029,10 @@ export type Database = {
           stored_event_id: string
         }[]
       }
-      can_monitor_user: { Args: { target_user_id: string }; Returns: boolean }
+      can_administer_user: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       cancel_my_help_request: {
         Args: { target_help_request_id: string }
         Returns: Database["public"]["Enums"]["help_request_status"]
@@ -1070,18 +1069,7 @@ export type Database = {
         }[]
       }
       expire_invitation_secrets: { Args: never; Returns: number }
-      get_admin_class_contexts: {
-        Args: never
-        Returns: {
-          access_role: string
-          class_id: string
-          class_name: string
-          class_shift: string
-          joined_at: string
-          membership_id: string | null
-        }[]
-      }
-      get_monitor_attempt_event_summaries: {
+      get_admin_attempt_event_summaries: {
         Args: { target_attempt_id: string; target_class_id: string }
         Returns: {
           attempt_id: string
@@ -1093,7 +1081,7 @@ export type Database = {
           step_id: string
         }[]
       }
-      get_monitor_attempt_summaries: {
+      get_admin_attempt_summaries: {
         Args: { target_class_id: string }
         Returns: {
           assignment_id: string
@@ -1108,7 +1096,18 @@ export type Database = {
           status: Database["public"]["Enums"]["attempt_status"]
         }[]
       }
-      get_monitor_class_evolution: {
+      get_admin_class_contexts: {
+        Args: never
+        Returns: {
+          access_role: string
+          class_id: string
+          class_name: string
+          class_shift: string
+          joined_at: string
+          membership_id: string
+        }[]
+      }
+      get_admin_class_evolution: {
         Args: { period_days?: number; target_class_id: string }
         Returns: {
           active_participants: number
@@ -1117,7 +1116,7 @@ export type Database = {
           completed_attempts: number
         }[]
       }
-      get_monitor_class_participants: {
+      get_admin_class_participants: {
         Args: { target_class_id: string }
         Returns: {
           assigned_missions: number
@@ -1132,7 +1131,7 @@ export type Database = {
           progress_percent: number
         }[]
       }
-      get_monitor_class_progress: {
+      get_admin_class_progress: {
         Args: { period_days?: number; target_class_id: string }
         Returns: {
           active_participants: number
@@ -1145,7 +1144,7 @@ export type Database = {
           participant_count: number
         }[]
       }
-      get_monitor_help_requests: {
+      get_admin_help_requests: {
         Args: { target_class_id: string }
         Returns: {
           acknowledged_at: string
@@ -1161,7 +1160,7 @@ export type Database = {
           step_title: string
         }[]
       }
-      get_monitor_mission_progress: {
+      get_admin_mission_progress: {
         Args: { period_days?: number; target_class_id: string }
         Returns: {
           assignment_id: string
@@ -1174,7 +1173,7 @@ export type Database = {
           title: string
         }[]
       }
-      get_monitor_participant: {
+      get_admin_participant: {
         Args: { target_class_id: string; target_participant_id: string }
         Returns: {
           assigned_missions: number
@@ -1189,7 +1188,7 @@ export type Database = {
           progress_percent: number
         }[]
       }
-      get_monitor_participant_history: {
+      get_admin_participant_history: {
         Args: {
           period_days?: number
           result_limit?: number
@@ -1210,7 +1209,7 @@ export type Database = {
           used_hint: boolean
         }[]
       }
-      get_monitor_participant_metrics: {
+      get_admin_participant_metrics: {
         Args: { period_days?: number; target_class_id: string }
         Returns: {
           assigned_missions: number
@@ -1230,7 +1229,7 @@ export type Database = {
           progress_percent: number
         }[]
       }
-      get_monitor_participant_report: {
+      get_admin_participant_report: {
         Args: {
           period_days?: number
           target_class_id: string
@@ -1254,7 +1253,7 @@ export type Database = {
           progress_percent: number
         }[]
       }
-      get_monitor_participants_page: {
+      get_admin_participants_page: {
         Args: {
           page_offset?: number
           page_size?: number
@@ -1428,7 +1427,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_class_monitor: { Args: { target_class_id: string }; Returns: boolean }
+      is_class_admin: { Args: { target_class_id: string }; Returns: boolean }
       is_global_admin: { Args: never; Returns: boolean }
       is_published_mission_version: {
         Args: { target_version_id: string }
@@ -1493,7 +1492,7 @@ export type Database = {
         | "account_deactivation_requested"
         | "class_archived"
       administrator_status: "active" | "revoked"
-      app_role: "participant" | "monitor"
+      app_role: "participant" | "admin"
       assignment_status: "scheduled" | "active" | "archived"
       attempt_event_type:
         | "attempt_started"
@@ -1661,7 +1660,7 @@ export const Constants = {
         "class_archived",
       ],
       administrator_status: ["active", "revoked"],
-      app_role: ["participant", "monitor"],
+      app_role: ["participant", "admin"],
       assignment_status: ["scheduled", "active", "archived"],
       attempt_event_type: [
         "attempt_started",

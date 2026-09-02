@@ -5,14 +5,14 @@ import {
   ClassContext,
   ClassParticipant,
   getAdminClassContexts,
-  getMonitorParticipant,
-  getMonitorParticipantHistory,
-  getMonitorParticipantsPage,
+  getAdminParticipant,
+  getAdminParticipantHistory,
+  getAdminParticipantsPage,
   getMyClassContexts,
-  type MonitorParticipantFilter,
-  type MonitorParticipantHistory,
-  type MonitorParticipantsPage,
-  type MonitorParticipantSort,
+  type AdminParticipantFilter,
+  type AdminParticipantHistory,
+  type AdminParticipantsPage,
+  type AdminParticipantSort,
 } from '@/lib/backend';
 
 type QueryState<T> = {
@@ -23,52 +23,65 @@ type QueryState<T> = {
   retry: () => void;
 };
 
+export function pickPrimaryClassContext<T extends Pick<ClassContext, 'class_id' | 'class_name' | 'joined_at' | 'access_role'>>(contexts: T[] | null | undefined): T | null {
+  if (!contexts || contexts.length === 0) return null;
+
+  return contexts.slice().sort((left, right) => {
+    const leftTime = left.joined_at ? new Date(left.joined_at).getTime() : Number.NEGATIVE_INFINITY;
+    const rightTime = right.joined_at ? new Date(right.joined_at).getTime() : Number.NEGATIVE_INFINITY;
+
+    if (rightTime !== leftTime) return rightTime - leftTime;
+    return left.class_name.localeCompare(right.class_name, 'pt-BR') || left.class_id.localeCompare(right.class_id);
+  })[0] ?? null;
+}
+
 export function useMyClass(role: Role): QueryState<ClassContext> {
   const loader = useCallback(async () => {
     const contexts = await getMyClassContexts();
-    return contexts.find((context) => context.access_role === role) ?? null;
+    const filtered = contexts.filter((context) => context.access_role === role);
+    return pickPrimaryClassContext(filtered) ?? null;
   }, [role]);
   return useQuery(loader);
 }
 
-/** Administradores são globais; a primeira turma ativa inicia o acompanhamento. */
+/** Administradores são globais; a turma principal é a mais recente ativa, nunca a primeira arbitrária. */
 export function useAdminClass(): QueryState<ClassContext> {
   const loader = useCallback(async () => {
     const contexts = await getAdminClassContexts();
-    return contexts[0] ?? null;
+    return pickPrimaryClassContext(contexts) ?? null;
   }, []);
   return useQuery(loader);
 }
 
-export function useMonitorParticipants(classId: string | null, options: {
+export function useAdminParticipants(classId: string | null, options: {
   periodDays?: 7 | 30 | 90;
   search?: string;
-  filter?: MonitorParticipantFilter;
-  sort?: MonitorParticipantSort;
+  filter?: AdminParticipantFilter;
+  sort?: AdminParticipantSort;
   limit?: number;
   offset?: number;
-} = {}): QueryState<MonitorParticipantsPage> {
+} = {}): QueryState<AdminParticipantsPage> {
   const { periodDays = 30, search = '', filter = 'all', sort = 'name', limit = 20, offset = 0 } = options;
   const loader = useCallback(
     () => classId
-      ? getMonitorParticipantsPage({ classId, periodDays, search, filter, sort, limit, offset })
+      ? getAdminParticipantsPage({ classId, periodDays, search, filter, sort, limit, offset })
       : Promise.resolve({ items: [], total: 0, limit, offset }),
     [classId, filter, limit, offset, periodDays, search, sort],
   );
   return useQuery(loader);
 }
 
-export function useMonitorParticipant(classId: string | null, participantId: string | null, periodDays: 7 | 30 | 90 = 30): QueryState<ClassParticipant> {
+export function useAdminParticipant(classId: string | null, participantId: string | null, periodDays: 7 | 30 | 90 = 30): QueryState<ClassParticipant> {
   const loader = useCallback(
-    () => classId && participantId ? getMonitorParticipant(classId, participantId, periodDays) : Promise.resolve(null),
+    () => classId && participantId ? getAdminParticipant(classId, participantId, periodDays) : Promise.resolve(null),
     [classId, participantId, periodDays],
   );
   return useQuery(loader);
 }
 
-export function useMonitorParticipantHistory(classId: string | null, participantId: string | null, periodDays: 7 | 30 | 90 = 30): QueryState<MonitorParticipantHistory[]> {
+export function useAdminParticipantHistory(classId: string | null, participantId: string | null, periodDays: 7 | 30 | 90 = 30): QueryState<AdminParticipantHistory[]> {
   const loader = useCallback(
-    () => classId && participantId ? getMonitorParticipantHistory(classId, participantId, periodDays) : Promise.resolve([]),
+    () => classId && participantId ? getAdminParticipantHistory(classId, participantId, periodDays) : Promise.resolve([]),
     [classId, participantId, periodDays],
   );
   return useQuery(loader);

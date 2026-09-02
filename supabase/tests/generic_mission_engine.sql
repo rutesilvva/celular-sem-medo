@@ -6,12 +6,12 @@ select plan(12);
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)
 values
   ('91000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'engine@mission.test', '', now(), now(), now(), '{}', '{"name":"Executor"}'),
-  ('91000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'engine-monitor@mission.test', '', now(), now(), now(), '{}', '{"name":"Monitor"}');
+  ('91000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'engine-admin@mission.test', '', now(), now(), now(), '{}', '{"name":"Admin"}');
 update public.profiles set account_status = 'active' where id in ('91000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000002');
 insert into public.classes (id, name, slug) values ('92000000-0000-4000-8000-000000000001', 'Turma Executor', 'turma-executor');
 insert into public.memberships (class_id, user_id, role) values
   ('92000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001', 'participant'),
-  ('92000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000002', 'monitor');
+  ('92000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000002', 'admin');
 insert into public.class_mission_assignments (id, class_id, mission_version_id, assigned_by, status, available_from)
 values
   ('93000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000004', '91000000-0000-4000-8000-000000000002', 'active', now() - interval '1 hour'),

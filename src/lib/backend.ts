@@ -2,25 +2,24 @@ import type { Database, Json } from '@/types/database.generated';
 import { getSupabase } from '@/lib/supabase';
 import type { AccessibilityPreferences } from '@/context/AppContext';
 
-type AppRole = Database['public']['Enums']['app_role'];
 type AttemptEventType = Database['public']['Enums']['attempt_event_type'];
 export type ClassContext = Database['public']['Functions']['get_my_class_contexts']['Returns'][number];
-type MonitorParticipantRow = Database['public']['Functions']['get_monitor_participant_metrics']['Returns'][number];
+type AdminParticipantRow = Database['public']['Functions']['get_admin_participant_metrics']['Returns'][number];
 type MissionCatalogRow = Database['public']['Functions']['get_participant_mission_catalog']['Returns'][number];
 type MissionDetailsRow = Database['public']['Functions']['get_participant_mission_details']['Returns'][number];
 type MissionStepRow = Database['public']['Functions']['get_participant_mission_steps']['Returns'][number];
 export type ParticipantProgress = Database['public']['Functions']['get_participant_progress']['Returns'][number];
 export type ParticipantCategoryProgress = Database['public']['Functions']['get_participant_category_progress']['Returns'][number];
-export type MonitorClassProgress = Database['public']['Functions']['get_monitor_class_progress']['Returns'][number];
-export type MonitorMissionProgress = Database['public']['Functions']['get_monitor_mission_progress']['Returns'][number];
+export type AdminClassProgress = Database['public']['Functions']['get_admin_class_progress']['Returns'][number];
+export type AdminMissionProgress = Database['public']['Functions']['get_admin_mission_progress']['Returns'][number];
 export type ParticipantHelpRequest = Database['public']['Functions']['get_my_help_requests']['Returns'][number];
-export type MonitorHelpRequest = Database['public']['Functions']['get_monitor_help_requests']['Returns'][number];
+export type AdminHelpRequest = Database['public']['Functions']['get_admin_help_requests']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
-export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_monitor';
-export type MonitorParticipantHistory = Database['public']['Functions']['get_monitor_participant_history']['Returns'][number];
-export type MonitorClassEvolution = Database['public']['Functions']['get_monitor_class_evolution']['Returns'][number];
-export type MonitorParticipantFilter = 'all' | 'attention' | 'advancing';
-export type MonitorParticipantSort = 'name' | 'progress_asc' | 'progress_desc' | 'recent';
+export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
+export type AdminParticipantHistory = Database['public']['Functions']['get_admin_participant_history']['Returns'][number];
+export type AdminClassEvolution = Database['public']['Functions']['get_admin_class_evolution']['Returns'][number];
+export type AdminParticipantFilter = 'all' | 'attention' | 'advancing';
+export type AdminParticipantSort = 'name' | 'progress_asc' | 'progress_desc' | 'recent';
 
 export type ClassParticipant = {
   id: string;
@@ -43,7 +42,7 @@ export type ClassParticipant = {
   difficultyDescription: string;
 };
 
-export type MonitorParticipantsPage = {
+export type AdminParticipantsPage = {
   items: ClassParticipant[];
   total: number;
   limit: number;
@@ -119,14 +118,14 @@ export async function getParticipantCategoryProgress(): Promise<ParticipantCateg
   return data;
 }
 
-export async function getMonitorClassProgress(classId: string, periodDays: number): Promise<MonitorClassProgress> {
-  const { data, error } = await getSupabase().rpc('get_monitor_class_progress', { target_class_id: classId, period_days: periodDays });
+export async function getAdminClassProgress(classId: string, periodDays: number): Promise<AdminClassProgress> {
+  const { data, error } = await getSupabase().rpc('get_admin_class_progress', { target_class_id: classId, period_days: periodDays });
   if (error || !data?.[0]) throw error ?? new Error('CLASS_PROGRESS_NOT_AVAILABLE');
   return data[0];
 }
 
-export async function getMonitorMissionProgress(classId: string, periodDays: number): Promise<MonitorMissionProgress[]> {
-  const { data, error } = await getSupabase().rpc('get_monitor_mission_progress', { target_class_id: classId, period_days: periodDays });
+export async function getAdminMissionProgress(classId: string, periodDays: number): Promise<AdminMissionProgress[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_mission_progress', { target_class_id: classId, period_days: periodDays });
   if (error) throw error;
   return data;
 }
@@ -153,22 +152,22 @@ export async function saveParticipantPreferences(userId: string, preferences: Ac
   if (error) throw error;
 }
 
-export async function getMonitorClassParticipants(classId: string): Promise<ClassParticipant[]> {
-  return (await getMonitorParticipantsPage({ classId })).items;
+export async function getAdminClassParticipants(classId: string): Promise<ClassParticipant[]> {
+  return (await getAdminParticipantsPage({ classId })).items;
 }
 
-export async function getMonitorParticipantsPage(input: {
+export async function getAdminParticipantsPage(input: {
   classId: string;
   periodDays?: 7 | 30 | 90;
   search?: string;
-  filter?: MonitorParticipantFilter;
-  sort?: MonitorParticipantSort;
+  filter?: AdminParticipantFilter;
+  sort?: AdminParticipantSort;
   limit?: number;
   offset?: number;
-}): Promise<MonitorParticipantsPage> {
+}): Promise<AdminParticipantsPage> {
   const limit = input.limit ?? 20;
   const offset = input.offset ?? 0;
-  const { data, error } = await getSupabase().rpc('get_monitor_participants_page', {
+  const { data, error } = await getSupabase().rpc('get_admin_participants_page', {
     target_class_id: input.classId,
     period_days: input.periodDays ?? 30,
     search_text: input.search ?? '',
@@ -181,8 +180,8 @@ export async function getMonitorParticipantsPage(input: {
   return { items: data.map(mapParticipant), total: data[0]?.total_count ?? 0, limit, offset };
 }
 
-export async function getMonitorParticipant(classId: string, participantId: string, periodDays: 7 | 30 | 90 = 30): Promise<ClassParticipant | null> {
-  const { data, error } = await getSupabase().rpc('get_monitor_participant_report', {
+export async function getAdminParticipant(classId: string, participantId: string, periodDays: 7 | 30 | 90 = 30): Promise<ClassParticipant | null> {
+  const { data, error } = await getSupabase().rpc('get_admin_participant_report', {
     target_class_id: classId,
     target_participant_id: participantId,
     period_days: periodDays,
@@ -191,8 +190,8 @@ export async function getMonitorParticipant(classId: string, participantId: stri
   return data[0] ? mapParticipant(data[0]) : null;
 }
 
-export async function getMonitorParticipantHistory(classId: string, participantId: string, periodDays: 7 | 30 | 90 = 30) {
-  const { data, error } = await getSupabase().rpc('get_monitor_participant_history', {
+export async function getAdminParticipantHistory(classId: string, participantId: string, periodDays: 7 | 30 | 90 = 30) {
+  const { data, error } = await getSupabase().rpc('get_admin_participant_history', {
     target_class_id: classId,
     target_participant_id: participantId,
     period_days: periodDays,
@@ -202,8 +201,8 @@ export async function getMonitorParticipantHistory(classId: string, participantI
   return data;
 }
 
-export async function getMonitorClassEvolution(classId: string, periodDays: 7 | 30 | 90) {
-  const { data, error } = await getSupabase().rpc('get_monitor_class_evolution', {
+export async function getAdminClassEvolution(classId: string, periodDays: 7 | 30 | 90) {
+  const { data, error } = await getSupabase().rpc('get_admin_class_evolution', {
     target_class_id: classId,
     period_days: periodDays,
   });
@@ -211,11 +210,11 @@ export async function getMonitorClassEvolution(classId: string, periodDays: 7 | 
   return data;
 }
 
-export async function createClassInvitation(classId: string, email: string, role: AppRole = 'participant') {
+export async function createClassInvitation(classId: string, email: string) {
   const { data, error } = await getSupabase().rpc('create_class_invitation', {
     target_class_id: classId,
     invited_email: email,
-    invited_role: role,
+    invited_role: 'participant',
   });
   if (error || !data?.[0]) throw error ?? new Error('INVITATION_NOT_CREATED');
   return data[0];
@@ -292,8 +291,8 @@ export async function getMyHelpRequests(): Promise<ParticipantHelpRequest[]> {
   return data;
 }
 
-export async function getMonitorHelpRequests(classId: string): Promise<MonitorHelpRequest[]> {
-  const { data, error } = await getSupabase().rpc('get_monitor_help_requests', { target_class_id: classId });
+export async function getAdminHelpRequests(classId: string): Promise<AdminHelpRequest[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_help_requests', { target_class_id: classId });
   if (error) throw error;
   return data;
 }
@@ -326,7 +325,7 @@ function createUuid() {
   });
 }
 
-function mapParticipant(row: MonitorParticipantRow): ClassParticipant {
+function mapParticipant(row: AdminParticipantRow): ClassParticipant {
   const score = Number(row.average_score);
   const progress = row.progress_percent;
   return {

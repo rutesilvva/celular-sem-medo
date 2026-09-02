@@ -8,11 +8,11 @@ import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAdminClass } from '@/hooks/useClassData';
-import { useMonitorProgress } from '@/hooks/useProgressData';
+import { useAdminProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type MissionFilter = 'all' | 'active' | 'planned';
-type MonitorMission = { id: string; title: string; completion: number; difficulty: number; audio: number; status: 'Ativa' };
+type AdminMission = { id: string; title: string; completion: number; difficulty: number; audio: number; status: 'Ativa' };
 
 const filters: readonly { key: MissionFilter; label: string }[] = [
   { key: 'all', label: 'Todas' },
@@ -27,12 +27,12 @@ const missionIcons = {
   'Simular uma compra na Shopee': 'cart-outline',
 } as const;
 
-export default function MonitorMissionsScreen() {
+export default function AdminMissionsScreen() {
   const [filter, setFilter] = useState<MissionFilter>('all');
   const { showNotice } = useApp();
   const classQuery = useAdminClass();
-  const progressQuery = useMonitorProgress(classQuery.data?.class_id ?? null, 30);
-  const missions: MonitorMission[] = progressQuery.missions.data.map((mission) => ({ id: mission.assignment_id, title: mission.title, completion: mission.completion_percent, difficulty: mission.difficulty_percent, audio: mission.audio_usage_percent, status: 'Ativa' }));
+  const progressQuery = useAdminProgress(classQuery.data?.class_id ?? null, 30);
+  const missions: AdminMission[] = progressQuery.missions.data.map((mission) => ({ id: mission.assignment_id, title: mission.title, completion: mission.completion_percent, difficulty: mission.difficulty_percent, audio: mission.audio_usage_percent, status: 'Ativa' }));
   const visibleMissions = filter === 'planned' ? [] : missions;
 
   const averageCompletion = Math.round(
@@ -125,7 +125,7 @@ function formatUpdatedAt(value: Date | null) {
   return value ? value.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'aguardando dados';
 }
 
-function MissionCard({ mission, onOpen }: { mission: MonitorMission; onOpen: () => void }) {
+function MissionCard({ mission, onOpen }: { mission: AdminMission; onOpen: () => void }) {
   const icon = missionIcons[mission.title as keyof typeof missionIcons] ?? 'flag-outline';
   const completionTone = mission.completion >= 70 ? colors.success : colors.primary;
   return (
@@ -206,7 +206,7 @@ function LegendRow({ color, label, description }: { color: string; label: string
 
 const styles = StyleSheet.create({
   metrics: { flexDirection: 'row', gap: spacing.md },
-  highlight: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, flexDirection: 'row', gap: spacing.md },
+  highlight: { alignItems: 'center', backgroundColor: '#F8F2FF', borderColor: colors.primaryMuted, borderRadius: radius.xl, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   highlightIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 50, justifyContent: 'center', width: 50 },
   highlightCopy: { flex: 1, gap: 2 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   filterSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   pressed: { opacity: 0.65 },
   missionList: { gap: spacing.lg },
-  missionCard: { gap: spacing.lg },
+  missionCard: { backgroundColor: '#FFFDFB', borderColor: colors.primaryMuted, gap: spacing.lg },
   missionHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   missionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 58, justifyContent: 'center', width: 58 },
   missionCopy: { flex: 1, gap: spacing.sm },

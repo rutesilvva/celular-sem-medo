@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-  getMonitorClassProgress,
-  getMonitorClassEvolution,
-  getMonitorMissionProgress,
+  getAdminClassProgress,
+  getAdminClassEvolution,
+  getAdminMissionProgress,
   getParticipantCategoryProgress,
   getParticipantProgress,
-  type MonitorClassProgress,
-  type MonitorClassEvolution,
-  type MonitorMissionProgress,
+  type AdminClassProgress,
+  type AdminClassEvolution,
+  type AdminMissionProgress,
   type ParticipantCategoryProgress,
   type ParticipantProgress,
 } from '@/lib/backend';
@@ -21,14 +21,14 @@ export function useParticipantCategoryProgress() {
   return useProgressQuery<ParticipantCategoryProgress[]>(getParticipantCategoryProgress, []);
 }
 
-export function useMonitorProgress(classId: string | null, periodDays: 7 | 30 | 90) {
-  const summaryLoader = useCallback(() => classId ? getMonitorClassProgress(classId, periodDays) : Promise.resolve(null), [classId, periodDays]);
-  const missionsLoader = useCallback(() => classId ? getMonitorMissionProgress(classId, periodDays) : Promise.resolve([]), [classId, periodDays]);
-  const evolutionLoader = useCallback(() => classId ? getMonitorClassEvolution(classId, periodDays) : Promise.resolve([]), [classId, periodDays]);
+export function useAdminProgress(classId: string | null, periodDays: 7 | 30 | 90) {
+  const summaryLoader = useCallback(() => classId ? getAdminClassProgress(classId, periodDays) : Promise.resolve(null), [classId, periodDays]);
+  const missionsLoader = useCallback(() => classId ? getAdminMissionProgress(classId, periodDays) : Promise.resolve([]), [classId, periodDays]);
+  const evolutionLoader = useCallback(() => classId ? getAdminClassEvolution(classId, periodDays) : Promise.resolve([]), [classId, periodDays]);
   return {
-    summary: useProgressQuery<MonitorClassProgress | null>(summaryLoader, null),
-    missions: useProgressQuery<MonitorMissionProgress[]>(missionsLoader, []),
-    evolution: useProgressQuery<MonitorClassEvolution[]>(evolutionLoader, []),
+    summary: useProgressQuery<AdminClassProgress | null>(summaryLoader, null),
+    missions: useProgressQuery<AdminMissionProgress[]>(missionsLoader, []),
+    evolution: useProgressQuery<AdminClassEvolution[]>(evolutionLoader, []),
   };
 }
 

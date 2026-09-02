@@ -67,7 +67,7 @@ describe('AuthProvider session lifecycle', () => {
     jest.mocked(loadAuthenticatedAccount).mockResolvedValue({ ...account, roles: ['participant', 'admin'] } as never);
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('authenticated'));
-    act(() => expect(result.current.selectSessionRole('monitor' as never)).toBe(false));
+    act(() => expect(result.current.selectSessionRole('invalid' as never)).toBe(false));
     act(() => expect(result.current.selectSessionRole('admin')).toBe(true));
     expect(result.current.sessionRole).toBe('admin');
   });

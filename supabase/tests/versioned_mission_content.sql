@@ -9,7 +9,7 @@ insert into auth.users (
 )
 values
   ('81000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'learner@mission.test', '', now(), now(), now(), '{}', '{"name":"Aprendiz"}'),
-  ('81000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'monitor@mission.test', '', now(), now(), now(), '{}', '{"name":"Monitor"}'),
+  ('81000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@mission.test', '', now(), now(), now(), '{}', '{"name":"Admin"}'),
   ('81000000-0000-4000-8000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'outsider@mission.test', '', now(), now(), now(), '{}', '{"name":"Outra turma"}');
 
 update public.profiles set account_status = 'active'
@@ -27,7 +27,7 @@ values
 insert into public.memberships (class_id, user_id, role)
 values
   ('82000000-0000-4000-8000-000000000001', '81000000-0000-4000-8000-000000000001', 'participant'),
-  ('82000000-0000-4000-8000-000000000001', '81000000-0000-4000-8000-000000000002', 'monitor'),
+  ('82000000-0000-4000-8000-000000000001', '81000000-0000-4000-8000-000000000002', 'admin'),
   ('82000000-0000-4000-8000-000000000002', '81000000-0000-4000-8000-000000000003', 'participant');
 
 insert into public.mission_versions (
@@ -68,7 +68,7 @@ select set_config('request.jwt.claims', '{"sub":"81000000-0000-4000-8000-0000000
 select is((select count(*) from public.get_participant_mission_details('83000000-0000-4000-8000-000000000001')), 0::bigint, 'participant cannot open another class assignment');
 
 select set_config('request.jwt.claims', '{"sub":"81000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
-select is((select count(*) from public.get_participant_mission_catalog()), 0::bigint, 'monitor does not receive participant catalog');
+select is((select count(*) from public.get_participant_mission_catalog()), 0::bigint, 'admin does not receive participant catalog');
 
 select * from finish();
 rollback;

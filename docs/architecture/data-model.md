@@ -13,7 +13,8 @@ fonte de verdade; este desenho serve para leitura e revisão do domínio.
 - Pode haver vários administradores globais ativos. O banco impede a revogação
   ou exclusão do último, evitando que o ambiente fique sem administração.
 - Uma conta pode ser aluno e administrador sem duplicar a identidade Google.
-  Vínculos históricos de monitor são mantidos inativos apenas para integridade.
+  A migração `202609020002_finalize_admin_student_roles.sql` converte acessos antigos,
+  remove vínculos legados e deixa o enum somente com `participant` e `admin`.
 - Conteúdo de missão é imutável por versão. Tentativas e eventos apontam para a
   versão praticada, preservando o histórico.
 - IDs são UUIDs e horários são `timestamptz`.
@@ -75,10 +76,10 @@ promovidas.
 - `get_my_class_contexts()` retorna somente turmas ativas e vínculos ativos da
   identidade autenticada. Uma identidade Google pode aparecer em mais de uma
   turma e possuir papéis diferentes sem duplicar `profiles`.
-- `get_monitor_class_participants(class_id)` exige vínculo ativo de monitor na
-  turma informada e retorna perfil mínimo e métricas agregadas; não expõe e-mail,
+- `get_admin_class_participants(class_id)` exige administrador global e retorna
+  perfil mínimo e métricas agregadas da turma; não expõe e-mail,
   metadata ou eventos brutos.
-- `get_monitor_participant(class_id, participant_id)` aplica a mesma fronteira e
+- `get_admin_participant(class_id, participant_id)` aplica a mesma fronteira e
   não confirma participantes de outra turma.
 - `get_participant_mission_catalog()` projeta apenas atribuições disponíveis da
   turma ativa, com missão ativa e versão publicada. Rascunhos nunca chegam ao
@@ -97,18 +98,18 @@ e os testes obrigatórios estão em
 [`docs/privacy/authorization-and-logging.md`](../privacy/authorization-and-logging.md).
 Antes de production, as policies precisam ser fortalecidas para exigir conta,
 turma e vínculo ativos de forma uniforme e para projetar somente as colunas
-necessárias ao monitor.
+necessárias ao administrador.
 
-| Recurso | Participante | Monitor | Admin global |
-| --- | --- | --- | --- |
-| Perfil | Lê e atualiza o próprio | Lê o próprio e perfis vinculados às suas turmas | Lê perfis para administrar contas; alterações sensíveis são server-side |
-| Turma e vínculos | Lê as próprias turmas e vínculos | Lê vínculos das turmas monitoradas | Lê todas as turmas; revoga vínculos por RPC auditada |
-| Convites | Sem acesso direto | Cria e lê convites de participante da própria turma | Lê todos para suporte operacional |
-| Catálogo | Lê missões ativas e versões publicadas | Mesmo acesso de leitura | Lê todo o catálogo; publicação continua server-side |
-| Atribuições | Lê as da própria turma | Cria, altera e arquiva nas turmas monitoradas | Gerencia em todas as turmas |
-| Tentativas e eventos | Cria e lê somente os próprios | Somente leitura nas turmas monitoradas | Lê para suporte, segurança e operação |
-| Preferências | Lê e altera somente as próprias | Lê e altera somente as próprias | Leitura excepcional para suporte; alteração negada |
-| Pedidos de ajuda | Cria e lê somente os próprios | Lê e atende os pedidos das turmas monitoradas | Lê e atualiza em todas as turmas |
+| Recurso | Aluno | Admin global |
+| --- | --- | --- |
+| Perfil | Lê e atualiza o próprio | Lê perfis para administrar contas; alterações sensíveis são server-side |
+| Turma e vínculos | Lê as próprias turmas e vínculos | Lê todas as turmas; revoga vínculos por RPC auditada |
+| Convites | Sem acesso direto | Cria convites somente de aluno e lê todos para suporte operacional |
+| Catálogo | Lê missões ativas e versões publicadas | Lê e administra todo o catálogo |
+| Atribuições | Lê as da própria turma | Gerencia em todas as turmas |
+| Tentativas e eventos | Cria e lê somente os próprios | Lê para suporte, segurança e operação |
+| Preferências | Lê e altera somente as próprias | Leitura excepcional para suporte; alteração negada |
+| Pedidos de ajuda | Cria e lê somente os próprios | Lê e atualiza em todas as turmas |
 
 Criação de turma, ativação/revogação de vínculo e publicação de conteúdo não têm
 policy de escrita para o cliente. Convites são criados, listados e consumidos por
@@ -122,9 +123,9 @@ A migração inicial não implementa ainda o ciclo completo da Issue #2:
 - FKs de autoria e histórico impedem apagar uma conta com um simples
   `DELETE auth.users`; a purga precisa de transação idempotente e tombstones;
 - o participante ainda não possui RPC para cancelar o próprio pedido de ajuda;
-- algumas policies do titular não exigem vínculo ativo, e os helpers ainda não
-  consideram de modo uniforme turma arquivada e tipo do usuário monitorado;
-- pedidos de ajuda precisam validar monitor ativo e imutabilidade após fechamento.
+- a execução periódica das rotinas de retenção ainda precisa ser homologada no
+  ambiente de produção;
+- exclusão e exportação devem ser exercitadas com dados reais antes do lançamento.
 
 O inventário técnico, a ordem de exclusão e a evidência esperada estão em
 [`docs/privacy/rights-and-operations.md`](../privacy/rights-and-operations.md#lacunas-técnicas-que-bloqueiam-production).

@@ -7,8 +7,8 @@ import { AdminNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
-import { useAdminClass, useMonitorParticipants } from '@/hooks/useClassData';
-import type { ClassParticipant, MonitorParticipantSort } from '@/lib/backend';
+import { useAdminClass, useAdminParticipants } from '@/hooks/useClassData';
+import type { ClassParticipant, AdminParticipantSort } from '@/lib/backend';
 import { colors, radius, spacing, type } from '@/theme/tokens';
 
 type FilterKey = 'all' | 'attention' | 'advancing';
@@ -18,7 +18,7 @@ const filters: readonly { key: FilterKey; label: string }[] = [
   { key: 'attention', label: 'Precisam de atenção' },
   { key: 'advancing', label: 'Avançando bem' },
 ];
-const sorts: readonly { key: MonitorParticipantSort; label: string }[] = [
+const sorts: readonly { key: AdminParticipantSort; label: string }[] = [
   { key: 'name', label: 'Nome' },
   { key: 'progress_asc', label: 'Menor progresso' },
   { key: 'progress_desc', label: 'Maior progresso' },
@@ -30,11 +30,11 @@ export default function ParticipantsScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [sort, setSort] = useState<MonitorParticipantSort>('name');
+  const [sort, setSort] = useState<AdminParticipantSort>('name');
   const [page, setPage] = useState(0);
   const deferredQuery = useDeferredValue(query);
   const classQuery = useAdminClass();
-  const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null, {
+  const participantsQuery = useAdminParticipants(classQuery.data?.class_id ?? null, {
     search: deferredQuery, filter, sort, limit: pageSize, offset: page * pageSize,
   });
   const participants = participantsQuery.data?.items ?? [];
@@ -227,10 +227,10 @@ function ParticipantCard({ participant, onPress }: { participant: ClassParticipa
 const styles = StyleSheet.create({
   searchShell: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: '#FFFDFB',
+    borderColor: colors.primaryMuted,
     borderRadius: radius.md,
-    borderWidth: 1.5,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     minHeight: 54,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   resultHeading: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between' },
   list: { gap: spacing.md },
   pagination: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  participantCard: { gap: spacing.md },
+  participantCard: { backgroundColor: '#FFFDFB', borderColor: colors.primaryMuted, gap: spacing.md },
   cardPressed: { opacity: 0.72, transform: [{ scale: 0.992 }] },
   personRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   avatar: {

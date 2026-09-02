@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getMonitorHelpRequests, getMyHelpRequests, type MonitorHelpRequest, type ParticipantHelpRequest } from '@/lib/backend';
+import { getAdminHelpRequests, getMyHelpRequests, type AdminHelpRequest, type ParticipantHelpRequest } from '@/lib/backend';
 
 export function useMyHelpRequests() {
   return useHelpQuery<ParticipantHelpRequest[]>(useCallback(() => getMyHelpRequests(), []), []);
 }
 
-export function useMonitorHelpRequests(classId: string | null) {
-  return useHelpQuery<MonitorHelpRequest[]>(useCallback(
-    () => classId ? getMonitorHelpRequests(classId) : Promise.resolve([]),
+export function useAdminHelpRequests(classId: string | null) {
+  return useHelpQuery<AdminHelpRequest[]>(useCallback(
+    () => classId ? getAdminHelpRequests(classId) : Promise.resolve([]),
     [classId],
   ), []);
 }

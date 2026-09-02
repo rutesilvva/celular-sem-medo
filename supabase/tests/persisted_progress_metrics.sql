@@ -5,13 +5,13 @@ select plan(13);
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data) values
 ('a1000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','progress1@test.invalid','',now(),now(),now(),'{}','{"name":"Participante 1"}'),
 ('a1000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','progress2@test.invalid','',now(),now(),now(),'{}','{"name":"Participante 2"}'),
-('a1000000-0000-4000-8000-000000000003','00000000-0000-0000-0000-000000000000','authenticated','authenticated','progress-monitor@test.invalid','',now(),now(),now(),'{}','{"name":"Monitor"}');
+('a1000000-0000-4000-8000-000000000003','00000000-0000-0000-0000-000000000000','authenticated','authenticated','progress-admin@test.invalid','',now(),now(),now(),'{}','{"name":"Admin"}');
 update public.profiles set account_status='active' where id::text like 'a1000000-%';
 insert into public.classes (id,name,slug) values ('a2000000-0000-4000-8000-000000000001','Turma Progresso','turma-progresso');
 insert into public.memberships (class_id,user_id,role) values
 ('a2000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001','participant'),
 ('a2000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000002','participant'),
-('a2000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000003','monitor');
+('a2000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000003','admin');
 insert into public.class_mission_assignments (id,class_id,mission_version_id,assigned_by,status,available_from) values
 ('a3000000-0000-4000-8000-000000000001','a2000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000003','active',now()-interval '1 day'),
 ('a3000000-0000-4000-8000-000000000002','a2000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000004','a1000000-0000-4000-8000-000000000003','active',now()-interval '1 day');
@@ -39,9 +39,9 @@ select is((select progress_percent from public.get_participant_progress()),0,'cl
 select is((select attempt_count from public.get_participant_progress()),0,'class without activity returns zero attempts');
 
 select set_config('request.jwt.claims','{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
-select is((select completed_missions from public.get_monitor_class_progress('a2000000-0000-4000-8000-000000000001',30)),1,'monitor sees same unique completion total');
-select is((select completion_percent from public.get_monitor_class_progress('a2000000-0000-4000-8000-000000000001',30)),25,'class completion uses people times assignments denominator');
-select is((select autonomy_percent from public.get_monitor_class_progress('a2000000-0000-4000-8000-000000000001',30)),50,'monitor autonomy matches participant attempts');
+select is((select completed_missions from public.get_admin_class_progress('a2000000-0000-4000-8000-000000000001',30)),1,'admin sees same unique completion total');
+select is((select completion_percent from public.get_admin_class_progress('a2000000-0000-4000-8000-000000000001',30)),25,'class completion uses people times assignments denominator');
+select is((select autonomy_percent from public.get_admin_class_progress('a2000000-0000-4000-8000-000000000001',30)),50,'admin autonomy matches participant attempts');
 
 select * from finish();
 rollback;

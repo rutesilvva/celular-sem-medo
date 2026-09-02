@@ -8,8 +8,8 @@ import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { useAdminClass, useMonitorParticipant, useMonitorParticipantHistory } from '@/hooks/useClassData';
-import type { ClassParticipant, MonitorParticipantHistory } from '@/lib/backend';
+import { useAdminClass, useAdminParticipant, useAdminParticipantHistory } from '@/hooks/useClassData';
+import type { ClassParticipant, AdminParticipantHistory } from '@/lib/backend';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type DetailTab = 'summary' | 'performance' | 'resources' | 'history';
@@ -28,8 +28,8 @@ export default function ParticipantDetailsScreen() {
   const [activeTab, setActiveTab] = useState<DetailTab>('summary');
   const [period, setPeriod] = useState<DetailPeriod>(30);
   const classQuery = useAdminClass();
-  const participantQuery = useMonitorParticipant(classQuery.data?.class_id ?? null, id ?? null, period);
-  const historyQuery = useMonitorParticipantHistory(classQuery.data?.class_id ?? null, id ?? null, period);
+  const participantQuery = useAdminParticipant(classQuery.data?.class_id ?? null, id ?? null, period);
+  const historyQuery = useAdminParticipantHistory(classQuery.data?.class_id ?? null, id ?? null, period);
 
   if (classQuery.loading || participantQuery.loading) {
     return (
@@ -305,7 +305,7 @@ function ResourceRow({ icon, title, value, tone, divider = false }: {
 
 function HistoryTab({ participant, history, loading, error, retry }: {
   participant: ClassParticipant;
-  history: MonitorParticipantHistory[];
+  history: AdminParticipantHistory[];
   loading: boolean;
   error: boolean;
   retry: () => void;
@@ -338,7 +338,7 @@ function HistoryTab({ participant, history, loading, error, retry }: {
   );
 }
 
-function historyDescription(event: MonitorParticipantHistory) {
+function historyDescription(event: AdminParticipantHistory) {
   const support = [event.used_audio ? 'áudio' : null, event.used_hint ? 'dica' : null, event.requested_help ? 'ajuda' : null].filter(Boolean);
   const status = event.attempt_status === 'completed' ? 'Concluída' : event.attempt_status === 'abandoned' ? 'Interrompida' : 'Em andamento';
   return `${status}. ${event.error_count} ${event.error_count === 1 ? 'erro registrado' : 'erros registrados'}${support.length ? `; recursos usados: ${support.join(', ')}` : ''}.`;

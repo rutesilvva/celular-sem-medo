@@ -35,7 +35,7 @@ O projeto é mobile-first, em orientação retrato e com tema claro. A versão w
 2. Alunos e administradores usam o mesmo botão **Continuar com Google**.
 3. Depois da autenticação, os papéis são resolvidos pelo servidor; quando houver mais de um acesso, a pessoa escolhe somente entre os papéis autorizados.
 
-### Participante
+### Aluno
 
 O fluxo principal demonstra a jornada de aprender, praticar, pedir ajuda e acompanhar a própria evolução:
 
@@ -199,17 +199,17 @@ development build conforme o guia de autenticação.
 ### Participante
 
 1. Aguarde a splash ou toque nela para abrir o login.
-2. Mantenha **Participante** selecionado e toque em **Entrar como participante**.
+2. Toque em **Continuar com Google** usando uma conta cadastrada como aluno.
 3. Avance pelas boas-vindas e configure as preferências de acessibilidade.
 4. Na tela inicial, abra a missão recomendada ou use a aba **Missões**.
 5. Entre nos detalhes, inicie o treino e percorra o simulador.
 6. Acione os recursos de áudio e o caminho de ajuda para conferir o feedback visual.
 7. Conclua a missão e abra **Progresso** e **Perfil** pela barra inferior.
 
-### Monitor
+### Administrador
 
 1. Volte ao login ou use **Sair da conta** no perfil.
-2. Selecione **Monitor** e toque em **Entrar como monitor**.
+2. Entre com uma conta Google previamente cadastrada como **Administrador**.
 3. Na visão geral, abra a lista de participantes.
 4. Selecione uma pessoa para ver progresso, dificuldades e missões recentes.
 5. Percorra **Missões**, **Relatórios** e **Perfil** pela barra inferior.

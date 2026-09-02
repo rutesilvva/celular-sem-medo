@@ -7,19 +7,19 @@ import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, Tag } from '@/components/ui';
 import { useAdminClass } from '@/hooks/useClassData';
-import { useMonitorHelpRequests } from '@/hooks/useHelpRequests';
+import { useAdminHelpRequests } from '@/hooks/useHelpRequests';
 import { helpReasonLabels, helpResolutionLabels, helpStatusLabels } from '@/lib/help-copy';
-import { updateHelpRequest, type HelpReason, type HelpResolution, type MonitorHelpRequest } from '@/lib/backend';
+import { updateHelpRequest, type HelpReason, type HelpResolution, type AdminHelpRequest } from '@/lib/backend';
 import { colors, spacing } from '@/theme/tokens';
 import { enablePushNotifications } from '@/lib/push-notifications';
 
-const resolutions: HelpResolution[] = ['review_hint', 'try_again', 'scheduled_support', 'guided_by_monitor'];
+const resolutions: HelpResolution[] = ['review_hint', 'try_again', 'scheduled_support', 'guided_by_admin'];
 
 export default function AdminHelpRequestsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const classQuery = useAdminClass();
-  const query = useMonitorHelpRequests(classQuery.data?.class_id ?? null);
+  const query = useAdminHelpRequests(classQuery.data?.class_id ?? null);
   const [pushMessage, setPushMessage] = useState('');
   if (classQuery.loading || query.loading) return <Screen footer={<AdminNav active="home" />}><Header title="Pedidos de ajuda" /><DataState kind="loading" title="Carregando pedidos" message="Buscando solicitações da turma." /></Screen>;
   if (classQuery.error || query.error) return <Screen footer={<AdminNav active="home" />}><Header title="Pedidos de ajuda" /><DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={() => { classQuery.retry(); query.retry(); }} /></Screen>;
@@ -31,7 +31,7 @@ export default function AdminHelpRequestsScreen() {
   </Screen>;
 }
 
-function RequestCard({ request, retry, highlighted }: { request: MonitorHelpRequest; retry: () => void; highlighted: boolean }) {
+function RequestCard({ request, retry, highlighted }: { request: AdminHelpRequest; retry: () => void; highlighted: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const change = async (status: 'in_progress' | 'resolved', resolution?: HelpResolution) => {
@@ -50,4 +50,4 @@ function RequestCard({ request, retry, highlighted }: { request: MonitorHelpRequ
   </Card>;
 }
 
-const styles = StyleSheet.create({ content: { gap: spacing.lg }, card: { gap: spacing.md }, highlighted: { borderColor: colors.primary, borderWidth: 2 }, row: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm }, copy: { flex: 1, gap: spacing.xs }, actions: { gap: spacing.sm } });
+const styles = StyleSheet.create({ content: { gap: spacing.lg }, card: { backgroundColor: '#FFFDFB', borderColor: colors.primaryMuted, gap: spacing.md }, highlighted: { borderColor: colors.primary, borderWidth: 2, backgroundColor: '#F9F4FF' }, row: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm }, copy: { flex: 1, gap: spacing.xs }, actions: { gap: spacing.sm } });
