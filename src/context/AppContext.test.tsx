@@ -9,7 +9,7 @@ jest.mock('./AuthContext', () => ({ useOptionalAuth: jest.fn() }));
 jest.mock('@/lib/backend', () => ({ saveParticipantPreferences: jest.fn() }));
 jest.mock('@/lib/preferences-cache', () => ({ readPreferencesCache: jest.fn(), writePreferencesCache: jest.fn() }));
 
-const serverPreferences = { largerText: false, highContrast: true, autoAudio: false, voiceResponse: true, audioRate: 0.9 };
+const serverPreferences = { largerText: false, highContrast: true, autoAudio: false, voiceResponse: true, audioRate: 0.9, reduceMotion: false, hapticFeedback: true, repeatInstructions: false };
 
 describe('AppProvider preferences', () => {
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe('AppProvider preferences', () => {
   it('updates accessibility preferences without changing the other values', () => {
     const { result } = renderHook(() => useApp(), { wrapper: AppProvider });
     act(() => result.current.setPreference('highContrast', true));
-    expect(result.current.preferences).toEqual({ largerText: true, highContrast: true, autoAudio: true, voiceResponse: false, audioRate: 0.9 });
+    expect(result.current.preferences).toEqual({ largerText: true, highContrast: true, autoAudio: true, voiceResponse: false, audioRate: 0.9, reduceMotion: false, hapticFeedback: true, repeatInstructions: false });
   });
 
   it('protects the current administrator and permits removing another user', () => {

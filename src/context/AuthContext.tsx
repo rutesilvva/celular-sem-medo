@@ -142,6 +142,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       auto_audio: preferences.autoAudio,
       voice_response: preferences.voiceResponse,
       audio_rate: preferences.audioRate,
+      reduce_motion: preferences.reduceMotion,
+      haptic_feedback: preferences.hapticFeedback,
+      repeat_instructions: preferences.repeatInstructions,
       onboarding_completed_at: new Date().toISOString(),
     }).eq('user_id', currentUser.id);
     if (error) return false;

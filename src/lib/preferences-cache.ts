@@ -13,7 +13,7 @@ export async function readPreferencesCache(userId: string): Promise<Accessibilit
     if (!value) return null;
     const parsed = JSON.parse(value) as Partial<AccessibilityPreferences>;
     if (!isBooleanPreferences(parsed)) return null;
-    return { ...parsed, audioRate: typeof parsed.audioRate === 'number' ? parsed.audioRate : 0.9 };
+    return { ...parsed, audioRate: typeof parsed.audioRate === 'number' ? parsed.audioRate : 0.9, reduceMotion: parsed.reduceMotion ?? false, hapticFeedback: parsed.hapticFeedback ?? true, repeatInstructions: parsed.repeatInstructions ?? false };
   } catch {
     return null;
   }

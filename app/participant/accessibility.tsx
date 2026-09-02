@@ -92,6 +92,12 @@ export default function ParticipantAccessibilityScreen() {
           value={preferences.voiceResponse}
           onValueChange={(value) => setPreference('voiceResponse', value)}
         />
+        <View style={styles.divider} />
+        <SwitchRow title="Reduzir movimentos" description="Evita animações e efeitos de escala" icon="remove-circle-outline" value={preferences.reduceMotion} onValueChange={(value) => setPreference('reduceMotion', value)} />
+        <View style={styles.divider} />
+        <SwitchRow title="Vibração de confirmação" description="Resposta tátil ao tocar nos botões" icon="phone-portrait-outline" value={preferences.hapticFeedback} onValueChange={(value) => setPreference('hapticFeedback', value)} />
+        <View style={styles.divider} />
+        <SwitchRow title="Repetir instruções" description="Repete automaticamente cada instrução uma vez" icon="repeat-outline" value={preferences.repeatInstructions} onValueChange={(value) => setPreference('repeatInstructions', value)} />
       </Card>
 
       <View

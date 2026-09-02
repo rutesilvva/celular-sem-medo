@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 import {
   Image,
@@ -78,6 +79,7 @@ export function Button({
   accessibilityHint,
   style,
 }: ButtonProps) {
+  const { preferences } = useApp();
   const foreground = disabled
     ? colors.textMuted
     : variant === 'primary' || variant === 'danger' ? colors.surface : colors.primary;
@@ -89,12 +91,12 @@ export function Button({
       accessibilityState={{ disabled }}
       disabled={disabled}
       hitSlop={10}
-      onPress={onPress}
+      onPress={() => { if (preferences.hapticFeedback) void Haptics.selectionAsync(); onPress(); }}
       style={({ pressed }) => [
         styles.button,
         styles[`button_${variant}`],
         disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.buttonPressed,
+        pressed && !disabled && !preferences.reduceMotion && styles.buttonPressed,
         style,
       ]}
     >
@@ -117,13 +119,14 @@ export function IconButton({
   onPress: () => void;
   tone?: 'primary' | 'muted';
 }) {
+  const { preferences } = useApp();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
-      onPress={onPress}
-      style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]}
+      onPress={() => { if (preferences.hapticFeedback) void Haptics.selectionAsync(); onPress(); }}
+      style={({ pressed }) => [styles.iconButton, pressed && !preferences.reduceMotion && styles.buttonPressed]}
     >
       <Ionicons name={icon} size={25} color={tone === 'primary' ? colors.primary : colors.iconMuted} />
     </Pressable>

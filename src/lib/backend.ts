@@ -17,6 +17,9 @@ export type AdminHelpRequest = Database['public']['Functions']['get_admin_help_r
 export type AdminClass = Database['public']['Functions']['get_admin_classes']['Returns'][number];
 export type AdminUser = Database['public']['Functions']['get_admin_users']['Returns'][number];
 export type HelpRequestHistory = Database['public']['Functions']['get_help_request_history']['Returns'][number];
+export type MissionRecommendation = Database['public']['Functions']['get_personalized_mission_recommendations']['Returns'][number];
+export type AdminImpactSummary = Database['public']['Functions']['get_admin_impact_summary']['Returns'][number];
+export type WorkshopParticipant = Database['public']['Functions']['get_admin_workshop_status']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
 export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
 export type AdminParticipantHistory = Database['public']['Functions']['get_admin_participant_history']['Returns'][number];
@@ -107,6 +110,43 @@ export async function getParticipantMissionContent(assignmentId: string): Promis
     details: detailsResult.data[0] ? mapMissionDetails(detailsResult.data[0]) : null,
     steps: stepsResult.data.map(mapMissionStep),
   };
+}
+
+export async function startMissionAssessment(assignmentId: string, confidence: number) {
+  const id = createUuid();
+  const { data, error } = await getSupabase().rpc('start_mission_self_assessment', { requested_id: id, target_assignment_id: assignmentId, rating: confidence });
+  if (error) throw error;
+  return data;
+}
+
+export async function completeMissionAssessment(assessmentId: string, attemptId: string, confidence: number) {
+  const { data, error } = await getSupabase().rpc('complete_mission_self_assessment', { target_assessment_id: assessmentId, target_attempt_id: attemptId, rating: confidence });
+  if (error) throw error;
+  return data;
+}
+
+export async function getMissionRecommendations(query = ''): Promise<MissionRecommendation[]> {
+  const { data, error } = await getSupabase().rpc('get_personalized_mission_recommendations', { search_query: query });
+  if (error) throw error;
+  return data;
+}
+
+export async function createLearningRequest(query: string) {
+  const { data, error } = await getSupabase().rpc('create_learning_request', { requested_id: createUuid(), query });
+  if (error) throw error;
+  return data;
+}
+
+export async function getAdminImpactSummary(classId?: string): Promise<AdminImpactSummary | null> {
+  const { data, error } = await getSupabase().rpc('get_admin_impact_summary', { target_class_id: classId });
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function getWorkshopStatus(classId: string): Promise<WorkshopParticipant[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_workshop_status', { target_class_id: classId });
+  if (error) throw error;
+  return data;
 }
 
 export async function getParticipantProgress(): Promise<ParticipantProgress | null> {
@@ -201,6 +241,9 @@ export async function saveParticipantPreferences(userId: string, preferences: Ac
     auto_audio: preferences.autoAudio,
     voice_response: preferences.voiceResponse,
     audio_rate: preferences.audioRate,
+    reduce_motion: preferences.reduceMotion,
+    haptic_feedback: preferences.hapticFeedback,
+    repeat_instructions: preferences.repeatInstructions,
   }).eq('user_id', userId);
   if (error) throw error;
 }

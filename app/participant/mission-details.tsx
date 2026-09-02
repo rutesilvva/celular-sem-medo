@@ -1,13 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { ConfidencePicker } from '@/components/ConfidencePicker';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, Tag } from '@/components/ui';
 import { useMissionContent } from '@/hooks/useMissionData';
 import { colors, radius, spacing } from '@/theme/tokens';
+import { startMissionAssessment } from '@/lib/backend';
 
 const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
@@ -15,14 +18,21 @@ export default function ParticipantMissionDetailsScreen() {
   const router = useRouter();
   const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
   const query = useMissionContent(assignmentId ?? null);
+  const [confidence, setConfidence] = useState<number | null>(null);
+  const [starting, setStarting] = useState(false);
 
   if (query.loading) return <State kind="loading" onRetry={query.retry} />;
   if (query.error) return <State kind="error" onRetry={query.retry} />;
   if (!query.data) return <State kind="empty" onRetry={query.retry} />;
 
   const { details, steps } = query.data;
-  const beginTraining = () => {
-    router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId } });
+  const beginTraining = async () => {
+    if (!confidence || starting) return;
+    setStarting(true);
+    try {
+      const assessmentId = await startMissionAssessment(details.assignmentId, confidence);
+      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId, assessmentId } });
+    } finally { setStarting(false); }
   };
 
   return (
@@ -78,8 +88,9 @@ export default function ParticipantMissionDetailsScreen() {
       </Card>
 
       <View style={styles.actions}>
+        <Card><ConfidencePicker label="Antes de começar, quanta confiança você sente?" value={confidence} onChange={setConfidence} /></Card>
         <AudioButton label="Ouvir explicação" message={steps.map((step) => step.audioText).join(' ')} />
-        <Button label="Começar treino" icon="play" accessibilityHint="Abre o simulador seguro" onPress={beginTraining} />
+        <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={!confidence || starting} accessibilityHint="Abre o simulador seguro" onPress={() => void beginTraining()} />
       </View>
     </Screen>
   );

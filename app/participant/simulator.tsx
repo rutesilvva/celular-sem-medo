@@ -15,15 +15,15 @@ import type { ParticipantMissionDetails, ParticipantMissionStep } from '@/lib/ba
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantSimulatorScreen() {
-  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
+  const { assignmentId, assessmentId } = useLocalSearchParams<{ assignmentId?: string; assessmentId?: string }>();
   const query = useMissionContent(assignmentId ?? null);
   if (query.loading) return <SimulatorState kind="loading" retry={query.retry} />;
   if (query.error) return <SimulatorState kind="error" retry={query.retry} />;
   if (!query.data) return <SimulatorState kind="empty" retry={query.retry} />;
-  return <MissionExecutor assignmentId={query.data.details.assignmentId} details={query.data.details} steps={query.data.steps} />;
+  return <MissionExecutor assignmentId={query.data.details.assignmentId} assessmentId={assessmentId} details={query.data.details} steps={query.data.steps} />;
 }
 
-function MissionExecutor({ assignmentId, details, steps }: { assignmentId: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[] }) {
+function MissionExecutor({ assignmentId, assessmentId, details, steps }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[] }) {
   const router = useRouter();
   const { playInstruction, preferences, stopInstruction } = useApp();
   const engine = useMissionEngine(assignmentId, steps);
@@ -40,8 +40,8 @@ function MissionExecutor({ assignmentId, details, steps }: { assignmentId: strin
 
   useEffect(() => {
     if (!engine.run.completed) return;
-    router.replace({ pathname: '/participant/result', params: { assignmentId, completion: engine.completion, attemptId: engine.attemptId ?? '' } });
-  }, [assignmentId, engine.attemptId, engine.completion, engine.run.completed, router]);
+    router.replace({ pathname: '/participant/result', params: { assignmentId, assessmentId: assessmentId ?? '', completion: engine.completion, attemptId: engine.attemptId ?? '' } });
+  }, [assessmentId, assignmentId, engine.attemptId, engine.completion, engine.run.completed, router]);
 
   if (engine.loading) return <SimulatorState kind="loading" retry={engine.retry} />;
   if (!step) return <SimulatorState kind="empty" retry={engine.retry} />;

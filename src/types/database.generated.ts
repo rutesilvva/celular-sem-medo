@@ -600,6 +600,51 @@ export type Database = {
           },
         ]
       }
+      learning_requests: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          normalized_query: string
+          participant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id: string
+          normalized_query: string
+          participant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          normalized_query?: string
+          participant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_requests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_requests_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           class_id: string
@@ -645,6 +690,61 @@ export type Database = {
           {
             foreignKeyName: "memberships_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mission_self_assessments: {
+        Row: {
+          assignment_id: string
+          attempt_id: string | null
+          completed_at: string | null
+          confidence_after: number | null
+          confidence_before: number
+          created_at: string
+          id: string
+          participant_id: string
+        }
+        Insert: {
+          assignment_id: string
+          attempt_id?: string | null
+          completed_at?: string | null
+          confidence_after?: number | null
+          confidence_before: number
+          created_at?: string
+          id: string
+          participant_id: string
+        }
+        Update: {
+          assignment_id?: string
+          attempt_id?: string | null
+          completed_at?: string | null
+          confidence_after?: number | null
+          confidence_before?: number
+          created_at?: string
+          id?: string
+          participant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_self_assessments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "class_mission_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_self_assessments_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_self_assessments_participant_id_fkey"
+            columns: ["participant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -828,10 +928,13 @@ export type Database = {
           audio_rate: number
           auto_audio: boolean
           created_at: string
+          haptic_feedback: boolean
           high_contrast: boolean
           larger_text: boolean
           locale: string
           onboarding_completed_at: string | null
+          reduce_motion: boolean
+          repeat_instructions: boolean
           updated_at: string
           user_id: string
           voice_response: boolean
@@ -840,10 +943,13 @@ export type Database = {
           audio_rate?: number
           auto_audio?: boolean
           created_at?: string
+          haptic_feedback?: boolean
           high_contrast?: boolean
           larger_text?: boolean
           locale?: string
           onboarding_completed_at?: string | null
+          reduce_motion?: boolean
+          repeat_instructions?: boolean
           updated_at?: string
           user_id: string
           voice_response?: boolean
@@ -852,10 +958,13 @@ export type Database = {
           audio_rate?: number
           auto_audio?: boolean
           created_at?: string
+          haptic_feedback?: boolean
           high_contrast?: boolean
           larger_text?: boolean
           locale?: string
           onboarding_completed_at?: string | null
+          reduce_motion?: boolean
+          repeat_instructions?: boolean
           updated_at?: string
           user_id?: string
           voice_response?: boolean
@@ -1066,6 +1175,14 @@ export type Database = {
         Args: { target_help_request_id: string }
         Returns: Database["public"]["Enums"]["help_request_status"]
       }
+      complete_mission_self_assessment: {
+        Args: {
+          rating: number
+          target_assessment_id: string
+          target_attempt_id: string
+        }
+        Returns: number
+      }
       consume_class_invitation: {
         Args: { plain_token: string }
         Returns: {
@@ -1096,6 +1213,10 @@ export type Database = {
           help_request_id: string
           request_status: Database["public"]["Enums"]["help_request_status"]
         }[]
+      }
+      create_learning_request: {
+        Args: { query: string; requested_id: string }
+        Returns: string
       }
       expire_invitation_secrets: { Args: never; Returns: number }
       get_admin_attempt_event_summaries: {
@@ -1199,6 +1320,18 @@ export type Database = {
           resolved_at: string
           status: Database["public"]["Enums"]["help_request_status"]
           step_title: string
+        }[]
+      }
+      get_admin_impact_summary: {
+        Args: { target_class_id?: string }
+        Returns: {
+          autonomous_completions: number
+          average_confidence_gain: number
+          completed_missions: number
+          confidence_responses: number
+          open_help_requests: number
+          participants: number
+          resolved_help_requests: number
         }[]
       }
       get_admin_mission_progress: {
@@ -1333,6 +1466,18 @@ export type Database = {
           email: string
           is_administrator: boolean
           user_id: string
+        }[]
+      }
+      get_admin_workshop_status: {
+        Args: { target_class_id: string }
+        Returns: {
+          attempt_status: Database["public"]["Enums"]["attempt_status"]
+          current_mission: string
+          current_step: string
+          display_name: string
+          last_activity_at: string
+          open_help_count: number
+          participant_id: string
         }[]
       }
       get_help_request_history: {
@@ -1470,6 +1615,16 @@ export type Database = {
           progress_percent: number
         }[]
       }
+      get_personalized_mission_recommendations: {
+        Args: { search_query?: string }
+        Returns: {
+          assignment_id: string
+          category: string
+          recommendation_reason: string
+          recommendation_score: number
+          title: string
+        }[]
+      }
       has_active_class_role: {
         Args: {
           required_role?: Database["public"]["Enums"]["app_role"]
@@ -1521,6 +1676,14 @@ export type Database = {
           target_step_id: string
         }
         Returns: Database["public"]["Enums"]["attempt_status"]
+      }
+      start_mission_self_assessment: {
+        Args: {
+          rating: number
+          requested_id: string
+          target_assignment_id: string
+        }
+        Returns: string
       }
       start_or_resume_mission_attempt: {
         Args: { requested_attempt_id: string; target_assignment_id: string }

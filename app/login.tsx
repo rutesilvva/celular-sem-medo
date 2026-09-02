@@ -91,6 +91,7 @@ export default function LoginScreen() {
             accessibilityHint="Abre a seleção segura de conta do Google"
           />
         )}
+        {process.env.EXPO_PUBLIC_APP_ENV === 'development' && process.env.EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS === 'true' ? <Button label="Abrir demonstração offline" icon="cloud-offline-outline" variant="soft" onPress={() => router.push('/demo')} /> : null}
         {errorCode ? (
           <View accessibilityLiveRegion="polite" style={styles.error}>
             <Ionicons name="alert-circle-outline" size={22} color={colors.danger} />

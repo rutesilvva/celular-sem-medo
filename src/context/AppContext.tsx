@@ -15,6 +15,9 @@ export type AccessibilityPreferences = {
   autoAudio: boolean;
   voiceResponse: boolean;
   audioRate: number;
+  reduceMotion: boolean;
+  hapticFeedback: boolean;
+  repeatInstructions: boolean;
 };
 
 type AppContextValue = {
@@ -45,6 +48,9 @@ export const defaultPreferences: AccessibilityPreferences = {
   autoAudio: true,
   voiceResponse: false,
   audioRate: 0.9,
+  reduceMotion: false,
+  hapticFeedback: true,
+  repeatInstructions: false,
 };
 
 export function AppProvider({ children }: PropsWithChildren) {
@@ -141,6 +147,14 @@ export function AppProvider({ children }: PropsWithChildren) {
         },
         onDone: () => {
           if (generation === speechGeneration.current) {
+            if (preferences.repeatInstructions) {
+              Speech.speak(message.slice(0, Speech.maxSpeechInputLength), {
+                language: 'pt-BR', voice: portugueseVoice?.identifier, rate: preferences.audioRate,
+                onDone: () => { if (generation === speechGeneration.current) { setAudioStatus('idle'); setAudioMessage(null); } },
+                onError: () => { if (generation === speechGeneration.current) setAudioStatus('error'); },
+              });
+              return;
+            }
             setAudioStatus('idle');
             setAudioMessage(null);
           }
@@ -159,7 +173,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       setAudioStatus('error');
       setAudioError('Não foi possível acessar a voz do aparelho.');
     });
-  }, [preferences.audioRate]);
+  }, [preferences.audioRate, preferences.repeatInstructions]);
 
   const pauseInstruction = useCallback(() => {
     if (Platform.OS === 'android') {

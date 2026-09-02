@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Share, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
 
 import { ParticipantNav } from '@/components/BottomNav';
+import { ConfidencePicker } from '@/components/ConfidencePicker';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, ProgressBar } from '@/components/ui';
@@ -10,10 +12,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useMissionContent } from '@/hooks/useMissionData';
 import { useParticipantProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
+import { completeMissionAssessment } from '@/lib/backend';
 
 export default function ParticipantResultScreen() {
   const router = useRouter();
-  const { assignmentId, completion } = useLocalSearchParams<{ assignmentId?: string; completion?: string }>();
+  const { assignmentId, assessmentId, attemptId, completion } = useLocalSearchParams<{ assignmentId?: string; assessmentId?: string; attemptId?: string; completion?: string }>();
+  const [confidenceAfter, setConfidenceAfter] = useState<number | null>(null);
+  const [gain, setGain] = useState<number | null>(null);
   const { currentUser } = useAuth();
   const query = useMissionContent(assignmentId ?? null);
   const progressQuery = useParticipantProgress();
@@ -84,6 +89,11 @@ export default function ParticipantResultScreen() {
         <ProgressBar value={progress?.progress_percent ?? 0} color={colors.primary} height={12} />
       </Card>
 
+      <Card style={styles.progressCard}>
+        <ConfidencePicker label="E agora, quanta confiança você sente?" value={confidenceAfter} onChange={setConfidenceAfter} />
+        <Button label={gain === null ? 'Registrar minha evolução' : `Evolução registrada: ${gain >= 0 ? '+' : ''}${gain}`} disabled={!confidenceAfter || gain !== null || !assessmentId || !attemptId} onPress={() => void completeMissionAssessment(assessmentId!,attemptId!,confidenceAfter!).then(setGain)} />
+      </Card>
+
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir resultado"
@@ -94,6 +104,7 @@ export default function ParticipantResultScreen() {
           icon="arrow-forward"
           accessibilityHint="Abre a tela do seu progresso"
           onPress={continueTrail}
+          disabled={Boolean(assessmentId && attemptId) && gain === null}
         />
         <Button
           label="Praticar novamente"
@@ -102,6 +113,7 @@ export default function ParticipantResultScreen() {
           accessibilityHint="Volta aos detalhes da missão"
           onPress={practiceAgain}
         />
+        <Button label="Compartilhar conquista" icon="share-social-outline" variant="soft" onPress={() => void Share.share({ message: `Hoje aprendi “${details.title}” com o Celular Sem Medo. Treino seguro para usar a tecnologia com mais confiança.` })} />
       </View>
     </Screen>
   );

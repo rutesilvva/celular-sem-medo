@@ -1,20 +1,26 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
-import { AppText, AudioButton, Card, Header, Tag } from '@/components/ui';
+import { AppText, AudioButton, Button, Card, Header, Tag } from '@/components/ui';
 import { useMissionCatalog } from '@/hooks/useMissionData';
-import type { ParticipantMission } from '@/lib/backend';
-import { colors, radius, spacing } from '@/theme/tokens';
+import { createLearningRequest, getMissionRecommendations, type MissionRecommendation, type ParticipantMission } from '@/lib/backend';
+import { colors, radius, spacing, type } from '@/theme/tokens';
 
 const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
 export default function ParticipantMissionsScreen() {
   const router = useRouter();
   const query = useMissionCatalog();
+  const [wanted, setWanted] = useState('');
+  const [recommendations, setRecommendations] = useState<MissionRecommendation[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [message, setMessage] = useState('');
+  const search = async () => { setSearching(true); setMessage(''); try { const result=await getMissionRecommendations(wanted); setRecommendations(result); if (!result.length) setMessage('Ainda não temos essa missão. Você pode enviar essa sugestão.'); } catch { setMessage('Não foi possível pesquisar agora.'); } finally { setSearching(false); } };
 
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
@@ -27,6 +33,7 @@ export default function ParticipantMissionsScreen() {
           <AppText variant="small" color={colors.textMuted}>O catálogo mostra apenas conteúdos publicados e liberados para sua turma.</AppText>
         </View>
       </Card>
+      <Card style={styles.searchCard}><AppText weight="800">Quero aprender isto</AppText><TextInput accessibilityLabel="O que você quer aprender" placeholder="Ex.: reconhecer uma mensagem falsa" placeholderTextColor={colors.placeholder} value={wanted} onChangeText={setWanted} style={styles.input} /><Button label={searching ? 'Buscando…' : 'Encontrar uma missão'} disabled={wanted.trim().length < 3 || searching} icon="search" onPress={() => void search()} />{message ? <AppText variant="small" color={colors.textMuted}>{message}</AppText> : null}{recommendations?.length === 0 ? <Button label="Enviar sugestão de nova missão" variant="soft" onPress={() => void createLearningRequest(wanted).then(() => setMessage('Sugestão registrada para a equipe.'))} /> : null}</Card>
 
       {query.loading ? (
         <DataState kind="loading" title="Carregando missões" message="Buscando o conteúdo publicado para sua turma." />
@@ -37,7 +44,7 @@ export default function ParticipantMissionsScreen() {
       ) : (
         <>
           <View accessibilityRole="list" style={styles.list}>
-            {query.data.map((mission, index) => (
+            {(recommendations ? recommendations.map((item) => query.data!.find((mission) => mission.assignmentId === item.assignment_id)).filter((mission): mission is ParticipantMission => Boolean(mission)) : query.data).map((mission, index) => (
               <MissionCard
                 key={mission.assignmentId}
                 mission={mission}
@@ -104,4 +111,6 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginTop: spacing.xs },
   metaItem: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
   pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
+  searchCard: { gap: spacing.md },
+  input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontFamily: type.family, fontSize: type.body, minHeight: 56, paddingHorizontal: spacing.md },
 });

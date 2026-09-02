@@ -46,6 +46,8 @@ export default function AdminHomeScreen() {
         <Action icon="school-outline" label="Gerenciar turmas" onPress={() => router.push('/admin/classes')} />
         <Action icon="people-outline" label="Acompanhar alunos" onPress={() => router.push('/admin/participants')} />
         <Action icon="people-outline" label="Pedidos de ajuda" onPress={() => router.push('/admin/help-requests')} />
+        <Action icon="pulse-outline" label="Modo oficina ao vivo" onPress={() => router.push('/admin/workshop')} />
+        <Action icon="analytics-outline" label="Painel de impacto" onPress={() => router.push('/admin/impact')} />
       </Card>
       <SectionTitle>Atividade recente</SectionTitle>
       <Card style={styles.activityCard}>
@@ -71,7 +73,7 @@ export default function AdminHomeScreen() {
   );
 }
 
-function Action({ icon, label, onPress }: { icon: 'people-outline' | 'school-outline'; label: string; onPress: () => void }) {
+function Action({ icon, label, onPress }: { icon: 'people-outline' | 'school-outline' | 'pulse-outline' | 'analytics-outline'; label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
       <Ionicons name={icon} size={24} color={colors.primary} />

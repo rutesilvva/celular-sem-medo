@@ -27,7 +27,7 @@ export default function RootLayout() {
 
 function AppNavigator() {
   const { sessionRole, status } = useAuth();
-  const { preferencesReady } = useApp();
+  const { preferences, preferencesReady } = useApp();
 
   if (status === 'bootstrapping' || status === 'refreshing' || (status === 'authenticated' && !preferencesReady)) {
     return (
@@ -40,7 +40,7 @@ function AppNavigator() {
   return (
     <Stack
       screenOptions={{
-        animation: 'fade',
+        animation: preferences.reduceMotion ? 'none' : 'fade',
         animationDuration: 200,
         contentStyle: { backgroundColor: colors.background },
         headerShown: false,
@@ -48,6 +48,7 @@ function AppNavigator() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="demo" />
       <Stack.Screen name="auth/callback" />
       <Stack.Screen name="+not-found" />
 
@@ -76,6 +77,8 @@ function AppNavigator() {
         <Stack.Screen name="admin/missions" />
         <Stack.Screen name="admin/reports" />
         <Stack.Screen name="admin/help-requests" />
+        <Stack.Screen name="admin/impact" />
+        <Stack.Screen name="admin/workshop" />
       </Stack.Protected>
     </Stack>
   );
