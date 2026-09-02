@@ -225,13 +225,16 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
 
   if (!step) return null;
 
-  const currentStepPos = Math.min(Math.max(step.position, 1), 8);
+  const currentStepPos = Math.min(Math.max(step.position, 1), 9);
 
   const handleNextStep = async () => {
     if (preferences.hapticFeedback) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const expected = asObject(step.expectedAction);
-    const optionId = expected.target ?? expected.action ?? 'continue';
-    await engine.submit({ action: 'continue', optionId, target: optionId });
+    const expected = asExpectedAction(step.expectedAction);
+    if (expected.action === 'choose') {
+      await engine.submit({ action: 'choose', optionId: expected.option_id ?? 'finish' });
+      return;
+    }
+    await engine.submit({ action: expected.action === 'tap' ? 'tap' : 'continue', target: expected.target });
   };
 
   const renderGovScreen = () => {
@@ -523,7 +526,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
           </View>
         );
 
-      default:
+      case 8:
         // Nova Foto 5: Cadastre uma senha para sua conta gov.br com checklist oficial de 5 regras
         return (
           <View style={styles.govScreenContainer}>
@@ -568,6 +571,52 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
             </View>
           </View>
         );
+
+      default:
+        return (
+          <View style={styles.govScreenContainer}>
+            <View style={styles.govTopNav}>
+              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <View style={styles.govAccessibilityBadge}>
+                <Ionicons name="accessibility" size={22} color="#ffffff" />
+              </View>
+            </View>
+
+            <View style={[styles.govCardInternal, styles.govSuccessContent]}>
+              <View style={styles.govConfettiRow} accessibilityElementsHidden>
+                {['#1351B4', '#E6AC00', '#009B3A', '#D93B3B', '#7C3AED'].map((color, index) => (
+                  <View key={color} style={[styles.govConfettiDot, { backgroundColor: color, transform: [{ rotate: `${index * 18}deg` }] }]} />
+                ))}
+              </View>
+              <AppText variant="title" weight="900" color="#1351B4" style={styles.centerText}>Parabéns!</AppText>
+              <AppText style={styles.centerText}>Você concluiu a criação de uma <AppText weight="900">conta gov.br simulada!</AppText></AppText>
+
+              <View style={styles.govBronzeRow}>
+                <View style={styles.govBronzeCard}>
+                  <View style={styles.govBronzeBarLight} />
+                  <View style={styles.govBronzeBarMedium} />
+                  <View style={styles.govBronzeBarDark} />
+                </View>
+                <AppText variant="subheading">Sua conta fictícia é nível <AppText variant="subheading" weight="900" color="#A24F3D">BRONZE</AppText></AppText>
+              </View>
+
+              <View style={styles.govInfoRow}>
+                <Ionicons name="information-circle" size={25} color={colors.text} />
+                <AppText variant="small" style={styles.flex1}>Em um processo real, você poderia retornar ao serviço e entrar com sua conta gov.br.</AppText>
+              </View>
+
+              <View style={styles.govSimulationNotice}>
+                <Ionicons name="shield-checkmark" size={24} color={colors.success} />
+                <AppText variant="small" weight="800" color={colors.successText} style={styles.flex1}>Isto foi apenas um treinamento. Nenhuma conta real foi criada e nenhum dado foi enviado.</AppText>
+              </View>
+
+              <Pressable accessibilityRole="button" accessibilityLabel="Concluir treinamento da conta Gov.br" style={styles.govOutlineBtn} disabled={engine.busy} onPress={handleNextStep}>
+                <AppText weight="900" color="#1351B4">Concluir</AppText>
+              </Pressable>
+              <AppText variant="small" color="#1351B4" style={styles.centerText}>Saiba mais sobre os níveis da conta gov.br</AppText>
+            </View>
+          </View>
+        );
     }
   };
 
@@ -584,7 +633,6 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         <AppText color={colors.textMuted}>{step.instruction}</AppText>
         <ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
-      <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
       {engine.run.mistakes > 0 ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
       {engine.run.usedHint || engine.run.usedHelp ? <Card style={styles.hints}><AppText weight="800">{engine.run.usedHelp ? 'Ajuda passo a passo' : 'Dicas deste passo'}</AppText>{step.hints.map((hint) => <AppText key={hint}>• {hint}</AppText>)}</Card> : null}
       <View style={styles.supportActions}>
@@ -789,6 +837,9 @@ function StepActions({ step, busy, onSubmit }: { step: ParticipantMissionStep; b
 function asObject(value: ParticipantMissionStep['expectedAction']): { action?: string; target?: string } {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as { action?: string; target?: string } : {};
 }
+function asExpectedAction(value: ParticipantMissionStep['expectedAction']): { action?: string; target?: string; option_id?: string } {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as { action?: string; target?: string; option_id?: string } : {};
+}
 function isOption(value: unknown): value is { id: string; label: string } {
   return Boolean(value && typeof value === 'object' && typeof (value as { id?: unknown }).id === 'string' && typeof (value as { label?: unknown }).label === 'string');
 }
@@ -914,6 +965,17 @@ const styles = StyleSheet.create({
   govInputMockRow: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: spacing.md },
   govChecklistBlock: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, gap: spacing.xs, padding: spacing.md },
   govCheckItem: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  govAccessibilityBadge: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.md, height: 42, justifyContent: 'center', width: 42 },
+  govSuccessContent: { alignItems: 'stretch', paddingVertical: spacing.xl },
+  govConfettiRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'center' },
+  govConfettiDot: { borderRadius: 3, height: 9, width: 5 },
+  govBronzeRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, marginVertical: spacing.md },
+  govBronzeCard: { backgroundColor: '#ffffff', borderRadius: radius.sm, gap: 4, padding: spacing.sm, ...shadow },
+  govBronzeBarLight: { backgroundColor: '#F3D3CB', height: 7, width: 52 },
+  govBronzeBarMedium: { backgroundColor: '#D98A78', height: 7, width: 52 },
+  govBronzeBarDark: { backgroundColor: '#A24F3D', height: 7, width: 52 },
+  govInfoRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.sm },
+  govSimulationNotice: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   centerText: { textAlign: 'center' },
   flex1: { flex: 1 },
 });
