@@ -1,12 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, SwitchRow } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import { captureUsageEvent } from '@/lib/observability';
+import { createVoiceConsentMessage, getVoiceConsentState, setVoiceConsentState } from '@/lib/voice-consent';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function ParticipantAccessibilityScreen() {
@@ -14,6 +16,9 @@ export default function ParticipantAccessibilityScreen() {
   const { preferences, setPreference, showNotice } = useApp();
   const { completeParticipantOnboarding } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [voiceConsent, setVoiceConsent] = useState<'not_requested' | 'requested' | 'accepted' | 'declined'>('not_requested');
+
+  useEffect(() => { void getVoiceConsentState().then(setVoiceConsent); }, []);
 
   const save = async () => {
     if (saving) return;
@@ -46,6 +51,35 @@ export default function ParticipantAccessibilityScreen() {
           Você pode alterar isso depois em Perfil e configurações.
         </AppText>
       </View>
+
+      {voiceConsent === 'not_requested' ? (
+        <Card style={styles.consentCard}>
+          <AppText weight="800">Autorização de voz</AppText>
+          <AppText variant="small" color={colors.textMuted}>{createVoiceConsentMessage()}</AppText>
+          <View style={styles.consentActions}>
+            <Button
+              label="Quero usar voz"
+              variant="primary"
+              onPress={() => {
+                void setVoiceConsentState('accepted');
+                setVoiceConsent('accepted');
+                captureUsageEvent('voice_consent_seen', { completed: true, event: 'voice_consent_seen' });
+                setPreference('voiceResponse', true);
+              }}
+            />
+            <Button
+              label="Prefiro texto"
+              variant="secondary"
+              onPress={() => {
+                void setVoiceConsentState('declined');
+                setVoiceConsent('declined');
+                captureUsageEvent('voice_consent_seen', { completed: false, event: 'voice_consent_seen' });
+                setPreference('voiceResponse', false);
+              }}
+            />
+          </View>
+        </Card>
+      ) : null}
 
       <Card style={styles.settings}>
         <SwitchRow
@@ -87,10 +121,19 @@ export default function ParticipantAccessibilityScreen() {
         <View style={styles.divider} />
         <SwitchRow
           title="Resposta por voz"
-          description="Opcional"
+          description={voiceConsent === 'accepted' ? 'Autorizado para ler instruções' : 'Pendente de autorização'}
           icon="mic-outline"
           value={preferences.voiceResponse}
-          onValueChange={(value) => setPreference('voiceResponse', value)}
+          onValueChange={(value) => {
+            if (voiceConsent !== 'accepted' && value) {
+              void setVoiceConsentState('requested');
+              setVoiceConsent('requested');
+              showNotice('Consulte a autorização de voz antes de ativar.');
+              captureUsageEvent('voice_consent_seen', { completed: false, event: 'voice_consent_seen' });
+              return;
+            }
+            setPreference('voiceResponse', value);
+          }}
         />
         <View style={styles.divider} />
         <SwitchRow title="Reduzir movimentos" description="Evita animações e efeitos de escala" icon="remove-circle-outline" value={preferences.reduceMotion} onValueChange={(value) => setPreference('reduceMotion', value)} />
@@ -131,6 +174,8 @@ const styles = StyleSheet.create({
   content: { gap: spacing.xl },
   intro: { alignItems: 'center', gap: spacing.sm },
   center: { textAlign: 'center' },
+  consentCard: { backgroundColor: '#FFFDFB', borderColor: colors.primaryMuted, gap: spacing.md, padding: spacing.lg },
+  consentActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   settings: { backgroundColor: '#FFFDFB', borderColor: colors.primaryMuted, gap: 0, paddingVertical: spacing.sm },
   divider: { backgroundColor: colors.border, height: 1 },
   preview: {

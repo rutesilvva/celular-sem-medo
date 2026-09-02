@@ -1,0 +1,36 @@
+import { buildReportCsv, buildSimplePdfDocument, createUsageEventSummary, type ReportExportRow } from './report-export';
+import { captureUsageEvent, sanitizeEventPayload } from './observability';
+
+describe('report export helpers', () => {
+  it('serializes a report into a csv-safe string', () => {
+    const rows: ReportExportRow[] = [
+      { label: 'Turma', value: '3A' },
+      { label: 'Aluno com e-mail', value: 'maria@example.com' },
+      { label: 'Conclusão', value: '85%' },
+    ];
+
+    const csv = buildReportCsv(rows);
+
+    expect(csv).toContain('Turma,3A');
+    expect(csv).toContain('Aluno com e-mail,REDACTED_PERSONAL_DATA');
+    expect(csv).toContain('Conclusão,85%');
+  });
+
+  it('summarizes usage events without personal payloads', () => {
+    const payload = { event: 'report_exported', className: '3A', completed: true, email: 'maria@example.com' };
+
+    const summary = createUsageEventSummary(payload);
+    const sanitized = sanitizeEventPayload(payload);
+
+    expect(summary).toContain('report_exported');
+    expect(sanitized.email).toBe('REDACTED_PERSONAL_DATA');
+    expect(sanitized.className).toBe('REDACTED_PERSONAL_DATA');
+    expect(captureUsageEvent('report_exported', payload)).toEqual(expect.not.objectContaining({ className: '3A' }));
+  });
+
+  it('places the title and first row on different PDF lines', () => {
+    const pdf = buildSimplePdfDocument('Resumo', [{ label: 'Turma', value: '3A' }]);
+    expect(pdf).toContain('72 760 Td');
+    expect(pdf).toContain('72 742 Td');
+  });
+});

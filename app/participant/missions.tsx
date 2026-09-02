@@ -1,13 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, Tag } from '@/components/ui';
 import { useMissionCatalog } from '@/hooks/useMissionData';
+import { generateAiMission } from '@/lib/ai-mission-generator';
 import { createLearningRequest, getMissionRecommendations, type MissionRecommendation, type ParticipantMission } from '@/lib/backend';
 import { colors, radius, spacing, type } from '@/theme/tokens';
 
@@ -17,23 +18,103 @@ export default function ParticipantMissionsScreen() {
   const router = useRouter();
   const query = useMissionCatalog();
   const [wanted, setWanted] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [recommendations, setRecommendations] = useState<MissionRecommendation[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
   const [message, setMessage] = useState('');
-  const search = async () => { setSearching(true); setMessage(''); try { const result=await getMissionRecommendations(wanted); setRecommendations(result); if (!result.length) setMessage('Ainda não temos essa missão. Você pode enviar essa sugestão.'); } catch { setMessage('Não foi possível pesquisar agora.'); } finally { setSearching(false); } };
+
+  const search = async () => {
+    setSearching(true);
+    setMessage('');
+    try {
+      const result = await getMissionRecommendations(wanted);
+      setRecommendations(result);
+      if (!result.length) setMessage('Ainda não temos essa missão no catálogo. Você pode gerar com IA abaixo!');
+    } catch {
+      setMessage('Não foi possível pesquisar agora.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleGenerateAi = async () => {
+    if (!wanted.trim()) return;
+    setAiGenerating(true);
+    setMessage('');
+    try {
+      const aiSessionId = await generateAiMission(wanted);
+      router.push({ pathname: '/participant/simulator', params: { aiSessionId } });
+    } catch {
+      setMessage('Não foi possível gerar o treino por IA no momento.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const categories = useMemo(() => {
+    if (!query.data) return ['Todas'];
+    const set = new Set(query.data.map((m) => m.category));
+    return ['Todas', ...Array.from(set)];
+  }, [query.data]);
+
+  const displayedMissions = useMemo(() => {
+    if (!query.data) return [];
+    let list = recommendations
+      ? recommendations
+          .map((item) => query.data!.find((mission) => mission.assignmentId === item.assignment_id))
+          .filter((mission): mission is ParticipantMission => Boolean(mission))
+      : query.data;
+
+    if (selectedCategory !== 'Todas') {
+      list = list.filter((m) => m.category.toLowerCase() === selectedCategory.toLowerCase());
+    }
+
+    return list;
+  }, [query.data, recommendations, selectedCategory]);
 
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title="Escolha uma missão" subtitle="Comece por algo que faça parte do seu dia a dia." audio />
+      {query.offline ? <Tag label="Catálogo salvo · sem internet" tone="yellow" /> : null}
 
       <Card style={styles.introCard}>
         <View style={styles.introIcon}><Ionicons name="flag" size={28} color={colors.primary} /></View>
         <View style={styles.introCopy}>
           <AppText weight="800">Qual habilidade você quer treinar?</AppText>
-          <AppText variant="small" color={colors.textMuted}>O catálogo mostra apenas conteúdos publicados e liberados para sua turma.</AppText>
+          <AppText variant="small" color={colors.textMuted}>O catálogo mostra conteúdos da sua turma e treinos por Inteligência Artificial.</AppText>
         </View>
       </Card>
-      <Card style={styles.searchCard}><AppText weight="800">Quero aprender isto</AppText><TextInput accessibilityLabel="O que você quer aprender" placeholder="Ex.: reconhecer uma mensagem falsa" placeholderTextColor={colors.placeholder} value={wanted} onChangeText={setWanted} style={styles.input} /><Button label={searching ? 'Buscando…' : 'Encontrar uma missão'} disabled={wanted.trim().length < 3 || searching} icon="search" onPress={() => void search()} />{message ? <AppText variant="small" color={colors.textMuted}>{message}</AppText> : null}{recommendations?.length === 0 ? <Button label="Enviar sugestão de nova missão" variant="soft" onPress={() => void createLearningRequest(wanted).then(() => setMessage('Sugestão registrada para a equipe.'))} /> : null}</Card>
+
+      <Card style={styles.searchCard}>
+        <AppText weight="800">Quero aprender isto</AppText>
+        <TextInput accessibilityLabel="O que você quer aprender" placeholder="Ex.: agendar remédio, pedir comida" placeholderTextColor={colors.placeholder} value={wanted} onChangeText={setWanted} style={styles.input} />
+        <View style={styles.searchActions}>
+          <Button label={searching ? 'Buscando…' : 'Buscar no catálogo'} disabled={wanted.trim().length < 3 || searching || aiGenerating} icon="search" variant="secondary" onPress={() => void search()} />
+          <Button label={aiGenerating ? 'Criando treino com IA… 🤖' : '✨ Gerar treino com IA'} disabled={wanted.trim().length < 3 || searching || aiGenerating} icon="sparkles" variant="primary" onPress={() => void handleGenerateAi()} />
+        </View>
+        {message ? <AppText variant="small" color={colors.textMuted}>{message}</AppText> : null}
+        {recommendations?.length === 0 ? <Button label="Enviar sugestão de nova missão" variant="soft" onPress={() => void createLearningRequest(wanted).then(() => setMessage('Sugestão registrada para a equipe.'))} /> : null}
+      </Card>
+
+      {categories.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsContainer}>
+          {categories.map((cat) => {
+            const active = cat === selectedCategory;
+            return (
+              <Pressable
+                key={cat}
+                onPress={() => setSelectedCategory(cat)}
+                style={[styles.pill, active && styles.pillActive]}
+              >
+                <AppText variant="small" weight="700" color={active ? colors.surface : colors.primary}>
+                  {cat}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
 
       {query.loading ? (
         <DataState kind="loading" title="Carregando missões" message="Buscando o conteúdo publicado para sua turma." />
@@ -41,14 +122,16 @@ export default function ParticipantMissionsScreen() {
         <DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={query.retry} />
       ) : !query.data?.length ? (
         <DataState kind="empty" title="Nenhuma missão disponível" message="Sua turma ainda não possui uma missão publicada." />
+      ) : !displayedMissions.length ? (
+        <DataState kind="empty" title="Nenhuma missão nesta categoria" message="Tente selecionar outra categoria nas pílulas acima." />
       ) : (
         <>
           <View accessibilityRole="list" style={styles.list}>
-            {(recommendations ? recommendations.map((item) => query.data!.find((mission) => mission.assignmentId === item.assignment_id)).filter((mission): mission is ParticipantMission => Boolean(mission)) : query.data).map((mission, index) => (
+            {displayedMissions.map((mission, index) => (
               <MissionCard
                 key={mission.assignmentId}
                 mission={mission}
-                recommended={index === 0}
+                recommended={index === 0 && selectedCategory === 'Todas' && !recommendations}
                 onPress={() => router.push({
                   pathname: '/participant/mission-details',
                   params: { assignmentId: mission.assignmentId },
@@ -58,12 +141,22 @@ export default function ParticipantMissionsScreen() {
           </View>
           <AudioButton
             label="Ouvir as missões"
-            message={query.data.map((mission) => `${mission.title}, ${mission.estimatedMinutes} minutos, dificuldade ${difficultyLabels[mission.difficulty]}`).join('. ')}
+            message={displayedMissions.map((mission) => `${mission.title}, ${mission.estimatedMinutes} minutos, dificuldade ${difficultyLabels[mission.difficulty]}`).join('. ')}
           />
         </>
       )}
     </Screen>
   );
+}
+
+function iconForCategory(category: string): keyof typeof Ionicons.glyphMap {
+  const cat = category.toLowerCase();
+  if (cat.includes('segurança')) return 'shield-checkmark-outline';
+  if (cat.includes('mensagem')) return 'chatbubbles-outline';
+  if (cat.includes('mobilidade')) return 'car-outline';
+  if (cat.includes('compra')) return 'cart-outline';
+  if (cat.includes('aplicativo')) return 'apps-outline';
+  return 'school-outline';
 }
 
 function MissionCard({ mission, recommended, onPress }: {
@@ -79,7 +172,9 @@ function MissionCard({ mission, recommended, onPress }: {
       onPress={onPress}
       style={({ pressed }) => [styles.mission, recommended && styles.missionRecommended, pressed && styles.pressed]}
     >
-      <View style={styles.missionIcon}><Ionicons name="school-outline" size={30} color={colors.primary} /></View>
+      <View style={styles.missionIcon}>
+        <Ionicons name={iconForCategory(mission.category)} size={28} color={colors.primary} />
+      </View>
       <View style={styles.missionBody}>
         <View style={styles.missionHeading}>
           <AppText variant="subheading" weight="800" style={styles.missionTitle}>{mission.title}</AppText>
@@ -112,5 +207,9 @@ const styles = StyleSheet.create({
   metaItem: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
   pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
   searchCard: { gap: spacing.md },
+  searchActions: { gap: spacing.md },
   input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontFamily: type.family, fontSize: type.body, minHeight: 56, paddingHorizontal: spacing.md },
+  pillsContainer: { gap: spacing.sm, paddingVertical: spacing.xs },
+  pill: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.round, borderWidth: 1.5, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  pillActive: { backgroundColor: colors.primary, borderColor: colors.primaryDark },
 });

@@ -3,8 +3,20 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
-import { AppText, AudioButton, LogoMark } from '@/components/ui';
-import { colors, radius, spacing } from '@/theme/tokens';
+import { AppText } from '@/components/ui';
+import { radius } from '@/theme/tokens';
+
+const dockIcons = [
+  { label: 'Finder', color: '#F7B267' },
+  { label: 'Safari', color: '#5AE4A8' },
+  { label: 'Mail', color: '#F26B6B' },
+  { label: 'App Store', color: '#7FB3FF' },
+  { label: 'Notes', color: '#FFD166' },
+  { label: 'Calendar', color: '#BD9DF8' },
+  { label: 'Music', color: '#4EC8FF' },
+  { label: 'Settings', color: '#B5B5B5' },
+  { label: 'Trash', color: '#D7D7D7' },
+];
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -15,42 +27,106 @@ export default function SplashScreen() {
   }, [router]);
 
   return (
-    <Screen scroll={false} contentStyle={styles.content}>
-      <View style={styles.orbOne} />
-      <View style={styles.orbTwo} />
+    <Screen scroll={false} contentStyle={styles.desktopPage}>
+      <View style={styles.topBar}>
+        <View style={styles.topLeft}>
+          <View style={styles.dotRed} />
+          <View style={styles.dotYellow} />
+          <View style={styles.dotGreen} />
+        </View>
+
+        <View style={styles.menuRow}>
+          <AppText variant="small" color="#D8D8D8">API Keys</AppText>
+          <AppText variant="small" color="#D8D8D8">|</AppText>
+          <AppText variant="small" color="#D8D8D8">Settings</AppText>
+          <AppText variant="small" color="#D8D8D8">|</AppText>
+          <AppText variant="small" color="#D8D8D8">Celular Sem Medo</AppText>
+        </View>
+
+        <View style={styles.urlChip}>
+          <View style={styles.globeDot} />
+          <AppText variant="small" color="#F2F2F2">localhost:8081</AppText>
+        </View>
+      </View>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Abrir Celular Sem Medo"
         accessibilityHint="Leva para a tela de entrada"
         onPress={() => router.replace('/login')}
-        style={styles.main}
-      >
-        <LogoMark wordmark />
-        <View style={styles.brandCopy}>
-          <AppText variant="body" color={colors.textMuted} style={styles.center}>
-            Aprenda no seu ritmo,{`\n`}pratique sem medo.
-          </AppText>
+        style={styles.emptyDesktop}
+      />
+
+      <View style={styles.dock}>
+        {dockIcons.map((icon, index) => (
+          <View key={`${icon.label}-${index}`} style={styles.iconWrap}>
+            <View style={[styles.appIcon, { backgroundColor: icon.color }]} />
+          </View>
+        ))}
+        <View style={styles.moreIconWrap}>
+          <View style={styles.moreIcon} />
         </View>
-      </Pressable>
-      <AudioButton label="Ouvir apresentação" message="Celular Sem Medo. Aprenda no seu ritmo e pratique sem medo." />
-      <View accessible={false} importantForAccessibility="no-hide-descendants" style={styles.dots}>
-        <View style={[styles.dot, styles.dotActive]} />
-        <View style={styles.dot} />
-        <View style={styles.dot} />
       </View>
-      <AppText variant="small" color={colors.textMuted} style={styles.center}>Toque para continuar</AppText>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: spacing.xxxl },
-  main: { alignItems: 'center', gap: spacing.xxl, width: '100%' },
-  brandCopy: { gap: spacing.md },
-  center: { textAlign: 'center' },
-  dots: { flexDirection: 'row', gap: spacing.sm },
-  dot: { backgroundColor: colors.primaryMuted, borderRadius: radius.round, height: 8, width: 8 },
-  dotActive: { backgroundColor: colors.primary, width: 24 },
-  orbOne: { backgroundColor: '#EAD9FF', borderRadius: radius.round, height: 260, left: -110, opacity: 0.9, position: 'absolute', top: -80, width: 260 },
-  orbTwo: { backgroundColor: '#F7DDC0', borderRadius: radius.round, bottom: -110, height: 230, opacity: 0.8, position: 'absolute', right: -100, width: 230 },
+  desktopPage: {
+    backgroundColor: '#000000',
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  topBar: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(20, 20, 20, 0.92)',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    height: 36,
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    width: '100%',
+  },
+  topLeft: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  dotRed: { backgroundColor: '#FF5F57', borderRadius: radius.round, height: 10, width: 10 },
+  dotYellow: { backgroundColor: '#FFBD2F', borderRadius: radius.round, height: 10, width: 10 },
+  dotGreen: { backgroundColor: '#28C840', borderRadius: radius.round, height: 10, width: 10 },
+  menuRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  urlChip: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  globeDot: { backgroundColor: '#34C759', borderRadius: radius.round, height: 9, width: 9 },
+  emptyDesktop: { flex: 1, width: '100%' },
+  dock: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(20, 20, 20, 0.82)',
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopWidth: 1,
+    bottom: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    width: '100%',
+  },
+  iconWrap: { alignItems: 'center', justifyContent: 'center', marginHorizontal: 6 },
+  appIcon: { borderRadius: 12, height: 30, width: 30 },
+  moreIconWrap: { alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+  moreIcon: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 8,
+    height: 30,
+    width: 30,
+  },
 });

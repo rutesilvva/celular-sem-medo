@@ -138,24 +138,26 @@ export function AudioButton({ label = 'Ouvir', compact = false, message }: {
   compact?: boolean;
   message?: string;
 }) {
-  const { playInstruction } = useApp();
+  const { audioStatus, playInstruction } = useApp();
+  const isSpeaking = audioStatus === 'speaking';
 
   if (compact) {
     return (
       <IconButton
-        icon="volume-high-outline"
-        label={label}
+        icon={isSpeaking ? 'volume-medium' : 'volume-high-outline'}
+        label={isSpeaking ? 'Ouvindo...' : label}
         onPress={() => playInstruction(message)}
+        tone="primary"
       />
     );
   }
 
   return (
     <Button
-      label={label}
-      icon="volume-high-outline"
+      label={isSpeaking ? 'Falando áudio… 🔊' : label}
+      icon={isSpeaking ? 'volume-medium' : 'volume-high-outline'}
       onPress={() => playInstruction(message)}
-      variant="secondary"
+      variant={isSpeaking ? 'primary' : 'secondary'}
     />
   );
 }

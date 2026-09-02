@@ -1,27 +1,37 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Share, StyleSheet, View } from 'react-native';
-import { useState } from 'react';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { ConfidencePicker } from '@/components/ConfidencePicker';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
-import { AppText, AudioButton, Button, Card, ProgressBar } from '@/components/ui';
+import { AppText, AudioButton, Button, Card, ProgressBar, Tag } from '@/components/ui';
+import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMissionContent } from '@/hooks/useMissionData';
 import { useParticipantProgress } from '@/hooks/useProgressData';
+import { completeAssessmentResilient } from '@/lib/offline-assessments';
 import { colors, radius, spacing } from '@/theme/tokens';
-import { completeMissionAssessment } from '@/lib/backend';
 
 export default function ParticipantResultScreen() {
   const router = useRouter();
   const { assignmentId, assessmentId, attemptId, completion } = useLocalSearchParams<{ assignmentId?: string; assessmentId?: string; attemptId?: string; completion?: string }>();
   const [confidenceAfter, setConfidenceAfter] = useState<number | null>(null);
   const [gain, setGain] = useState<number | null>(null);
+  const [assessmentPending, setAssessmentPending] = useState(false);
   const { currentUser } = useAuth();
+  const { preferences } = useApp();
   const query = useMissionContent(assignmentId ?? null);
   const progressQuery = useParticipantProgress();
+
+  useEffect(() => {
+    if (preferences.hapticFeedback) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [preferences.hapticFeedback]);
 
   if (query.loading) return <ResultState kind="loading" retry={query.retry} />;
   if (query.error) return <ResultState kind="error" retry={query.retry} />;
@@ -45,6 +55,7 @@ export default function ParticipantResultScreen() {
         <View style={styles.successRing}>
           <Ionicons name="checkmark" size={58} color={colors.surface} />
         </View>
+        <Tag label="★ Missão Praticada com Sucesso!" tone="green" />
         <View style={styles.heroCopy}>
           <AppText variant="title" weight="800" color={colors.primary} style={styles.center}>
             Você conseguiu!
@@ -91,7 +102,8 @@ export default function ParticipantResultScreen() {
 
       <Card style={styles.progressCard}>
         <ConfidencePicker label="E agora, quanta confiança você sente?" value={confidenceAfter} onChange={setConfidenceAfter} />
-        <Button label={gain === null ? 'Registrar minha evolução' : `Evolução registrada: ${gain >= 0 ? '+' : ''}${gain}`} disabled={!confidenceAfter || gain !== null || !assessmentId || !attemptId} onPress={() => void completeMissionAssessment(assessmentId!,attemptId!,confidenceAfter!).then(setGain)} />
+        <Button label={gain === null ? 'Registrar minha evolução' : `Evolução registrada: ${gain >= 0 ? '+' : ''}${gain}`} disabled={!confidenceAfter || gain !== null || !assessmentId || !attemptId || !currentUser} onPress={() => void completeAssessmentResilient(currentUser!.id,assessmentId!,attemptId!,confidenceAfter!).then((value) => { if (value === null) setAssessmentPending(true); else setGain(value); }).catch(() => setAssessmentPending(true))} />
+        {assessmentPending ? <AppText variant="small" color={colors.textMuted}>A missão foi concluída offline. A avaliação poderá ser registrada quando a tentativa terminar de sincronizar.</AppText> : null}
       </Card>
 
       <View style={styles.actions}>
@@ -104,7 +116,7 @@ export default function ParticipantResultScreen() {
           icon="arrow-forward"
           accessibilityHint="Abre a tela do seu progresso"
           onPress={continueTrail}
-          disabled={Boolean(assessmentId && attemptId) && gain === null}
+          disabled={Boolean(assessmentId && attemptId) && gain === null && !assessmentPending}
         />
         <Button
           label="Praticar novamente"

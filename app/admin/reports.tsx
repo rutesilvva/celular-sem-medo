@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import { useCallback, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminNav } from '@/components/BottomNav';
 import { AdminClassSelector } from '@/components/AdminClassSelector';
@@ -10,6 +11,8 @@ import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, Se
 import { useApp } from '@/context/AppContext';
 import { useAdminClass } from '@/hooks/useClassData';
 import { useAdminProgress } from '@/hooks/useProgressData';
+import { deleteReportFiles, exportReportFiles, type ReportExportRow } from '@/lib/report-export';
+import { captureUsageEvent } from '@/lib/observability';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 type ReportPeriod = 7 | 30 | 90;
@@ -25,6 +28,37 @@ export default function ReportsScreen() {
   const failed = classQuery.error || progress.summary.error || progress.missions.error || progress.evolution.error;
   const hasActivity = (data?.active_participants ?? 0) > 0;
   const updatedAt = progress.summary.updatedAt;
+  const handleExport = useCallback(async () => {
+    if (!data || !classQuery.data) return;
+    const rows: ReportExportRow[] = [
+      { label: 'Turma', value: classQuery.data.class_name },
+      { label: 'Participantes ativos', value: data.active_participants ?? 0 },
+      { label: 'Missões concluídas', value: data.completed_missions ?? 0 },
+      { label: 'Conclusão da turma', value: `${data.completion_percent ?? 0}%` },
+      { label: 'Autonomia', value: `${data.autonomy_percent ?? 0}%` },
+      { label: 'Uso de áudio', value: `${data.audio_usage_percent ?? 0}%` },
+      { label: 'Período', value: `${period} dias` },
+    ];
+
+    try {
+      const exported = await exportReportFiles(rows, `Relatório ${classQuery.data.class_name}`);
+      captureUsageEvent('report_exported', { className: classQuery.data.class_name, completed: true, event: 'report_exported' });
+      if (!await Sharing.isAvailableAsync()) {
+        Alert.alert('Exportação pronta', 'Os arquivos foram gerados, mas o compartilhamento não está disponível neste dispositivo.');
+        return;
+      }
+      Alert.alert('Escolha o formato', 'Qual arquivo você deseja compartilhar?', [
+        { text: 'Cancelar', style: 'cancel', onPress: () => void deleteReportFiles([exported.csvPath, exported.pdfPath]) },
+        { text: 'CSV', onPress: () => void shareAndClean(exported.csvPath, exported.pdfPath, 'text/csv') },
+        { text: 'PDF', onPress: () => void shareAndClean(exported.pdfPath, exported.csvPath, 'application/pdf') },
+      ]);
+      showNotice('Relatório pronto para compartilhar');
+    } catch (error) {
+      captureUsageEvent('report_exported', { className: classQuery.data.class_name, completed: false, event: 'report_exported' });
+      console.error(error);
+      Alert.alert('Não foi possível exportar', 'Verifique a permissão para salvar arquivos no aparelho e tente novamente.');
+    }
+  }, [classQuery.data, data, period, showNotice]);
 
   return (
     <Screen footer={<AdminNav active="reports" />}>
@@ -148,14 +182,19 @@ export default function ReportsScreen() {
           </View>
         </View>
         <Button
-          label="Preparar relatório para exportação"
+          label="Exportar CSV e PDF"
           icon="download-outline"
-          onPress={() => showNotice('Relatório pronto para exportação.')}
+          onPress={handleExport}
         />
       </Card>
       </>}
     </Screen>
   );
+}
+
+async function shareAndClean(selectedPath: string, unusedPath: string, mimeType: string) {
+  try { await Sharing.shareAsync(selectedPath, { mimeType, dialogTitle: 'Compartilhar relatório' }); }
+  finally { await deleteReportFiles([selectedPath, unusedPath]); }
 }
 
 function formatUpdatedAt(value: Date | null) {

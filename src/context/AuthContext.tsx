@@ -7,6 +7,7 @@ import { canSelectRole } from '@/features/auth/authorization';
 import { GoogleAuthError, loadAuthenticatedAccount } from '@/lib/google-auth';
 import type { AuthenticatedAccount, AuthenticatedUser, GoogleAuthErrorCode } from '@/lib/google-auth';
 import { clearStoredSession, getSupabase } from '@/lib/supabase';
+import { clearAccountCache, readAccountCache, writeAccountCache } from '@/lib/account-cache';
 
 export type AuthStatus = 'bootstrapping' | 'anonymous' | 'authenticated' | 'refreshing';
 
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (account.roles.length === 1) setSessionRole(account.roles[0]!);
     else setSessionRole(null);
     setStatus('authenticated');
+    void writeAccountCache(account);
   }, []);
 
   const refreshOnce = useCallback(() => {
@@ -99,8 +101,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       acceptAuthenticatedAccount(await loadAuthenticatedAccount());
     } catch (error) {
       const code = error instanceof GoogleAuthError ? error.code : isNetworkError(error) ? 'offline' : 'temporary_failure';
+      if (code === 'offline') {
+        const cachedAccount = await readAccountCache();
+        if (cachedAccount) { acceptAuthenticatedAccount(cachedAccount); return; }
+      }
       // Sem rede preservamos a credencial no storage para permitir nova tentativa.
-      if (code !== 'offline') await clearStoredSession();
+      if (code !== 'offline') { await clearStoredSession(); await clearAccountCache(); }
       clearAuthState(code);
     }
   }, [acceptAuthenticatedAccount, clearAuthState, refreshOnce]);
@@ -167,6 +173,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (timeout) clearTimeout(timeout);
       supabase.auth.stopAutoRefresh();
       await clearStoredSession();
+      await clearAccountCache();
       if (Platform.OS !== 'web') {
         try {
           WebBrowser.dismissAuthSession();

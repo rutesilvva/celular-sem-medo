@@ -112,8 +112,8 @@ export async function getParticipantMissionContent(assignmentId: string): Promis
   };
 }
 
-export async function startMissionAssessment(assignmentId: string, confidence: number) {
-  const id = createUuid();
+export async function startMissionAssessment(assignmentId: string, confidence: number, requestedId = createUuid()) {
+  const id = requestedId;
   const { data, error } = await getSupabase().rpc('start_mission_self_assessment', { requested_id: id, target_assignment_id: assignmentId, rating: confidence });
   if (error) throw error;
   return data;

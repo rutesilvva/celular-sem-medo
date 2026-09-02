@@ -20,6 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-font',
     'expo-status-bar',
+    'expo-sharing',
     ['expo-web-browser', { experimentalLauncherActivity: false }],
     ['expo-secure-store', { configureAndroidBackup: true }],
     ['expo-splash-screen', { image: './assets/logo-celular-sem-medo.png', resizeMode: 'contain', backgroundColor: '#FAF8FC' }],

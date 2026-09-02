@@ -1,136 +1,44 @@
+import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import {
-  completionKind,
-  initialMissionRunState,
-  isExpectedAction,
-  missionRunReducer,
-  type MissionAction,
-  type MissionRunState,
-} from '@/features/mission-engine/executor';
-import { appendAttemptEvent, setMissionAttemptProgress, startOrResumeMissionAttempt } from '@/lib/backend';
-import type { ParticipantMissionStep } from '@/lib/backend';
+import { useAuth } from '@/context/AuthContext';
+import { completionKind, initialMissionRunState, isExpectedAction, missionRunReducer, type MissionAction } from '@/features/mission-engine/executor';
+import { type ParticipantMissionStep } from '@/lib/backend';
+import { enqueueOfflineEvent, readOfflineAttempt, writeOfflineAttempt, type OfflineAttempt, type OfflineMissionEvent } from '@/lib/offline-store';
+import { synchronizeOfflineAttempt } from '@/lib/offline-sync';
 
-type AttemptEventType = Parameters<typeof appendAttemptEvent>[0]['eventType'];
+type SyncStatus='offline'|'pending'|'syncing'|'synced'|'failed';
 
-export function useMissionEngine(assignmentId: string, steps: ParticipantMissionStep[]) {
-  const [attemptId, setAttemptId] = useState<string | null>(null);
-  const [sequence, setSequence] = useState(1);
-  const [run, setRun] = useState<MissionRunState>(initialMissionRunState);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const mounted = useRef(true);
-  const startedFor = useRef<string | null>(null);
-  const eventTimes = useRef<Record<number, string>>({});
-  const occurredAt = useCallback((eventSequence: number) => {
-    eventTimes.current[eventSequence] ??= new Date().toISOString();
-    return eventTimes.current[eventSequence];
-  }, []);
+export function useMissionEngine(assignmentId:string,steps:ParticipantMissionStep[]){
+  const {currentUser}=useAuth();
+  const [attempt,setAttempt]=useState<OfflineAttempt|null>(null);
+  const [loading,setLoading]=useState(true);const[busy,setBusy]=useState(false);const[error,setError]=useState<string|null>(null);const[syncStatus,setSyncStatus]=useState<SyncStatus>('pending');
+  const mounted=useRef(true);const syncing=useRef<Promise<void>|null>(null);const attemptRef=useRef<OfflineAttempt|null>(null);
+  const applyAttempt=useCallback(async(next:OfflineAttempt)=>{attemptRef.current=next;if(mounted.current)setAttempt(next);await writeOfflineAttempt(next)},[]);
 
-  const start = useCallback(async () => {
-    if (!steps.length) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const attempt = await startOrResumeMissionAttempt(assignmentId, createUuid());
-      const restoredIndex = Math.max(0, steps.findIndex((step) => step.id === attempt.current_step_id));
-      if (!mounted.current) return;
-      setAttemptId(attempt.attempt_id);
-      setSequence(attempt.next_sequence_number);
-      setRun({
-        ...initialMissionRunState,
-        stepIndex: restoredIndex,
-        completed: attempt.attempt_status === 'completed',
-        mistakes: attempt.mistake_count,
-        usedHint: attempt.used_hint,
-        usedHelp: attempt.used_help,
-      });
-      if (attempt.attempt_status === 'in_progress') {
-        await record(attempt.attempt_id, attempt.next_sequence_number, attempt.next_sequence_number === 1 ? 'attempt_started' : 'attempt_resumed', steps[restoredIndex]?.id, occurredAt(attempt.next_sequence_number));
-        if (mounted.current) setSequence(attempt.next_sequence_number + 1);
-      }
-    } catch {
-      if (mounted.current) setError('Não foi possível iniciar ou restaurar esta tentativa.');
-    } finally {
-      if (mounted.current) setLoading(false);
-    }
-  }, [assignmentId, occurredAt, steps]);
+  const synchronize=useCallback(async(candidate?:OfflineAttempt)=>{
+    if(syncing.current)return syncing.current;
+    const local=candidate??attemptRef.current;if(!local||!currentUser||local.ownerId!==currentUser.id||!local.pending.length){setSyncStatus('synced');return;}
+    const network=await NetInfo.fetch();if(network.isConnected===false||network.isInternetReachable===false){setSyncStatus('offline');return;}
+    const task=(async()=>{setSyncStatus('syncing');try{
+      const working=await synchronizeOfflineAttempt(currentUser.id,local.assignmentId,(next)=>{attemptRef.current=next;if(mounted.current)setAttempt(next)});
+      if(working){attemptRef.current=working;if(mounted.current)setAttempt(working)}
+      if(mounted.current){setSyncStatus('synced');setError(null)}
+    }catch{if(mounted.current){setSyncStatus('failed');setError('A missão está salva neste aparelho. Toque para sincronizar quando houver internet.')}}finally{syncing.current=null}})();
+    syncing.current=task;return task;
+  },[currentUser]);
 
-  useEffect(() => {
-    mounted.current = true;
-    const startKey = `${assignmentId}:${steps.map((step) => step.id).join(',')}`;
-    if (startedFor.current === startKey) return () => { mounted.current = false; };
-    startedFor.current = startKey;
-    void start();
-    return () => { mounted.current = false; };
-  }, [assignmentId, start, steps]);
+  const start=useCallback(async()=>{if(!currentUser||!steps.length)return;setLoading(true);setError(null);const cached=await readOfflineAttempt(currentUser.id,assignmentId);if(cached){await applyAttempt(cached);setSyncStatus(cached.pending.length?'pending':'synced');setLoading(false);void synchronize(cached);return}const created:OfflineAttempt={ownerId:currentUser.id,assignmentId,localAttemptId:createUuid(),remoteAttemptId:null,remoteNextSequence:null,run:initialMissionRunState,pending:[],syncedOperationIds:[],updatedAt:new Date().toISOString()};const started=enqueueOfflineEvent(created,event('attempt_started',steps[0]?.id));await applyAttempt(started);setSyncStatus('pending');setLoading(false);void synchronize(started)},[applyAttempt,assignmentId,currentUser,steps,synchronize]);
 
-  const currentStep = steps[run.stepIndex] ?? steps[0] ?? null;
+  useEffect(()=>{mounted.current=true;queueMicrotask(()=>void start());const unsubscribe=NetInfo.addEventListener(state=>{if(state.isConnected&&state.isInternetReachable!==false)void synchronize()});return()=>{mounted.current=false;unsubscribe()}},[start,synchronize]);
+  const run=attempt?.run??initialMissionRunState;const currentStep=steps[run.stepIndex]??steps[0]??null;
 
-  const submit = useCallback(async (action: MissionAction) => {
-    if (!attemptId || !currentStep || busy || run.completed) return;
-    setBusy(true);
-    setError(null);
-    const correct = isExpectedAction(currentStep.expectedAction, action);
-    const lastStep = run.stepIndex === steps.length - 1;
-    try {
-      await record(attemptId, sequence, correct ? 'action_succeeded' : 'action_failed', currentStep.id, occurredAt(sequence));
-      let nextSequence = sequence + 1;
-      if (correct) {
-        const nextStep = steps[run.stepIndex + 1] ?? currentStep;
-        if (lastStep) {
-          await record(attemptId, nextSequence, 'attempt_completed', currentStep.id, occurredAt(nextSequence));
-          nextSequence += 1;
-        }
-        await setMissionAttemptProgress({ attemptId, stepId: nextStep.id, completed: lastStep });
-      }
-      setRun((value) => missionRunReducer(value, { type: 'answer', correct, lastStep }));
-      setSequence(nextSequence);
-    } catch {
-      setError('A ação não pôde ser salva. Tente novamente.');
-    } finally {
-      setBusy(false);
-    }
-  }, [attemptId, busy, currentStep, occurredAt, run.completed, run.stepIndex, sequence, steps]);
+  const submit=useCallback(async(action:MissionAction)=>{const local=attemptRef.current;if(!local||!currentStep||busy||local.run.completed)return;setBusy(true);setError(null);const correct=isExpectedAction(currentStep.expectedAction,action);const lastStep=local.run.stepIndex===steps.length-1;const nextRun=missionRunReducer(local.run,{type:'answer',correct,lastStep});let next=enqueueOfflineEvent({...local,run:nextRun},event(correct?'action_succeeded':'action_failed',currentStep.id,correct?steps[local.run.stepIndex+1]?.id??currentStep.id:undefined,correct&&lastStep));if(correct&&lastStep)next=enqueueOfflineEvent(next,event('attempt_completed',currentStep.id));await applyAttempt(next);setSyncStatus('pending');setBusy(false);void synchronize(next)},[applyAttempt,busy,currentStep,steps,synchronize]);
 
-  const registerSupport = useCallback(async (kind: 'hint' | 'help' | 'audio') => {
-    if (!attemptId || !currentStep || busy) return;
-    setBusy(true);
-    const eventType: AttemptEventType = kind === 'hint' ? 'hint_requested' : kind === 'help' ? 'help_requested' : 'audio_started';
-    try {
-      await record(attemptId, sequence, eventType, currentStep.id, occurredAt(sequence));
-      setSequence((value) => value + 1);
-      if (kind !== 'audio') setRun((value) => missionRunReducer(value, { type: kind }));
-    } catch {
-      setError('Não foi possível registrar o apoio agora.');
-    } finally {
-      setBusy(false);
-    }
-  }, [attemptId, busy, currentStep, occurredAt, sequence]);
+  const registerSupport=useCallback(async(kind:'hint'|'help'|'audio')=>{const local=attemptRef.current;if(!local||!currentStep||busy)return;setBusy(true);const eventType=kind==='hint'?'hint_requested':kind==='help'?'help_requested':'audio_started';const nextRun=kind==='audio'?local.run:missionRunReducer(local.run,{type:kind});const next=enqueueOfflineEvent({...local,run:nextRun},event(eventType,currentStep.id));await applyAttempt(next);setSyncStatus('pending');setBusy(false);void synchronize(next)},[applyAttempt,busy,currentStep,synchronize]);
 
-  return useMemo(() => ({
-    attemptId, busy, completion: completionKind(run), currentStep, error, loading,
-    run, retry: start, submit, registerSupport,
-  }), [attemptId, busy, currentStep, error, loading, registerSupport, run, start, submit]);
+  return useMemo(()=>({attemptId:attempt?.remoteAttemptId??attempt?.localAttemptId??null,localAttemptId:attempt?.localAttemptId??null,busy,completion:completionKind(run),currentStep,error,loading,pendingCount:attempt?.pending.length??0,run,syncStatus,retry:()=>synchronize(),submit,registerSupport}),[attempt,busy,currentStep,error,loading,registerSupport,run,submit,syncStatus,synchronize]);
 }
 
-async function record(attemptId: string, sequenceNumber: number, eventType: AttemptEventType, stepId: string | undefined, occurredAt: string) {
-  return appendAttemptEvent({
-    eventId: eventUuid(attemptId, sequenceNumber), attemptId, sequenceNumber, eventType, stepId,
-    occurredAt,
-  });
-}
-
-function eventUuid(attemptId: string, sequenceNumber: number) {
-  const suffix = sequenceNumber.toString(16).padStart(12, '0').slice(-12);
-  return `${attemptId.slice(0, 24)}${suffix}`;
-}
-
-function createUuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
-    const random = Math.floor(Math.random() * 16);
-    const value = character === 'x' ? random : (random & 0x3) | 0x8;
-    return value.toString(16);
-  });
-}
+function event(eventType:OfflineMissionEvent['eventType'],stepId?:string,progressStepId?:string,completed=false):OfflineMissionEvent{return{operationId:createUuid(),eventType,stepId,occurredAt:new Date().toISOString(),progressStepId,completed}}
+function createUuid(){return'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.floor(Math.random()*16);return(c==='x'?r:(r&3)|8).toString(16)})}
