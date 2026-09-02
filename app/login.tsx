@@ -8,6 +8,7 @@ import { AppText, Button, Card, LogoMark } from '@/components/ui';
 import type { Role } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { GoogleAuthError, GoogleAuthErrorCode, signInWithGoogle } from '@/lib/google-auth';
+import { isDemoModeEnabled } from '@/lib/demo-mode';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 const errorMessages: Record<GoogleAuthErrorCode, string> = {
@@ -91,7 +92,7 @@ export default function LoginScreen() {
             accessibilityHint="Abre a seleção segura de conta do Google"
           />
         )}
-        {process.env.EXPO_PUBLIC_APP_ENV === 'development' && process.env.EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS === 'true' ? <Button label="Testar missões de demonstração" icon="cloud-offline-outline" variant="soft" onPress={() => router.push('/demo')} /> : null}
+        {isDemoModeEnabled() ? <Button label="Testar missões de demonstração" icon="cloud-offline-outline" variant="soft" onPress={() => router.push('/demo')} /> : null}
         {errorCode ? (
           <View accessibilityLiveRegion="polite" style={styles.error}>
             <Ionicons name="alert-circle-outline" size={22} color={colors.danger} />

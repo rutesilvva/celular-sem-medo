@@ -45,7 +45,7 @@ export default function SplashScreen() {
 
         <View style={styles.urlChip}>
           <View style={styles.globeDot} />
-          <AppText variant="small" color="#F2F2F2">localhost:8081</AppText>
+          <AppText variant="small" color="#F2F2F2">Celular Sem Medo</AppText>
         </View>
       </View>
 

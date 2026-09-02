@@ -209,14 +209,15 @@ disponibilidade são entregues ao participante. O seed de staging atribui a
 missão sintética à turma marcada depois que as contas Google de teste forem
 provisionadas.
 
-As missões demonstrativas do painel do monitor ficam disponíveis apenas quando
-`EXPO_PUBLIC_APP_ENV=development` e
-`EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS=true`. Essa opção deve permanecer `false`
-em staging e production.
+O atalho para o modo demonstração não é ativado por localhost. Ele fica disponível
+somente quando `EXPO_PUBLIC_DEMO_MODE=true` em um ambiente diferente de
+`production`. Mantenha a opção `false` no uso conectado normal e habilite-a apenas
+em builds deliberadamente preparados para apresentação. Mesmo configurado por
+engano, o modo é bloqueado em production.
 
 O contrato e as garantias do executor estão em
 [`docs/missions/safe-mission-engine.md`](missions/safe-mission-engine.md).
-As fórmulas usadas nas telas de participante e monitor estão em
+As fórmulas usadas nas telas de aluno e administrador estão em
 [`docs/progress/metrics.md`](progress/metrics.md).
 
 ## Verificações antes de abrir um pull request

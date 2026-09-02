@@ -1,11 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, Tag } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme/tokens';
+import { isDemoModeEnabled } from '@/lib/demo-mode';
 
 type DemoMission = {
   id: string;
@@ -63,9 +64,11 @@ export default function DemoScreen() {
     };
   }, [selectedId]);
 
+  if (!isDemoModeEnabled()) return <Redirect href="/login" />;
+
   return (
     <Screen contentStyle={styles.content}>
-      <Header title="Missões de demonstração" subtitle="Ambiente local e sem dados reais" onBack={() => router.replace('/login')} />
+      <Header title="Missões de demonstração" subtitle="Modo controlado e sem dados reais" onBack={() => router.replace('/login')} />
       <Tag label="Modo seguro de teste" tone="green" />
 
       <Card style={styles.headerCard}>
