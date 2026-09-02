@@ -1,5 +1,6 @@
 export type TechnicalEvent =
   | 'app.started'
+  | 'app.unhandled_error'
   | 'auth.failed'
   | 'auth.session_restoration_failed'
   | 'backend.request_failed'

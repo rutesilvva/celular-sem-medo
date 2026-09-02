@@ -9,4 +9,6 @@ npx supabase secrets set GEMINI_API_KEY=valor --project-ref <project-ref>
 npx supabase functions deploy generate-mission --project-ref <project-ref>
 ```
 
-A entrada aceita de 3 a 160 caracteres. Temas de credenciais e transações são recusados. Entrada e saída possuem validação e a resposta nunca deve pedir CPF, senha, token, pagamento, foto, localização ou permissão real. Antes de produção, configure rate limiting no gateway e monitore apenas códigos técnicos agregados, sem armazenar a busca do aluno.
+A entrada aceita de 3 a 160 caracteres. Temas de credenciais e transações são recusados. Entrada e saída possuem validação e a resposta nunca deve pedir CPF, senha, token, pagamento, foto, localização ou permissão real. A função `consume_ai_generation_quota` limita cada conta a dez gerações por hora sem armazenar a busca do aluno.
+
+Missões geradas são sessões temporárias e nunca entram automaticamente no catálogo publicado. Uma futura promoção para o catálogo deverá criar uma versão em rascunho e exigir revisão explícita de um administrador.

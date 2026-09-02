@@ -9,3 +9,19 @@ O identificador Android e o bundle ID iOS são `br.com.celularsemmedo.app`; o sc
 5. Distribua a validação interna com `npm run build:preview` e gere artefatos de loja com `npm run build:production`.
 
 Os perfis apontam, respectivamente, para os ambientes EAS `development`, `preview` e `production`. Antes de produção, valide callback Google com o app fechado, aberto e em background, e confirme fingerprints Android e URL scheme iOS no Google Cloud.
+
+## Checklist de promoção
+
+1. A árvore Git deve estar limpa e os testes, typecheck, lint e Expo Doctor devem passar.
+2. Rode `npm run build:preview:android` e `npm run build:preview:ios` e instale ambos em aparelhos limpos.
+3. Valide login, logout, sessão expirada, aluno, administrador, modo avião, TTS, microfone negado e deep link de ajuda.
+4. Registre commit, números dos builds, backend e clientes OAuth usados.
+5. Só então rode `npm run build:production`; a submissão usa `npm run submit:production` e exige aprovação humana.
+
+## Atualizações e rollback
+
+`runtimeVersion` segue a versão do aplicativo; mudanças nativas, autenticação ou schema incompatível exigem uma nova build. Atualizações JavaScript de preview usam `npm run update:preview`. Produção usa `npm run update:production` somente depois da mesma validação e aprovação da build.
+
+Para rollback, selecione no painel EAS uma atualização anterior da mesma runtime ou publique novamente o bundle previamente aprovado. Banco não recebe down migration destrutiva: use migração corretiva e mantenha funcionalidades novas sob flag durante a janela de implantação.
+
+Credenciais Apple, Google Play, Expo e chaves privadas ficam no EAS/CI. `EXPO_PUBLIC_*` pode conter apenas identificadores e configurações públicas.

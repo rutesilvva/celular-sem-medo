@@ -9,6 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   scheme: 'celularsemmedo',
   userInterfaceStyle: 'light',
+  runtimeVersion: { policy: 'appVersion' },
   ios: { supportsTablet: false, bundleIdentifier: 'br.com.celularsemmedo.app' },
   android: {
     package: 'br.com.celularsemmedo.app',
@@ -21,9 +22,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-font',
     'expo-status-bar',
     'expo-sharing',
+    ['expo-audio', { microphonePermission: 'Permita o microfone apenas quando você escolher responder por voz em um treinamento.' }],
     ['expo-web-browser', { experimentalLauncherActivity: false }],
     ['expo-secure-store', { configureAndroidBackup: true }],
     ['expo-splash-screen', { image: './assets/logo-celular-sem-medo.png', resizeMode: 'contain', backgroundColor: '#FAF8FC' }],
   ],
   experiments: { typedRoutes: true },
+  updates: { checkAutomatically: 'ON_LOAD', fallbackToCacheTimeout: 0 },
 });

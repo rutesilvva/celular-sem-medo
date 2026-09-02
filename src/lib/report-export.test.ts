@@ -30,7 +30,12 @@ describe('report export helpers', () => {
 
   it('places the title and first row on different PDF lines', () => {
     const pdf = buildSimplePdfDocument('Resumo', [{ label: 'Turma', value: '3A' }]);
-    expect(pdf).toContain('72 760 Td');
-    expect(pdf).toContain('72 742 Td');
+    expect(pdf).toContain('54 752 Td');
+    expect(pdf).toContain('54 733 Td');
+  });
+
+  it('paginates large reports', () => {
+    const pdf = buildSimplePdfDocument('Resumo', Array.from({ length: 80 }, (_, index) => ({ label: `Linha ${index}`, value: index })));
+    expect(pdf).toContain('/Count 3');
   });
 });

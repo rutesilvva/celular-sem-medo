@@ -22,6 +22,9 @@ Deno.serve(async (request) => {
   });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return json({ error: 'authentication_required' }, 401, headers);
+  const { data: quotaAccepted, error: quotaError } = await supabase.rpc('consume_ai_generation_quota');
+  if (quotaError) return json({ error: 'quota_unavailable' }, 503, headers);
+  if (!quotaAccepted) return json({ error: 'rate_limit_exceeded' }, 429, headers);
 
   let body: unknown;
   try { body = await request.json(); } catch { return json({ error: 'invalid_request' }, 400, headers); }

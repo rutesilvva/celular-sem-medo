@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppFeedback } from '@/components/AppFeedback';
+import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { NotificationRouter } from '@/components/NotificationRouter';
 import { OfflineSyncManager } from '@/components/OfflineSyncManager';
 import { AppProvider, useApp } from '@/context/AppContext';
@@ -26,17 +27,19 @@ const bootDockIcons = [
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <AppProvider>
-          <AppNavigator />
-          <NotificationRouter />
-          <OfflineSyncManager />
-          <StatusBar style="dark" />
-          <AppFeedback />
-        </AppProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <AppErrorBoundary>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <AppProvider>
+            <AppNavigator />
+            <NotificationRouter />
+            <OfflineSyncManager />
+            <StatusBar style="dark" />
+            <AppFeedback />
+          </AppProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </AppErrorBoundary>
   );
 }
 

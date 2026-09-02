@@ -81,6 +81,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps }: { assig
     return (
       <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
         <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+        <SyncStatusCard engine={engine} />
 
         <Card style={styles.whatsappFrame}>
           <View style={styles.whatsappHeader}>
@@ -176,7 +177,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps }: { assig
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
-      {engine.syncStatus !== 'synced' ? <Card style={styles.syncCard}><Ionicons name={engine.syncStatus === 'offline' ? 'cloud-offline-outline' : engine.syncStatus === 'failed' ? 'alert-circle-outline' : 'cloud-upload-outline'} size={24} color={engine.syncStatus === 'failed' ? colors.danger : colors.primary} /><View style={styles.safeCopy}><AppText weight="800">{engine.syncStatus === 'offline' ? 'Praticando sem internet' : engine.syncStatus === 'failed' ? 'Sincronização pendente' : engine.syncStatus === 'syncing' ? 'Sincronizando…' : 'Alterações salvas no aparelho'}</AppText><AppText variant="small" color={colors.textMuted}>{engine.pendingCount} evento(s) aguardando envio. Você pode continuar normalmente.</AppText></View>{engine.syncStatus === 'failed' ? <Button label="Tentar" variant="soft" onPress={() => void engine.retry()} /> : null}</Card> : null}
+      <SyncStatusCard engine={engine} />
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
           <AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText>
@@ -623,6 +624,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+      <SyncStatusCard engine={engine} />
       <Card style={styles.govFrame}>{renderGovScreen()}</Card>
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
@@ -779,6 +781,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+      <SyncStatusCard engine={engine} />
       <Card style={styles.pixMockCard}>{renderPixScreen()}</Card>
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
@@ -831,6 +834,23 @@ function StepActions({ step, busy, onSubmit }: { step: ParticipantMissionStep; b
       disabled={busy}
       onPress={() => void handleAction({ action, target: expected.target })}
     />
+  );
+}
+
+function SyncStatusCard({ engine }: { engine: ReturnType<typeof useMissionEngine> }) {
+  if (engine.syncStatus === 'synced') return null;
+  const offline = engine.syncStatus === 'offline';
+  const failed = engine.syncStatus === 'failed';
+  const syncing = engine.syncStatus === 'syncing';
+  return (
+    <Card style={styles.syncCard}>
+      <Ionicons name={offline ? 'cloud-offline-outline' : failed ? 'alert-circle-outline' : 'cloud-upload-outline'} size={24} color={failed ? colors.danger : colors.primary} />
+      <View style={styles.safeCopy}>
+        <AppText weight="800">{offline ? 'Praticando sem internet' : failed ? 'Sincronização pendente' : syncing ? 'Sincronizando…' : 'Alterações salvas no aparelho'}</AppText>
+        <AppText variant="small" color={colors.textMuted}>{engine.pendingCount} atividade(s) aguardando envio. Você pode continuar normalmente.</AppText>
+      </View>
+      {failed ? <Button label="Tentar novamente" variant="soft" onPress={() => void engine.retry()} /> : null}
+    </Card>
   );
 }
 

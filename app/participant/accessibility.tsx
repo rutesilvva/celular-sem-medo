@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
+import { VoiceResponseRecorder } from '@/components/VoiceResponseRecorder';
 import { AppText, Button, Card, Header, SwitchRow } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -142,6 +143,8 @@ export default function ParticipantAccessibilityScreen() {
         <View style={styles.divider} />
         <SwitchRow title="Repetir instruções" description="Repete automaticamente cada instrução uma vez" icon="repeat-outline" value={preferences.repeatInstructions} onValueChange={(value) => setPreference('repeatInstructions', value)} />
       </Card>
+
+      {voiceConsent === 'accepted' ? <VoiceResponseRecorder /> : null}
 
       <View
         accessibilityLabel={`Exemplo de leitura${preferences.largerText ? ' com letras maiores' : ''}${preferences.highContrast ? ' e alto contraste' : ''}`}
