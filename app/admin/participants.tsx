@@ -4,6 +4,7 @@ import { useDeferredValue, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { AdminNav } from '@/components/BottomNav';
+import { AdminClassSelector } from '@/components/AdminClassSelector';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
@@ -53,6 +54,7 @@ export default function ParticipantsScreen() {
           : 'Carregando turma…'}
         audio
       />
+      <AdminClassSelector selectedId={classQuery.data?.class_id} />
 
       {classQuery.loading || (classQuery.data && participantsQuery.loading) ? (
         <DataState kind="loading" title="Carregando participantes" message="Buscando os vínculos ativos da turma." />

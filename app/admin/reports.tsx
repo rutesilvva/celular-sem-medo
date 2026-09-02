@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminNav } from '@/components/BottomNav';
+import { AdminClassSelector } from '@/components/AdminClassSelector';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
@@ -32,6 +33,7 @@ export default function ReportsScreen() {
         subtitle={classQuery.data ? `Evolução de ${classQuery.data.class_name}` : 'Evolução da turma'}
         action={<AudioButton compact label="Ouvir resumo do relatório" message={`Reproduzindo relatório dos últimos ${period} dias…`} />}
       />
+      <AdminClassSelector selectedId={classQuery.data?.class_id} />
 
       <View style={styles.periodBlock}>
         <AppText variant="small" weight="800" color={colors.primary}>Período do relatório</AppText>

@@ -9,7 +9,7 @@ import { AppText, AudioButton, Card, Header, MetricCard, ProgressBar, SectionTit
 import { useAuth } from '@/context/AuthContext';
 import { useMissionCatalog } from '@/hooks/useMissionData';
 import { useParticipantProgress } from '@/hooks/useProgressData';
-import { colors, radius, spacing } from '@/theme/tokens';
+import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantProgressScreen() {
   const router = useRouter();
@@ -22,6 +22,8 @@ export default function ParticipantProgressScreen() {
   const progress = progressQuery.data;
   const recommended = missionQuery.data?.find((mission) => mission.assignmentId !== progress.latest_assignment_id) ?? missionQuery.data?.[0];
   const completionLabel = progress.latest_completion_kind === 'with_help' ? 'com ajuda' : progress.latest_completion_kind === 'with_hint' ? 'com uma dica' : 'com autonomia';
+  const badges = getProgressBadges(progress);
+  const evidence = buildEvidenceCard(progress);
 
   return (
     <Screen footer={<ParticipantNav active="progress" />} contentStyle={styles.content}>
@@ -34,10 +36,17 @@ export default function ParticipantProgressScreen() {
             <AppText variant="subheading" weight="800">Aprendizagem no seu ritmo</AppText>
             <AppText variant="small" color={colors.textMuted}>{progress.completed_missions > 0 ? 'Você está cada vez mais independente.' : 'Sua primeira prática já está preparada.'}</AppText>
           </View>
+          <Tag label={`${progress.progress_percent}%`} tone="purple" />
         </View>
         <View style={styles.progressHeading}><AppText variant="small" weight="700">Progresso da trilha</AppText><AppText variant="small" weight="800" color={colors.primary}>{progress.progress_percent}%</AppText></View>
         <ProgressBar value={progress.progress_percent} height={12} />
       </Card>
+
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryPill}><Ionicons name="checkmark-circle-outline" size={18} color={colors.success} /><AppText variant="small" weight="700">{progress.completed_missions} concluídas</AppText></View>
+        <View style={styles.summaryPill}><Ionicons name="hand-left-outline" size={18} color={colors.primary} /><AppText variant="small" weight="700">{progress.autonomy_percent}% autonomia</AppText></View>
+      </View>
+
       <View style={styles.metricsRow}>
         <MetricCard icon="checkmark-circle-outline" value={`${progress.completed_missions}`} label="Missões concluídas" tone="green" />
         <MetricCard icon="flame-outline" value={`${progress.practice_streak_days} ${progress.practice_streak_days === 1 ? 'dia' : 'dias'}`} label="Sequência de prática" tone="yellow" />
@@ -45,6 +54,29 @@ export default function ParticipantProgressScreen() {
       <View style={styles.metricsRow}>
         <MetricCard icon="hand-left-outline" value={`${progress.autonomy_percent}%`} label="Autonomia" tone="purple" />
         <MetricCard icon="help-circle-outline" value={`${progress.difficulty_percent}%`} label="Tentativas com apoio" tone="blue" />
+      </View>
+
+      <Card style={styles.evidenceCard}>
+        <View style={styles.evidenceHeader}>
+          <AppText variant="subheading" weight="800">Evidência de valor</AppText>
+          <Tag label={evidence.tag} tone={evidence.tagTone} />
+        </View>
+        <AppText variant="small" color={colors.textMuted}>{evidence.summary}</AppText>
+        <View style={styles.evidenceGrid}>
+          <View style={styles.evidencePill}><AppText variant="caption" color={colors.textMuted}>Autonomia</AppText><AppText weight="800">{progress.autonomy_percent}%</AppText></View>
+          <View style={styles.evidencePill}><AppText variant="caption" color={colors.textMuted}>Apoio</AppText><AppText weight="800">{Math.max(0, 100 - progress.difficulty_percent)}%</AppText></View>
+          <View style={styles.evidencePill}><AppText variant="caption" color={colors.textMuted}>Engajamento</AppText><AppText weight="800">{Math.min(100, Math.round((progress.progress_percent + progress.completed_missions * 12) / 2))}%</AppText></View>
+        </View>
+      </Card>
+
+      <SectionTitle>Conquistas</SectionTitle>
+      <View style={styles.badgeRow}>
+        {badges.map((badge) => (
+          <View key={badge.label} style={[styles.badge, badge.active && styles.badgeActive]}>
+            <Ionicons name={badge.icon} size={18} color={badge.active ? colors.primary : colors.iconMuted} />
+            <AppText variant="small" weight="700" color={badge.active ? colors.primary : colors.textMuted}>{badge.label}</AppText>
+          </View>
+        ))}
       </View>
 
       <SectionTitle>Conquista mais recente</SectionTitle>
@@ -68,10 +100,31 @@ export default function ParticipantProgressScreen() {
   );
 }
 
+function getProgressBadges(progress: { completed_missions?: number; autonomy_percent?: number; progress_percent?: number }) {
+  return [
+    { label: 'Primeira missão', icon: 'checkmark-circle-outline' as const, active: (progress.completed_missions ?? 0) >= 1 },
+    { label: 'Sequência', icon: 'flame-outline' as const, active: (progress.progress_percent ?? 0) >= 40 },
+    { label: 'Autonomia', icon: 'shield-checkmark-outline' as const, active: (progress.autonomy_percent ?? 0) >= 70 },
+  ];
+}
+
+function buildEvidenceCard(progress: { autonomy_percent?: number; difficulty_percent?: number; progress_percent?: number; completed_missions?: number }) {
+  const autonomy = progress.autonomy_percent ?? 0;
+  const supportReduction = Math.max(0, 100 - (progress.difficulty_percent ?? 0));
+  const engagement = Math.min(100, Math.round((progress.progress_percent ?? 0) * 0.7 + (progress.completed_missions ?? 0) * 12));
+  const tag = autonomy >= 70 && supportReduction >= 60 ? 'Em alta' : autonomy >= 50 ? 'Progredindo' : 'Em construção';
+  const tagTone = autonomy >= 70 && supportReduction >= 60 ? 'green' : autonomy >= 50 ? 'purple' : 'yellow';
+  return {
+    tag,
+    tagTone: tagTone as 'green' | 'purple' | 'yellow',
+    summary: `A autonomia está em ${autonomy}% e a necessidade de apoio caiu para ${supportReduction}%. O engajamento da rotina está em ${engagement}%.`,
+  };
+}
+
 function ProgressState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; retry: () => void }) {
   return <Screen footer={<ParticipantNav active="progress" />}><Header title="Meu progresso" /><DataState kind={kind} title={kind === 'loading' ? 'Calculando seu progresso' : kind === 'error' ? 'Não foi possível carregar' : 'Progresso indisponível'} message="Os dados da sua turma não estão disponíveis agora." onRetry={retry} /></Screen>;
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg }, heroCard: { backgroundColor: '#FBF8FF', borderColor: colors.primaryMuted, gap: spacing.md }, heroTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md }, levelIcon: { alignItems: 'center', backgroundColor: colors.warningSoft, borderRadius: radius.round, height: 68, justifyContent: 'center', width: 68 }, heroCopy: { flex: 1, gap: spacing.xs }, progressHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, metricsRow: { flexDirection: 'row', gap: spacing.md }, achievementCard: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.md }, achievementIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 }, achievementCopy: { flex: 1, gap: spacing.sm }, achievementHeading: { alignItems: 'flex-start', gap: spacing.sm }, nextMission: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 104, padding: spacing.lg }, nextMissionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 54, justifyContent: 'center', width: 54 }, nextMissionCopy: { flex: 1, gap: spacing.xs }, pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
+  content: { gap: spacing.lg }, heroCard: { backgroundColor: '#F9F1FF', borderColor: '#E3CFFC', borderRadius: radius.xl, borderWidth: 1.5, gap: spacing.md, padding: spacing.lg, ...shadow }, heroTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md }, levelIcon: { alignItems: 'center', backgroundColor: '#F9E7B7', borderColor: '#F3D68A', borderRadius: radius.round, borderWidth: 1, height: 70, justifyContent: 'center', width: 70 }, heroCopy: { flex: 1, gap: spacing.xs }, progressHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, summaryRow: { flexDirection: 'row', gap: spacing.sm }, summaryPill: { alignItems: 'center', backgroundColor: '#FFFDFD', borderColor: '#E8DEF6', borderRadius: radius.round, borderWidth: 1, flex: 1, flexDirection: 'row', gap: spacing.xs, justifyContent: 'center', minHeight: 48, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, metricsRow: { flexDirection: 'row', gap: spacing.md }, evidenceCard: { backgroundColor: '#F7F3FF', borderColor: colors.primaryMuted, borderRadius: radius.xl, borderWidth: 1.5, gap: spacing.md, padding: spacing.lg }, evidenceHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, evidenceGrid: { flexDirection: 'row', gap: spacing.sm }, evidencePill: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, gap: 2, padding: spacing.sm }, badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }, badge: { alignItems: 'center', backgroundColor: '#F8F5FB', borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, badgeActive: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted }, achievementCard: { alignItems: 'flex-start', backgroundColor: '#FFFDFD', borderColor: '#E8DEF6', borderRadius: radius.xl, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md }, achievementIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 }, achievementCopy: { flex: 1, gap: spacing.xs }, achievementHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' }, nextMission: { alignItems: 'center', backgroundColor: '#FEFCFF', borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 104, padding: spacing.lg }, nextMissionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 54, justifyContent: 'center', width: 54 }, nextMissionCopy: { flex: 1, gap: 2 }, pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
 });

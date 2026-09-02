@@ -21,10 +21,10 @@ export default function ParticipantWelcomeScreen() {
             Olá, {firstName}!
           </AppText>
           <AppText variant="subheading" weight="700" style={styles.center}>
-            Este é um lugar seguro para aprender.
+            Você está pronto(a) para aprender no seu ritmo.
           </AppText>
           <AppText color={colors.textMuted} style={styles.center}>
-            Aqui você pode praticar quantas vezes quiser, no seu ritmo e sem medo de errar.
+            Aqui você pratica com segurança, revisa quando quiser e pede ajuda sem medo.
           </AppText>
         </View>
       </View>
@@ -34,26 +34,46 @@ export default function ParticipantWelcomeScreen() {
           <Ionicons name="shield-checkmark" size={30} color={colors.success} />
         </View>
         <View style={styles.promiseCopy}>
-          <AppText weight="800">Nada aqui é enviado de verdade</AppText>
+          <AppText weight="800">Ambiente seguro para praticar</AppText>
           <AppText variant="small" color={colors.textMuted}>
-            As atividades são simulações. Você pode testar, voltar e pedir ajuda quando precisar.
+            As tarefas são simuladas e não envolvem riscos. Você pode repetir, voltar e continuar quando quiser.
           </AppText>
+        </View>
+      </Card>
+
+      <Card style={styles.benefitsCard}>
+        <AppText variant="subheading" weight="800">O que você vai encontrar</AppText>
+        <View style={styles.benefitsList}>
+          <BenefitRow icon="volume-high-outline" label="Instruções em áudio e texto" />
+          <BenefitRow icon="repeat-outline" label="Repetição tranquila de cada etapa" />
+          <BenefitRow icon="help-circle-outline" label="Apoio sempre que precisar" />
         </View>
       </Card>
 
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir boas-vindas"
-          message={`Olá, ${firstName}. Este é um lugar seguro para aprender. Você pode praticar no seu ritmo e sem medo de errar.`}
+          message={`Olá, ${firstName}. Você pode aprender sempre no seu ritmo. Aqui, as instruções aparecem em áudio e texto, e você pode repetir cada etapa quando quiser.`}
         />
         <Button
           label="Começar"
           icon="arrow-forward"
-          accessibilityHint="Abre as opções de acessibilidade"
+          accessibilityHint="Abre as opções de acessibilidade e personalização"
           onPress={() => router.push('/participant/accessibility')}
         />
       </View>
     </Screen>
+  );
+}
+
+function BenefitRow({ icon, label }: { icon: 'volume-high-outline' | 'repeat-outline' | 'help-circle-outline'; label: string }) {
+  return (
+    <View style={styles.benefitRow}>
+      <View style={styles.benefitIcon}>
+        <Ionicons name={icon} size={20} color={colors.primary} />
+      </View>
+      <AppText variant="small" color={colors.textMuted}>{label}</AppText>
+    </View>
   );
 }
 
@@ -62,7 +82,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: spacing.xxl },
   copy: { gap: spacing.md },
   center: { textAlign: 'center' },
-  promiseCard: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  promiseCard: { alignItems: 'center', backgroundColor: '#F7F1FF', borderColor: colors.primaryMuted, flexDirection: 'row', gap: spacing.md },
   promiseIcon: {
     alignItems: 'center',
     backgroundColor: colors.successSoft,
@@ -72,5 +92,16 @@ const styles = StyleSheet.create({
     width: 56,
   },
   promiseCopy: { flex: 1, gap: spacing.xs },
+  benefitsCard: { gap: spacing.md },
+  benefitsList: { gap: spacing.sm },
+  benefitRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  benefitIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.round,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
   actions: { gap: spacing.md },
 });

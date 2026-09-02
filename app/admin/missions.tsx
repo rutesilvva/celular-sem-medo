@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminNav } from '@/components/BottomNav';
+import { AdminClassSelector } from '@/components/AdminClassSelector';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
@@ -52,6 +53,7 @@ export default function AdminMissionsScreen() {
   return (
     <Screen footer={<AdminNav active="missions" />}>
       <Header title="Missões" subtitle="Acompanhe a prática da turma" audio />
+      <AdminClassSelector selectedId={classQuery.data.class_id} />
       <AppText variant="caption" color={colors.textMuted}>Última atualização: {formatUpdatedAt(progressQuery.missions.updatedAt)}</AppText>
 
       <View style={styles.metrics}>

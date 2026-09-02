@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
@@ -25,9 +25,18 @@ export default function ParticipantSimulatorScreen() {
 
 function MissionExecutor({ assignmentId, details, steps }: { assignmentId: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[] }) {
   const router = useRouter();
-  const { playInstruction } = useApp();
+  const { playInstruction, preferences, stopInstruction } = useApp();
   const engine = useMissionEngine(assignmentId, steps);
   const step = engine.currentStep;
+  const lastAutoPlayedStep = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!step || !preferences.autoAudio || lastAutoPlayedStep.current === step.id) return;
+    lastAutoPlayedStep.current = step.id;
+    playInstruction(step.audioText);
+  }, [playInstruction, preferences.autoAudio, step]);
+
+  useEffect(() => () => stopInstruction(), [stopInstruction]);
 
   useEffect(() => {
     if (!engine.run.completed) return;
@@ -47,7 +56,7 @@ function MissionExecutor({ assignmentId, details, steps }: { assignmentId: strin
         </View>
         <AppText variant="subheading" weight="800">{step.title}</AppText>
         <AppText color={colors.textMuted}>{step.instruction}</AppText>
-        <ProgressBar value={Math.round(100 * step.position / steps.length)} />
+        <ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
       <Card style={styles.simulation}>
         <View style={styles.safeHeader}>
@@ -106,8 +115,17 @@ function SimulatorState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; 
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg }, instructionCard: { backgroundColor: colors.primarySoft, gap: spacing.md }, instructionTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  simulation: { borderColor: colors.primaryDark, borderWidth: 2, gap: spacing.xl, minHeight: 390, ...shadow }, safeHeader: { alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, paddingBottom: spacing.md },
-  safeIcon: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 }, safeCopy: { flex: 1 }, taskArea: { alignItems: 'center', flex: 1, gap: spacing.md, justifyContent: 'center', padding: spacing.lg }, center: { textAlign: 'center' },
-  options: { gap: spacing.md }, feedback: { alignItems: 'center', backgroundColor: colors.warningSoft, flexDirection: 'row', gap: spacing.md }, hints: { backgroundColor: colors.primarySoft, gap: spacing.sm }, supportActions: { gap: spacing.md },
+  content: { gap: spacing.lg },
+  instructionCard: { backgroundColor: '#F6EEFF', borderColor: colors.primaryMuted, gap: spacing.md },
+  instructionTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  simulation: { backgroundColor: '#FFFDFB', borderColor: colors.primaryDark, borderWidth: 2, gap: spacing.xl, minHeight: 390, ...shadow },
+  safeHeader: { alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, paddingBottom: spacing.md },
+  safeIcon: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
+  safeCopy: { flex: 1 },
+  taskArea: { alignItems: 'center', backgroundColor: '#F8F3FF', borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flex: 1, gap: spacing.md, justifyContent: 'center', padding: spacing.lg },
+  center: { textAlign: 'center' },
+  options: { gap: spacing.md },
+  feedback: { alignItems: 'center', backgroundColor: colors.warningSoft, flexDirection: 'row', gap: spacing.md },
+  hints: { backgroundColor: colors.primarySoft, gap: spacing.sm },
+  supportActions: { gap: spacing.md },
 });

@@ -36,23 +36,13 @@ export default function ParticipantResultScreen() {
 
   return (
     <Screen footer={<ParticipantNav active="progress" />} contentStyle={styles.content}>
-      <View style={styles.confetti} pointerEvents="none">
-        <View style={[styles.confettiPiece, styles.pieceOne]} />
-        <View style={[styles.confettiPiece, styles.pieceTwo]} />
-        <View style={[styles.confettiPiece, styles.pieceThree]} />
-        <View style={[styles.confettiPiece, styles.pieceFour]} />
-      </View>
-
-      <View accessibilityRole="header" style={styles.hero}>
+      <Card style={styles.hero}>
         <View style={styles.successRing}>
           <Ionicons name="checkmark" size={58} color={colors.surface} />
         </View>
         <View style={styles.heroCopy}>
           <AppText variant="title" weight="800" color={colors.primary} style={styles.center}>
             Você conseguiu!
-          </AppText>
-          <AppText variant="subheading" weight="700" style={styles.center}>
-            Missão concluída com coragem
           </AppText>
           <AppText color={colors.textMuted} style={styles.center}>
             {completion === 'with_help'
@@ -62,23 +52,23 @@ export default function ParticipantResultScreen() {
                 : 'Você concluiu todos os passos com autonomia.'}
           </AppText>
         </View>
-      </View>
+      </Card>
 
-      <Card style={styles.achievementCard}>
-        <View style={styles.achievementTop}>
+      <Card style={styles.summaryCard}>
+        <View style={styles.summaryHeader}>
           <View style={styles.missionIcon}>
-            <Ionicons name="image-outline" size={30} color={colors.primary} />
+            <Ionicons name="trophy-outline" size={28} color={colors.primary} />
           </View>
-          <View style={styles.achievementCopy}>
+          <View style={styles.summaryText}>
             <AppText weight="800">{details.title}</AppText>
-            <AppText variant="small" color={colors.textMuted}>Treino seguro finalizado</AppText>
+            <AppText variant="small" color={colors.textMuted}>Treino seguro concluído</AppText>
           </View>
-          <Ionicons name="ribbon" size={34} color={colors.warning} />
+          <Ionicons name="ribbon-outline" size={28} color={colors.warning} />
         </View>
         <View style={styles.divider} />
         <View style={styles.metrics}>
-          <ResultMetric icon="time-outline" value={`${details.estimatedMinutes} min`} label="Duração estimada" />
-          <ResultMetric icon="refresh-outline" value={`${progress?.attempt_count ?? 1}`} label="Tentativas totais" />
+          <ResultMetric icon="time-outline" value={`${details.estimatedMinutes} min`} label="Tempo" />
+          <ResultMetric icon="refresh-outline" value={`${progress?.attempt_count ?? 1}`} label="Tentativas" />
           <ResultMetric icon="trending-up-outline" value={`${progress?.autonomy_percent ?? 0}%`} label="Autonomia" />
         </View>
       </Card>
@@ -86,21 +76,21 @@ export default function ParticipantResultScreen() {
       <Card style={styles.progressCard}>
         <View style={styles.progressTop}>
           <View>
-            <AppText weight="800">Progresso da sua trilha</AppText>
-            <AppText variant="small" color={colors.textMuted}>Uma nova habilidade aprendida.</AppText>
+            <AppText weight="800">Seu progresso geral</AppText>
+            <AppText variant="small" color={colors.textMuted}>Mais uma etapa concluída.</AppText>
           </View>
-          <AppText variant="subheading" weight="800" color={colors.successText}>{progress?.progress_percent ?? 0}%</AppText>
+          <AppText variant="subheading" weight="800" color={colors.primary}>{progress?.progress_percent ?? 0}%</AppText>
         </View>
-        <ProgressBar value={progress?.progress_percent ?? 0} color={colors.success} height={12} />
+        <ProgressBar value={progress?.progress_percent ?? 0} color={colors.primary} height={12} />
       </Card>
 
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir resultado"
-          message={`Parabéns, ${currentUser?.name || 'participante'}. Você concluiu a missão ${details.title} e está com ${progress?.progress_percent ?? 0} por cento da sua trilha.`}
+          message={`Parabéns, ${currentUser?.name || 'participante'}. Você concluiu a missão ${details.title}.`}
         />
         <Button
-          label="Continuar minha trilha"
+          label="Continuar"
           icon="arrow-forward"
           accessibilityHint="Abre a tela do seu progresso"
           onPress={continueTrail}
@@ -143,24 +133,18 @@ function ResultMetric({ icon, value, label }: {
 
 const styles = StyleSheet.create({
   content: { justifyContent: 'center', paddingTop: spacing.xxxl },
-  confetti: { bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 },
-  confettiPiece: { borderRadius: radius.sm, height: 14, position: 'absolute', width: 8 },
-  pieceOne: { backgroundColor: colors.yellow, left: '8%', top: 36, transform: [{ rotate: '24deg' }] },
-  pieceTwo: { backgroundColor: colors.primaryMuted, right: '10%', top: 90, transform: [{ rotate: '-18deg' }] },
-  pieceThree: { backgroundColor: colors.success, left: '17%', top: 180, transform: [{ rotate: '-32deg' }] },
-  pieceFour: { backgroundColor: colors.blue, right: '16%', top: 220, transform: [{ rotate: '36deg' }] },
-  hero: { alignItems: 'center', gap: spacing.lg },
+  hero: { alignItems: 'center', backgroundColor: '#F3F8F2', borderColor: '#CFEAD8', gap: spacing.lg },
   successRing: { alignItems: 'center', backgroundColor: colors.success, borderColor: colors.successSoft, borderRadius: radius.round, borderWidth: 10, height: 112, justifyContent: 'center', width: 112 },
   heroCopy: { gap: spacing.sm },
   center: { textAlign: 'center' },
-  achievementCard: { gap: spacing.lg },
-  achievementTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  summaryCard: { gap: spacing.lg },
+  summaryHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   missionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, height: 58, justifyContent: 'center', width: 58 },
-  achievementCopy: { flex: 1 },
+  summaryText: { flex: 1 },
   divider: { backgroundColor: colors.border, height: 1 },
   metrics: { flexDirection: 'row' },
   metric: { alignItems: 'center', flex: 1, gap: spacing.xs },
-  progressCard: { backgroundColor: colors.successSoft, borderColor: '#BEE8CE', gap: spacing.md },
+  progressCard: { backgroundColor: '#F4EEFF', borderColor: colors.primaryMuted, gap: spacing.md },
   progressTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   actions: { gap: spacing.md },
 });

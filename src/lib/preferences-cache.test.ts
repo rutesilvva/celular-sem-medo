@@ -10,7 +10,7 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 describe('preferences cache', () => {
-  const preferences = { largerText: true, highContrast: false, autoAudio: true, voiceResponse: false };
+  const preferences = { largerText: true, highContrast: false, autoAudio: true, voiceResponse: false, audioRate: 0.9 };
 
   beforeEach(() => {
     jest.clearAllMocks();

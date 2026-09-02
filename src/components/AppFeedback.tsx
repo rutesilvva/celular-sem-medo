@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui';
@@ -7,38 +7,44 @@ import { useApp } from '@/context/AppContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export function AppFeedback() {
-  const { audioMessage, notice } = useApp();
+  const { audioError, audioMessage, audioStatus, notice, pauseInstruction, repeatInstruction, resumeInstruction, stopInstruction } = useApp();
   const insets = useSafeAreaInsets();
-  const message = audioMessage ?? notice;
+  const message = audioError ?? audioMessage ?? notice;
   if (!message) return null;
 
   const isAudio = Boolean(audioMessage);
-  const feedbackLabel = isAudio ? 'Áudio de demonstração' : 'Confirmação';
+  const feedbackLabel = isAudio ? 'Instrução em áudio' : 'Confirmação';
 
   return (
-    <View pointerEvents="none" style={[styles.wrap, { top: insets.top + spacing.sm }]}>
+    <View pointerEvents="box-none" style={[styles.wrap, { top: insets.top + spacing.sm }]}>
       <View
         accessibilityLabel={`${feedbackLabel}: ${message}`}
         accessibilityLiveRegion="polite"
         accessibilityRole="alert"
         style={[styles.toast, !isAudio && styles.notice]}
       >
-        <Ionicons
-          name={isAudio ? 'volume-high' : 'checkmark-circle'}
-          size={24}
-          color={isAudio ? colors.primary : colors.success}
-        />
+        <View style={[styles.iconWrap, isAudio && styles.iconAudio]}>
+          <Ionicons
+            name={isAudio ? 'volume-high' : 'checkmark-circle'}
+            size={22}
+            color={isAudio ? colors.primary : colors.success}
+          />
+        </View>
         <View style={styles.copy}>
           <AppText variant="caption" weight="800" color={isAudio ? colors.primary : colors.success}>
             {feedbackLabel}
           </AppText>
-          <AppText variant="small" weight="700">{message}</AppText>
+          <AppText variant="small" weight="700" numberOfLines={2}>{message}</AppText>
         </View>
         {isAudio ? (
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.wave}>
-            <View style={styles.barSmall} />
-            <View style={styles.barTall} />
-            <View style={styles.barSmall} />
+          <View style={styles.controls}>
+            {audioStatus === 'paused' ? (
+              <AudioControl label="Continuar áudio" icon="play" onPress={resumeInstruction} />
+            ) : (
+              <AudioControl label="Pausar áudio" icon="pause" onPress={pauseInstruction} disabled={audioStatus !== 'speaking'} />
+            )}
+            <AudioControl label="Repetir áudio" icon="refresh" onPress={repeatInstruction} />
+            <AudioControl label="Parar áudio" icon="stop" onPress={stopInstruction} />
           </View>
         ) : null}
       </View>
@@ -46,10 +52,21 @@ export function AppFeedback() {
   );
 }
 
+function AudioControl({ label, icon, onPress, disabled = false }: {
+  label: string;
+  icon: 'pause' | 'play' | 'refresh' | 'stop';
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} style={styles.control}>
+    <Ionicons name={icon} size={19} color={disabled ? colors.iconMuted : colors.primary} />
+  </Pressable>;
+}
+
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', left: spacing.lg, position: 'absolute', right: spacing.lg, zIndex: 100 },
   toast: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     backgroundColor: colors.primarySoft,
     borderColor: colors.primary,
     borderRadius: radius.round,
@@ -61,8 +78,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   notice: { backgroundColor: colors.successSoft, borderColor: '#BEE8CE' },
+  iconWrap: {
+    alignItems: 'center',
+    backgroundColor: '#F4E8FF',
+    borderRadius: radius.round,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  iconAudio: { backgroundColor: '#E9F2FF' },
   copy: { flex: 1, flexShrink: 1, gap: 2 },
-  wave: { alignItems: 'center', alignSelf: 'center', flexDirection: 'row', gap: 2 },
-  barSmall: { backgroundColor: colors.primary, borderRadius: 2, height: 8, width: 3 },
-  barTall: { backgroundColor: colors.primary, borderRadius: 2, height: 16, width: 3 },
+  controls: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  control: { alignItems: 'center', justifyContent: 'center', minHeight: 40, minWidth: 36 },
 });

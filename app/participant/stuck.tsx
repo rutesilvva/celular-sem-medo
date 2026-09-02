@@ -26,17 +26,17 @@ export default function ParticipantStuckScreen() {
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title="Onde eu travei" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/simulator', params: { assignmentId: content.details.assignmentId } })} />
 
-      <View accessibilityRole="header" style={styles.hero}>
+      <Card style={styles.hero}>
         <View style={styles.heroIcon}>
           <Ionicons name="help-circle" size={52} color={colors.primary} />
         </View>
         <AppText variant="heading" weight="800" style={styles.center}>
-          Tudo bem ter dúvida
+          Tudo bem pedir ajuda
         </AppText>
         <AppText color={colors.textMuted} style={styles.center}>
-          Errar faz parte do treino. Escolha como você quer receber ajuda agora.
+          Você pode ouvir a orientação ou ver onde tocar.
         </AppText>
-      </View>
+      </Card>
 
       <Card style={styles.contextCard}>
         <View style={styles.contextIcon}>
@@ -53,13 +53,13 @@ export default function ParticipantStuckScreen() {
         <HelpOption
           icon="mic-outline"
           title="Explicar em voz alta"
-          description="Conte com suas palavras o que ficou difícil."
+          description="Ouça a instrução e tente novamente."
           onPress={() => playInstruction(currentStep.audioText)}
         />
         <HelpOption
           icon="hand-left-outline"
           title="Mostrar onde tocar"
-          description="Veja o botão certo destacado na tela."
+          description="Veja a área certa para continuar."
           onPress={() => router.push({ pathname: '/participant/guided-help', params: { assignmentId: content.details.assignmentId } })}
         />
       </View>
@@ -115,7 +115,7 @@ function HelpOption({ icon, title, description, onPress }: {
 
 const styles = StyleSheet.create({
   content: { gap: spacing.xl },
-  hero: { alignItems: 'center', gap: spacing.md },
+  hero: { alignItems: 'center', backgroundColor: '#FBF5E9', borderColor: '#E9D9A8', gap: spacing.md },
   heroIcon: {
     alignItems: 'center',
     backgroundColor: colors.warningSoft,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     width: 92,
   },
   center: { textAlign: 'center' },
-  contextCard: { alignItems: 'center', backgroundColor: colors.primarySoft, flexDirection: 'row', gap: spacing.md },
+  contextCard: { alignItems: 'center', backgroundColor: '#F6EEFF', borderColor: colors.primaryMuted, flexDirection: 'row', gap: spacing.md },
   contextIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
   contextCopy: { flex: 1, gap: spacing.xs },
   helpList: { gap: spacing.md },

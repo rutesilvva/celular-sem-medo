@@ -66,12 +66,12 @@ export default function LoginScreen() {
     <Screen contentStyle={styles.content}>
       <View style={styles.brand}>
         <LogoMark compact wordmark />
-        <AppText variant="small" color={colors.textMuted} style={styles.center}>Segurança para aprender e praticar.</AppText>
+        <AppText variant="small" color={colors.textMuted} style={styles.center}>Aprenda com segurança e autonomia</AppText>
       </View>
       <Card style={styles.form}>
         <View style={styles.heading}>
           <AppText variant="heading" weight="800" color={colors.primary} style={styles.center}>Entrar na sua conta</AppText>
-          <AppText color={colors.textMuted} style={styles.center}>Alunos e administradores usam a mesma entrada.</AppText>
+          <AppText color={colors.textMuted} style={styles.center}>Informe seus dados para continuar.</AppText>
         </View>
         {availableRoles.length > 1 && currentUser ? (
           <View style={styles.roleGroup}>
@@ -159,13 +159,13 @@ const styles = StyleSheet.create({
   content: { justifyContent: 'center', minHeight: '100%', paddingTop: spacing.xxl },
   brand: { alignItems: 'center', gap: spacing.md },
   center: { textAlign: 'center' },
-  form: { gap: spacing.xl, padding: spacing.xl },
+  form: { backgroundColor: '#FFFDFB', borderColor: colors.primaryMuted, gap: spacing.xl, padding: spacing.xl },
   heading: { gap: spacing.sm },
   roleGroup: { gap: spacing.md },
-  roleCard: { alignItems: 'center', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', minHeight: 56, paddingHorizontal: spacing.lg },
+  roleCard: { alignItems: 'center', backgroundColor: '#F9F5FF', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', minHeight: 56, paddingHorizontal: spacing.lg },
   error: { alignItems: 'flex-start', backgroundColor: colors.dangerSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   retry: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
-  security: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  security: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   identity: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   avatar: { borderRadius: radius.round, height: 52, width: 52 },
   avatarFallback: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },

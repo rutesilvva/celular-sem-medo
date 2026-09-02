@@ -29,12 +29,23 @@ export default function ParticipantMissionDetailsScreen() {
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title={details.title} subtitle={`Versão ${details.version} publicada`} onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/missions')} audio />
 
-      <View style={styles.hero}>
+      <Card style={styles.hero}>
         <View style={styles.heroIcon}><Ionicons name="school-outline" size={48} color={colors.primary} /></View>
-        {details.required ? <Tag label="Recomendada" tone="purple" /> : null}
+        <View style={styles.heroTopRow}>
+          {details.required ? <Tag label="Recomendada" tone="purple" /> : null}
+          <Tag label="Passo a passo" tone="green" />
+        </View>
         <AppText variant="heading" weight="800" style={styles.center}>{details.learningObjective}</AppText>
         <AppText color={colors.textMuted} style={styles.center}>{details.summary}</AppText>
-      </View>
+      </Card>
+
+      <Card style={styles.storyCard}>
+        <View style={styles.storyHeader}>
+          <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
+          <AppText variant="small" weight="800" color={colors.primary}>COMO A PRÁTICA FUNCIONA</AppText>
+        </View>
+        <AppText variant="small" color={colors.textMuted}>Você recebe instruções claras, pode ouvir a explicação e pedir ajuda a qualquer momento sem depender de outra pessoa para seguir avançando.</AppText>
+      </Card>
 
       <Card style={styles.summaryCard}>
         <SummaryItem icon="time-outline" value={`${details.estimatedMinutes} min`} label="Duração" />
@@ -95,19 +106,22 @@ function SummaryItem({ icon, value, label }: { icon: 'time-outline' | 'leaf-outl
 
 const styles = StyleSheet.create({
   content: { gap: spacing.xl },
-  hero: { alignItems: 'center', gap: spacing.md },
+  hero: { alignItems: 'center', backgroundColor: '#F9F3FF', borderColor: colors.primaryMuted, borderRadius: radius.xl, gap: spacing.md, padding: spacing.lg },
+  heroTopRow: { flexDirection: 'row', gap: spacing.sm },
   heroIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.xl, height: 94, justifyContent: 'center', width: 94 },
   center: { textAlign: 'center' },
-  summaryCard: { alignItems: 'stretch', flexDirection: 'row', paddingHorizontal: spacing.sm },
+  storyCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.lg, gap: spacing.sm, padding: spacing.md },
+  storyHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  summaryCard: { alignItems: 'stretch', backgroundColor: '#FFFDFC', borderColor: colors.primaryMuted, borderRadius: radius.lg, flexDirection: 'row', paddingHorizontal: spacing.sm },
   summaryItem: { alignItems: 'center', flex: 1, gap: spacing.xs, paddingHorizontal: spacing.xs },
   verticalDivider: { backgroundColor: colors.border, width: 1 },
   section: { gap: spacing.md },
   steps: { gap: spacing.md },
-  step: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  step: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   stepNumber: { alignItems: 'center', justifyContent: 'center', width: 20 },
   stepIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
   stepCopy: { flex: 1, gap: 2 },
-  reassurance: { alignItems: 'center', backgroundColor: colors.successSoft, flexDirection: 'row', gap: spacing.md },
+  reassurance: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   reassuranceCopy: { flex: 1 },
   actions: { gap: spacing.md },
 });

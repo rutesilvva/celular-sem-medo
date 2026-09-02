@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
-import { AppText, AudioButton, Button, Card, Header, SwitchRow } from '@/components/ui';
+import { AppText, Button, Card, Header, SwitchRow } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { colors, radius, spacing } from '@/theme/tokens';
@@ -32,52 +32,62 @@ export default function ParticipantAccessibilityScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <Header
-        title="Do seu jeito"
-        subtitle="Ajuste como prefere aprender."
+        title="Vamos personalizar"
+        subtitle="Sua experiência"
         onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/welcome')}
         audio
       />
 
       <View style={styles.intro}>
-        <View style={styles.accessibilityIcon}>
-          <Ionicons name="accessibility" size={38} color={colors.primary} />
-        </View>
         <AppText variant="subheading" weight="800" style={styles.center}>
-          O que deixa a leitura mais confortável para você?
+          Ajuste a experiência para o seu jeito de usar o celular.
         </AppText>
-        <AppText color={colors.textMuted} style={styles.center}>
-          Você poderá mudar essas escolhas depois no seu perfil.
+        <AppText variant="small" color={colors.textMuted} style={styles.center}>
+          Você pode alterar isso depois em Perfil e configurações.
         </AppText>
       </View>
 
       <Card style={styles.settings}>
         <SwitchRow
-          title="Letras maiores"
-          description="Aumenta o destaque dos textos importantes."
+          title="Tamanho do texto"
+          description="Médio"
           icon="text-outline"
           value={preferences.largerText}
           onValueChange={(value) => setPreference('largerText', value)}
         />
         <View style={styles.divider} />
-        <SwitchRow
-          title="Alto contraste"
-          description="Reforça a diferença entre fundo e conteúdo."
-          icon="contrast-outline"
-          value={preferences.highContrast}
-          onValueChange={(value) => setPreference('highContrast', value)}
-        />
+        <View style={styles.rateSetting}>
+          <View style={styles.rateCopy}>
+            <Ionicons name="speedometer-outline" size={24} color={colors.primary} />
+            <View style={styles.flex}>
+              <AppText weight="800">Velocidade da voz</AppText>
+              <AppText variant="small" color={colors.textMuted}>Escolha o ritmo mais confortável</AppText>
+            </View>
+          </View>
+          <View style={styles.rateOptions}>
+            {[0.75, 0.9, 1.05].map((rate) => <Button key={rate} label={rate === 0.75 ? 'Lenta' : rate === 0.9 ? 'Normal' : 'Rápida'} variant={preferences.audioRate === rate ? 'primary' : 'secondary'} onPress={() => setPreference('audioRate', rate)} />)}
+          </View>
+        </View>
         <View style={styles.divider} />
         <SwitchRow
-          title="Preferência de áudio automático"
-          description="Reproduz automaticamente as instruções disponíveis."
+          title="Ouvir instruções em voz alta"
+          description="Ative para ouvir as instruções"
           icon="volume-high-outline"
           value={preferences.autoAudio}
           onValueChange={(value) => setPreference('autoAudio', value)}
         />
         <View style={styles.divider} />
         <SwitchRow
-          title="Preferência de resposta por voz"
-          description="Prepara atividades compatíveis com resposta por voz. Nenhuma fala é gravada nesta versão."
+          title="Contraste"
+          description="Padrão"
+          icon="contrast-outline"
+          value={preferences.highContrast}
+          onValueChange={(value) => setPreference('highContrast', value)}
+        />
+        <View style={styles.divider} />
+        <SwitchRow
+          title="Resposta por voz"
+          description="Opcional"
           icon="mic-outline"
           value={preferences.voiceResponse}
           onValueChange={(value) => setPreference('voiceResponse', value)}
@@ -99,14 +109,10 @@ export default function ParticipantAccessibilityScreen() {
       </View>
 
       <View style={styles.actions}>
-        <AudioButton
-          label="Ouvir esta tela"
-          message="Escolha letras maiores, alto contraste, instruções em áudio e resposta por voz. Você poderá mudar tudo depois."
-        />
         <Button
-          label={saving ? 'Salvando…' : 'Salvar e continuar'}
+          label={saving ? 'Salvando…' : 'Salvar e começar'}
           icon="checkmark"
-          accessibilityHint="Salva as preferências e abre a tela inicial"
+          accessibilityHint="Salva as preferências e abre a tela inicial de aprendizagem"
           onPress={save}
           disabled={saving}
         />
@@ -118,17 +124,8 @@ export default function ParticipantAccessibilityScreen() {
 const styles = StyleSheet.create({
   content: { gap: spacing.xl },
   intro: { alignItems: 'center', gap: spacing.sm },
-  accessibilityIcon: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.round,
-    height: 68,
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-    width: 68,
-  },
   center: { textAlign: 'center' },
-  settings: { gap: 0, paddingVertical: spacing.sm },
+  settings: { backgroundColor: '#FFFDFB', borderColor: colors.primaryMuted, gap: 0, paddingVertical: spacing.sm },
   divider: { backgroundColor: colors.border, height: 1 },
   preview: {
     alignItems: 'center',
@@ -141,4 +138,8 @@ const styles = StyleSheet.create({
   previewContrast: { backgroundColor: colors.primaryDark },
   previewLargeText: { fontSize: 20, lineHeight: 28 },
   actions: { gap: spacing.md },
+  rateSetting: { gap: spacing.md, paddingVertical: spacing.md },
+  rateCopy: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  rateOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  flex: { flex: 1 },
 });

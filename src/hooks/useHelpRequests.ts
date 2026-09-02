@@ -1,15 +1,37 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getAdminHelpRequests, getMyHelpRequests, type AdminHelpRequest, type ParticipantHelpRequest } from '@/lib/backend';
+import { getAdminHelpRequests, getHelpRequestHistory, getMyHelpRequests, type AdminHelpRequest, type HelpRequestHistory, type ParticipantHelpRequest } from '@/lib/backend';
+import { getSupabase } from '@/lib/supabase';
 
 export function useMyHelpRequests() {
-  return useHelpQuery<ParticipantHelpRequest[]>(useCallback(() => getMyHelpRequests(), []), []);
+  const query = useHelpQuery<ParticipantHelpRequest[]>(useCallback(() => getMyHelpRequests(), []), []);
+  useEffect(() => {
+    const channel = getSupabase().channel('my-help-requests')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'help_requests' }, query.retry)
+      .subscribe();
+    return () => { void getSupabase().removeChannel(channel); };
+  }, [query.retry]);
+  return query;
 }
 
 export function useAdminHelpRequests(classId: string | null) {
-  return useHelpQuery<AdminHelpRequest[]>(useCallback(
+  const query = useHelpQuery<AdminHelpRequest[]>(useCallback(
     () => classId ? getAdminHelpRequests(classId) : Promise.resolve([]),
     [classId],
+  ), []);
+  useEffect(() => {
+    if (!classId) return;
+    const channel = getSupabase().channel(`admin-help-${classId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'help_requests', filter: `class_id=eq.${classId}` }, query.retry)
+      .subscribe();
+    return () => { void getSupabase().removeChannel(channel); };
+  }, [classId, query.retry]);
+  return query;
+}
+
+export function useHelpRequestHistory(requestId: string | null) {
+  return useHelpQuery<HelpRequestHistory[]>(useCallback(
+    () => requestId ? getHelpRequestHistory(requestId) : Promise.resolve([]), [requestId],
   ), []);
 }
 

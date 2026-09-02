@@ -51,5 +51,10 @@ export function Screen({
 const styles = StyleSheet.create({
   safe: { backgroundColor: colors.background, flex: 1 },
   fill: { flex: 1 },
-  content: { gap: spacing.lg, paddingBottom: spacing.xxl, paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+  },
 });

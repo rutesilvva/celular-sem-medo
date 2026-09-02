@@ -44,13 +44,13 @@ export default function SplashScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  content: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: spacing.xxxl },
   main: { alignItems: 'center', gap: spacing.xxl, width: '100%' },
   brandCopy: { gap: spacing.md },
   center: { textAlign: 'center' },
   dots: { flexDirection: 'row', gap: spacing.sm },
   dot: { backgroundColor: colors.primaryMuted, borderRadius: radius.round, height: 8, width: 8 },
   dotActive: { backgroundColor: colors.primary, width: 24 },
-  orbOne: { backgroundColor: '#EFE0FF', borderRadius: radius.round, height: 260, left: -130, opacity: 0.7, position: 'absolute', top: -40, width: 260 },
-  orbTwo: { backgroundColor: colors.warningSoft, borderRadius: radius.round, bottom: -120, height: 230, opacity: 0.62, position: 'absolute', right: -110, width: 230 },
+  orbOne: { backgroundColor: '#EAD9FF', borderRadius: radius.round, height: 260, left: -110, opacity: 0.9, position: 'absolute', top: -80, width: 260 },
+  orbTwo: { backgroundColor: '#F7DDC0', borderRadius: radius.round, bottom: -110, height: 230, opacity: 0.8, position: 'absolute', right: -100, width: 230 },
 });

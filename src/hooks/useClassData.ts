@@ -23,6 +23,13 @@ type QueryState<T> = {
   retry: () => void;
 };
 
+let selectedAdminClassId: string | null = null;
+const adminClassListeners = new Set<() => void>();
+export function selectAdminClass(classId: string) {
+  selectedAdminClassId = classId;
+  adminClassListeners.forEach((listener) => listener());
+}
+
 export function pickPrimaryClassContext<T extends Pick<ClassContext, 'class_id' | 'class_name' | 'joined_at' | 'access_role'>>(contexts: T[] | null | undefined): T | null {
   if (!contexts || contexts.length === 0) return null;
 
@@ -46,10 +53,21 @@ export function useMyClass(role: Role): QueryState<ClassContext> {
 
 /** Administradores são globais; a turma principal é a mais recente ativa, nunca a primeira arbitrária. */
 export function useAdminClass(): QueryState<ClassContext> {
-  const loader = useCallback(async () => {
-    const contexts = await getAdminClassContexts();
-    return pickPrimaryClassContext(contexts) ?? null;
+  const [selectionGeneration, setSelectionGeneration] = useState(0);
+  useEffect(() => {
+    const listener = () => setSelectionGeneration((value) => value + 1);
+    adminClassListeners.add(listener);
+    return () => { adminClassListeners.delete(listener); };
   }, []);
+  const loader = useCallback(async () => {
+    void selectionGeneration;
+    const contexts = await getAdminClassContexts();
+    const selected = contexts.find((context) => context.class_id === selectedAdminClassId);
+    const result = selected ?? pickPrimaryClassContext(contexts) ?? null;
+    if (result) selectedAdminClassId = result.class_id;
+    return result;
+  // selectionGeneration intentionally invalidates the selected class query.
+  }, [selectionGeneration]);
   return useQuery(loader);
 }
 

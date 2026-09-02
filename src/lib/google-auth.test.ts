@@ -44,7 +44,7 @@ describe('Google authentication', () => {
     await expect(signInWithGoogle()).resolves.toMatchObject({
       roles: ['participant', 'admin'],
       user: { name: 'Pessoa Persistida' },
-      preferences: { largerText: false, highContrast: true, autoAudio: false, voiceResponse: true },
+      preferences: { largerText: false, highContrast: true, autoAudio: false, voiceResponse: true, audioRate: 0.9 },
       participantOnboardingCompleted: true,
     });
     expect(client.auth.exchangeCodeForSession).toHaveBeenCalledWith('valid');

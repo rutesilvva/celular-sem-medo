@@ -14,6 +14,9 @@ export type AdminClassProgress = Database['public']['Functions']['get_admin_clas
 export type AdminMissionProgress = Database['public']['Functions']['get_admin_mission_progress']['Returns'][number];
 export type ParticipantHelpRequest = Database['public']['Functions']['get_my_help_requests']['Returns'][number];
 export type AdminHelpRequest = Database['public']['Functions']['get_admin_help_requests']['Returns'][number];
+export type AdminClass = Database['public']['Functions']['get_admin_classes']['Returns'][number];
+export type AdminUser = Database['public']['Functions']['get_admin_users']['Returns'][number];
+export type HelpRequestHistory = Database['public']['Functions']['get_help_request_history']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
 export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
 export type AdminParticipantHistory = Database['public']['Functions']['get_admin_participant_history']['Returns'][number];
@@ -142,12 +145,62 @@ export async function getAdminClassContexts(): Promise<ClassContext[]> {
   return data as ClassContext[];
 }
 
+export async function getAdminClasses(): Promise<AdminClass[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_classes');
+  if (error) throw error;
+  return data;
+}
+
+export async function getAdminUsers(): Promise<AdminUser[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_users');
+  if (error) throw error;
+  return data;
+}
+
+export async function createAdminClass(name: string, slug: string, shift?: string) {
+  const { data, error } = await getSupabase().rpc('admin_create_class', { class_name: name, class_slug: slug, class_shift: shift });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateAdminClass(id: string, name: string, shift?: string) {
+  const { data, error } = await getSupabase().rpc('admin_update_class', { target_class_id: id, class_name: name, class_shift: shift });
+  if (error) throw error;
+  return data;
+}
+
+export async function archiveAdminClass(id: string) {
+  const { data, error } = await getSupabase().rpc('admin_archive_class', { target_class_id: id });
+  if (error) throw error;
+  return data;
+}
+
+export async function addStudentToClass(classId: string, userId: string) {
+  const { data, error } = await getSupabase().rpc('admin_add_student', { target_class_id: classId, target_user_id: userId });
+  if (error) throw error;
+  return data;
+}
+
+export async function removeStudentFromClass(classId: string, userId: string) {
+  const { data, error } = await getSupabase().rpc('admin_revoke_membership', { target_class_id: classId, target_user_id: userId, target_role: 'participant' });
+  if (error) throw error;
+  return data;
+}
+
+export async function setAdministrator(userId: string, enabled: boolean) {
+  const rpc = enabled ? 'admin_grant_administrator' : 'admin_revoke_administrator';
+  const { data, error } = await getSupabase().rpc(rpc, { target_user_id: userId });
+  if (error) throw error;
+  return data;
+}
+
 export async function saveParticipantPreferences(userId: string, preferences: AccessibilityPreferences) {
   const { error } = await getSupabase().from('preferences').update({
     larger_text: preferences.largerText,
     high_contrast: preferences.highContrast,
     auto_audio: preferences.autoAudio,
     voice_response: preferences.voiceResponse,
+    audio_rate: preferences.audioRate,
   }).eq('user_id', userId);
   if (error) throw error;
 }
@@ -302,6 +355,12 @@ export async function updateHelpRequest(id: string, status: 'in_progress' | 'res
     target_help_request_id: id, target_status: status,
     target_resolution_code: resolution,
   });
+  if (error) throw error;
+  return data;
+}
+
+export async function getHelpRequestHistory(id: string): Promise<HelpRequestHistory[]> {
+  const { data, error } = await getSupabase().rpc('get_help_request_history', { target_help_request_id: id });
   if (error) throw error;
   return data;
 }

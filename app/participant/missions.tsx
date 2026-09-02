@@ -18,7 +18,7 @@ export default function ParticipantMissionsScreen() {
 
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header title="Escolher missão" subtitle="Pratique uma habilidade por vez." audio />
+      <Header title="Escolha uma missão" subtitle="Comece por algo que faça parte do seu dia a dia." audio />
 
       <Card style={styles.introCard}>
         <View style={styles.introIcon}><Ionicons name="flag" size={28} color={colors.primary} /></View>
@@ -91,12 +91,12 @@ function MissionCard({ mission, recommended, onPress }: {
 
 const styles = StyleSheet.create({
   content: { gap: spacing.lg },
-  introCard: { alignItems: 'center', backgroundColor: colors.primarySoft, flexDirection: 'row', gap: spacing.md },
+  introCard: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, flexDirection: 'row', gap: spacing.md },
   introIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
   introCopy: { flex: 1, gap: spacing.xs },
   list: { gap: spacing.md },
-  mission: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 132, padding: spacing.lg },
-  missionRecommended: { borderColor: colors.primary, borderWidth: 2 },
+  mission: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 132, padding: spacing.lg },
+  missionRecommended: { borderColor: colors.primary, borderWidth: 2, backgroundColor: '#FBF7FF' },
   missionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, height: 58, justifyContent: 'center', width: 58 },
   missionBody: { flex: 1, gap: spacing.xs },
   missionHeading: { alignItems: 'flex-start', gap: spacing.sm },

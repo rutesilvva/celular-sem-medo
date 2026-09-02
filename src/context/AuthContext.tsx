@@ -141,6 +141,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       high_contrast: preferences.highContrast,
       auto_audio: preferences.autoAudio,
       voice_response: preferences.voiceResponse,
+      audio_rate: preferences.audioRate,
       onboarding_completed_at: new Date().toISOString(),
     }).eq('user_id', currentUser.id);
     if (error) return false;

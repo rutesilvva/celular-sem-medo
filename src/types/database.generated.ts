@@ -1006,11 +1006,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_student: {
+        Args: { target_class_id: string; target_user_id: string }
+        Returns: boolean
+      }
+      admin_archive_class: {
+        Args: { target_class_id: string }
+        Returns: boolean
+      }
+      admin_create_class: {
+        Args: { class_name: string; class_shift?: string; class_slug: string }
+        Returns: string
+      }
+      admin_grant_administrator: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
+      admin_revoke_administrator: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       admin_revoke_membership: {
         Args: {
           target_class_id: string
           target_role: Database["public"]["Enums"]["app_role"]
           target_user_id: string
+        }
+        Returns: boolean
+      }
+      admin_update_class: {
+        Args: {
+          class_name: string
+          class_shift?: string
+          target_class_id: string
         }
         Returns: boolean
       }
@@ -1029,6 +1057,7 @@ export type Database = {
           stored_event_id: string
         }[]
       }
+      can_admin_user: { Args: { target_user_id: string }; Returns: boolean }
       can_administer_user: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1141,6 +1170,18 @@ export type Database = {
           completed_missions: number
           completion_percent: number
           difficulty_percent: number
+          participant_count: number
+        }[]
+      }
+      get_admin_classes: {
+        Args: never
+        Returns: {
+          class_id: string
+          class_name: string
+          class_shift: string
+          class_slug: string
+          class_status: Database["public"]["Enums"]["class_status"]
+          created_at: string
           participant_count: number
         }[]
       }
@@ -1280,6 +1321,29 @@ export type Database = {
           participant_id: string
           progress_percent: number
           total_count: number
+        }[]
+      }
+      get_admin_users: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          active_class_count: number
+          avatar_url: string
+          display_name: string
+          email: string
+          is_administrator: boolean
+          user_id: string
+        }[]
+      }
+      get_help_request_history: {
+        Args: { target_help_request_id: string }
+        Returns: {
+          actor_id: string
+          from_status: Database["public"]["Enums"]["help_request_status"]
+          history_id: number
+          occurred_at: string
+          resolution_code: string
+          to_status: Database["public"]["Enums"]["help_request_status"]
         }[]
       }
       get_my_access_roles: {

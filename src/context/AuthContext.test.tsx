@@ -18,7 +18,7 @@ jest.mock('expo-web-browser', () => ({ dismissAuthSession: jest.fn() }));
 const account = {
   roles: ['participant'] as const,
   user: { id: 'user-1', name: 'Pessoa', email: 'person@test.invalid', avatarUrl: null },
-  preferences: { largerText: true, highContrast: false, autoAudio: true, voiceResponse: false },
+  preferences: { largerText: true, highContrast: false, autoAudio: true, voiceResponse: false, audioRate: 0.9 },
   participantOnboardingCompleted: false,
 };
 const wrapper = ({ children }: PropsWithChildren) => <AuthProvider>{children}</AuthProvider>;
@@ -99,14 +99,14 @@ describe('AuthProvider session lifecycle', () => {
     client.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('anonymous'));
-    await expect(result.current.completeParticipantOnboarding({ largerText: true, highContrast: false, autoAudio: true, voiceResponse: false })).resolves.toBe(false);
+    await expect(result.current.completeParticipantOnboarding({ largerText: true, highContrast: false, autoAudio: true, voiceResponse: false, audioRate: 0.9 })).resolves.toBe(false);
   });
 
   it('persists onboarding preferences for the authenticated participant', async () => {
     client.auth.getSession.mockResolvedValue(validSession());
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('authenticated'));
-    await act(() => result.current.completeParticipantOnboarding({ largerText: true, highContrast: true, autoAudio: false, voiceResponse: false }));
+    await act(() => result.current.completeParticipantOnboarding({ largerText: true, highContrast: true, autoAudio: false, voiceResponse: false, audioRate: 0.9 }));
     expect(client.from).toHaveBeenCalledWith('preferences');
     expect(result.current.participantOnboardingCompleted).toBe(true);
   });

@@ -58,10 +58,13 @@ function BottomNav({ items, active, compact = false }: { items: NavItem[]; activ
             accessibilityLabel={item.label}
             accessibilityState={{ selected }}
             key={item.key}
+            hitSlop={10}
             onPress={() => openTab(item.href)}
-            style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.item, selected && styles.itemSelected, pressed && styles.pressed]}
           >
-            <Ionicons name={selected ? item.activeIcon : item.icon} size={compact ? 22 : 24} color={selected ? colors.primary : colors.iconMuted} />
+            <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
+              <Ionicons name={selected ? item.activeIcon : item.icon} size={compact ? 24 : 26} color={selected ? colors.primary : colors.iconMuted} />
+            </View>
             <AppText
               variant="caption"
               weight={selected ? '800' : '500'}
@@ -86,7 +89,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.sm,
   },
-  item: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center', minHeight: 62, minWidth: 0 },
-  pressed: { opacity: 0.62 },
+  item: { alignItems: 'center', borderRadius: 18, flex: 1, gap: 5, justifyContent: 'center', minHeight: 72, minWidth: 0 },
+  itemSelected: { backgroundColor: colors.primarySoft },
+  iconWrap: { alignItems: 'center', borderRadius: 14, height: 36, justifyContent: 'center', width: 36 },
+  iconWrapSelected: { backgroundColor: '#E9DFFF' },
+  pressed: { opacity: 0.7 },
   compactLabel: { textAlign: 'center' },
 });

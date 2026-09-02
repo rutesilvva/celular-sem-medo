@@ -33,7 +33,7 @@ export function AppText({
 }: AppTextProps) {
   const { preferences } = useApp();
   const metrics = textMetrics[variant];
-  const scale = preferences.largerText ? 1.16 : 1;
+  const scale = preferences.largerText ? 1.28 : 1;
   const isSubtleText = color === colors.textMuted || color === colors.placeholder;
   const effectiveColor = preferences.highContrast && isSubtleText ? colors.text : color;
 
@@ -88,6 +88,7 @@ export function Button({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       disabled={disabled}
+      hitSlop={10}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
@@ -342,6 +343,17 @@ const textMetrics = {
   caption: { fontSize: type.caption, lineHeight: 16 },
 } as const;
 
+function colorAlpha(hex: string, alpha: number) {
+  const clean = hex.replace('#', '');
+  const opacity = Math.max(0, Math.min(1, alpha));
+  const value = clean.length === 3 ? clean.split('').map((char) => char + char).join('') : clean;
+  const num = parseInt(value, 16);
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
 const styles = StyleSheet.create({
   text: { fontFamily: type.family, lineHeight: 24 },
   text_title: { fontSize: type.title, lineHeight: 38 },
@@ -351,45 +363,45 @@ const styles = StyleSheet.create({
   text_small: { fontSize: type.small, lineHeight: 20 },
   text_caption: { fontSize: type.caption, lineHeight: 16 },
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    backgroundColor: '#FFFDFD',
+    borderColor: colorAlpha(colors.primary, 0.18),
+    borderRadius: radius.xl,
+    borderWidth: 1.5,
     padding: spacing.lg,
     ...shadow,
   },
   button: {
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     flexDirection: 'row',
     gap: spacing.sm,
     justifyContent: 'center',
-    minHeight: 54,
-    paddingHorizontal: spacing.lg,
+    minHeight: 64,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
   },
-  button_primary: { backgroundColor: colors.primary },
-  button_secondary: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 1.5 },
-  button_soft: { backgroundColor: colors.primarySoft },
-  button_danger: { backgroundColor: colors.danger },
-  buttonPressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
+  button_primary: { backgroundColor: colors.primary, borderColor: colors.primaryDark, borderWidth: 1.5, borderRadius: radius.xl },
+  button_secondary: { backgroundColor: '#FFFDFD', borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl },
+  button_soft: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderWidth: 1.5, borderRadius: radius.xl },
+  button_danger: { backgroundColor: colors.danger, borderColor: '#A83B4D', borderWidth: 1.5, borderRadius: radius.xl },
+  buttonPressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
   buttonDisabled: { backgroundColor: '#E4E1E8', borderColor: '#E4E1E8', opacity: 0.75 },
   buttonLabel: { flexShrink: 1, textAlign: 'center' },
   iconButton: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: '#FFFDFD',
+    borderColor: colors.primaryMuted,
     borderRadius: radius.round,
-    borderWidth: 1,
-    height: 48,
+    borderWidth: 1.5,
+    height: 50,
     justifyContent: 'center',
-    width: 48,
+    width: 50,
     ...shadow,
   },
   progressTrack: { backgroundColor: colors.primarySoft, borderRadius: radius.round, overflow: 'hidden', width: '100%' },
   progressFill: { borderRadius: radius.round, height: '100%' },
   tag: { alignSelf: 'flex-start', borderRadius: radius.round, paddingHorizontal: 10, paddingVertical: 5 },
-  switchRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, minHeight: 68, paddingVertical: spacing.sm },
+  switchRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, minHeight: 76, paddingVertical: spacing.sm },
   switchRowPressed: { backgroundColor: colors.primarySoft, borderRadius: radius.md },
   switchIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
   switchCopy: { flex: 1, gap: 2 },

@@ -98,7 +98,7 @@ export async function loadAuthenticatedAccount(): Promise<AuthenticatedAccount> 
   const authUser = sessionData.session.user;
   const [profileResult, preferencesResult] = await Promise.all([
     supabase.from('profiles').select('display_name, avatar_url').eq('id', authUser.id).maybeSingle(),
-    supabase.from('preferences').select('larger_text, high_contrast, auto_audio, voice_response, onboarding_completed_at').eq('user_id', authUser.id).maybeSingle(),
+    supabase.from('preferences').select('larger_text, high_contrast, auto_audio, voice_response, audio_rate, onboarding_completed_at').eq('user_id', authUser.id).maybeSingle(),
   ]);
   if (profileResult.error || preferencesResult.error) throw profileResult.error ?? preferencesResult.error;
   const profile = profileResult.data;
@@ -120,6 +120,7 @@ export async function loadAuthenticatedAccount(): Promise<AuthenticatedAccount> 
       highContrast: preferences?.high_contrast ?? false,
       autoAudio: preferences?.auto_audio ?? true,
       voiceResponse: preferences?.voice_response ?? false,
+      audioRate: Number(preferences?.audio_rate ?? 0.9),
     },
     participantOnboardingCompleted: Boolean(preferences?.onboarding_completed_at),
   };

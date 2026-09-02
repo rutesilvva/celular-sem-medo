@@ -99,13 +99,13 @@ export default function ParticipantProfileScreen() {
         <Card style={styles.menuCard}>
           <MenuRow
             icon="help-circle-outline"
-            label="Como usar o aplicativo"
-            onPress={() => showNotice('Guia rápido disponível nas instruções em áudio')}
+            label="Guia rápido do app"
+            onPress={() => showNotice('Você pode repetir as instruções e ouvir a explicação novamente')}
           />
           <View style={styles.divider} />
           <MenuRow
             icon="chatbubble-ellipses-outline"
-            label="Pedir ajuda à administração"
+            label="Pedir ajuda ao suporte"
             onPress={() => router.push('/participant/help-requests')}
           />
           <View style={styles.divider} />
@@ -151,7 +151,7 @@ function MenuRow({ icon, label, onPress }: {
 
 const styles = StyleSheet.create({
   content: { gap: spacing.xl },
-  profileCard: { alignItems: 'center', flexDirection: 'row', gap: spacing.lg },
+  profileCard: { alignItems: 'center', backgroundColor: '#F9F4FF', borderColor: colors.primaryMuted, flexDirection: 'row', gap: spacing.lg },
   avatar: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 76, justifyContent: 'center', width: 76 },
   profileCopy: { alignItems: 'flex-start', flex: 1, gap: spacing.xs },
   section: { gap: spacing.md },

@@ -43,8 +43,8 @@ export default function ParticipantGuidedHelpScreen() {
 
       <View accessibilityLabel="Exemplo da parte inferior de uma conversa, com o botão de clipe destacado" style={styles.demo}>
         <View style={styles.demoTop}>
-          <Tag label="OLHE AQUI" tone="yellow" />
-          <AppText variant="small" weight="800" color={colors.primary}>PARTE DE BAIXO DA CONVERSA</AppText>
+          <Tag label="Olhe aqui" tone="yellow" />
+          <AppText variant="small" weight="800" color={colors.primary}>Parte de baixo da conversa</AppText>
         </View>
         <View style={styles.arrowArea}>
           <AppText variant="subheading" weight="800" color={colors.primary} style={styles.center}>{currentStep.title}</AppText>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   encouragement: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: '#F1D68C', flexDirection: 'row', gap: spacing.md },
   encouragementCopy: { flex: 1, gap: spacing.xs },
   demo: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#FDFBFF',
     borderColor: colors.primaryMuted,
     borderRadius: radius.xl,
     borderWidth: 2,
