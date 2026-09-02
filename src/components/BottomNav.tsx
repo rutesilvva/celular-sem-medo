@@ -9,8 +9,7 @@ import { colors, spacing } from '@/theme/tokens';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type ParticipantKey = 'home' | 'missions' | 'progress' | 'profile';
-type MonitorKey = 'home' | 'participants' | 'missions' | 'reports' | 'profile';
-type AdminKey = 'home' | 'users' | 'classes' | 'profile';
+type AdminKey = 'home' | 'users' | 'classes' | 'participants' | 'missions' | 'reports' | 'profile';
 
 type NavItem = { key: string; label: string; icon: IconName; activeIcon: IconName; href: Href };
 
@@ -21,18 +20,11 @@ const participantItems: NavItem[] = [
   { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/participant/profile' },
 ];
 
-const monitorItems: NavItem[] = [
-  { key: 'home', label: 'Visão geral', icon: 'home-outline', activeIcon: 'home', href: '/monitor/home' },
-  { key: 'participants', label: 'Participantes', icon: 'people-outline', activeIcon: 'people', href: '/monitor/participants' },
-  { key: 'missions', label: 'Missões', icon: 'flag-outline', activeIcon: 'flag', href: '/monitor/missions' },
-  { key: 'reports', label: 'Relatórios', icon: 'bar-chart-outline', activeIcon: 'bar-chart', href: '/monitor/reports' },
-  { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/monitor/profile' },
-];
-
 const adminItems: NavItem[] = [
   { key: 'home', label: 'Visão geral', icon: 'grid-outline', activeIcon: 'grid', href: '/admin/home' },
-  { key: 'users', label: 'Pessoas', icon: 'people-outline', activeIcon: 'people', href: '/admin/users' },
-  { key: 'classes', label: 'Turmas', icon: 'school-outline', activeIcon: 'school', href: '/admin/classes' },
+  { key: 'participants', label: 'Alunos', icon: 'people-outline', activeIcon: 'people', href: '/admin/participants' },
+  { key: 'missions', label: 'Missões', icon: 'flag-outline', activeIcon: 'flag', href: '/admin/missions' },
+  { key: 'reports', label: 'Relatórios', icon: 'bar-chart-outline', activeIcon: 'bar-chart', href: '/admin/reports' },
   { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/admin/profile' },
 ];
 
@@ -40,12 +32,8 @@ export function ParticipantNav({ active }: { active: ParticipantKey }) {
   return <BottomNav items={participantItems} active={active} />;
 }
 
-export function MonitorNav({ active }: { active: MonitorKey }) {
-  return <BottomNav items={monitorItems} active={active} compact />;
-}
-
 export function AdminNav({ active }: { active: AdminKey }) {
-  return <BottomNav items={adminItems} active={active} />;
+  return <BottomNav items={adminItems} active={active} compact />;
 }
 
 function BottomNav({ items, active, compact = false }: { items: NavItem[]; active: string; compact?: boolean }) {

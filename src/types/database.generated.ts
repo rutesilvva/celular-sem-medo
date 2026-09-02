@@ -1070,6 +1070,17 @@ export type Database = {
         }[]
       }
       expire_invitation_secrets: { Args: never; Returns: number }
+      get_admin_class_contexts: {
+        Args: never
+        Returns: {
+          access_role: string
+          class_id: string
+          class_name: string
+          class_shift: string
+          joined_at: string
+          membership_id: string | null
+        }[]
+      }
       get_monitor_attempt_event_summaries: {
         Args: { target_attempt_id: string; target_class_id: string }
         Returns: {

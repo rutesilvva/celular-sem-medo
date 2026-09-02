@@ -3,12 +3,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { MonitorNav } from '@/components/BottomNav';
+import { AdminNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { useMyClass, useMonitorParticipant, useMonitorParticipantHistory } from '@/hooks/useClassData';
+import { useAdminClass, useMonitorParticipant, useMonitorParticipantHistory } from '@/hooks/useClassData';
 import type { ClassParticipant, MonitorParticipantHistory } from '@/lib/backend';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -27,14 +27,14 @@ export default function ParticipantDetailsScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [activeTab, setActiveTab] = useState<DetailTab>('summary');
   const [period, setPeriod] = useState<DetailPeriod>(30);
-  const classQuery = useMyClass('monitor');
+  const classQuery = useAdminClass();
   const participantQuery = useMonitorParticipant(classQuery.data?.class_id ?? null, id ?? null, period);
   const historyQuery = useMonitorParticipantHistory(classQuery.data?.class_id ?? null, id ?? null, period);
 
   if (classQuery.loading || participantQuery.loading) {
     return (
-      <Screen footer={<MonitorNav active="participants" />}>
-        <Header title="Detalhes" onBack={() => router.replace('/monitor/participants')} />
+      <Screen footer={<AdminNav active="participants" />}>
+        <Header title="Detalhes" onBack={() => router.replace('/admin/participants')} />
         <DataState kind="loading" title="Carregando participante" message="Consultando o vínculo e o progresso permitido." />
       </Screen>
     );
@@ -42,8 +42,8 @@ export default function ParticipantDetailsScreen() {
 
   if (classQuery.error || participantQuery.error) {
     return (
-      <Screen footer={<MonitorNav active="participants" />}>
-        <Header title="Detalhes" onBack={() => router.replace('/monitor/participants')} />
+      <Screen footer={<AdminNav active="participants" />}>
+        <Header title="Detalhes" onBack={() => router.replace('/admin/participants')} />
         <DataState kind="error" title="Não foi possível carregar" message="O acesso pode ter mudado ou a conexão está indisponível." onRetry={classQuery.error ? classQuery.retry : participantQuery.retry} />
       </Screen>
     );
@@ -51,13 +51,13 @@ export default function ParticipantDetailsScreen() {
 
   if (!classQuery.data || !participantQuery.data) {
     return (
-      <Screen footer={<MonitorNav active="participants" />}>
-        <Header title="Participante não encontrado" onBack={() => router.replace('/monitor/participants')} />
+      <Screen footer={<AdminNav active="participants" />}>
+        <Header title="Aluno não encontrado" onBack={() => router.replace('/admin/participants')} />
         <Card style={styles.notFoundCard}>
           <Ionicons name="person-remove-outline" size={42} color={colors.primary} />
           <AppText variant="subheading" weight="800" style={styles.center}>Não encontramos este cadastro</AppText>
           <AppText color={colors.textMuted} style={styles.center}>Volte à lista e escolha um participante disponível.</AppText>
-          <Button label="Voltar aos participantes" onPress={() => router.replace('/monitor/participants')} />
+          <Button label="Voltar aos alunos" onPress={() => router.replace('/admin/participants')} />
         </Card>
       </Screen>
     );
@@ -66,11 +66,11 @@ export default function ParticipantDetailsScreen() {
   const participant = participantQuery.data;
 
   return (
-    <Screen footer={<MonitorNav active="participants" />}>
+    <Screen footer={<AdminNav active="participants" />}>
       <Header
         title="Detalhes"
         subtitle="Acompanhamento individual"
-        onBack={() => router.replace('/monitor/participants')}
+        onBack={() => router.replace('/admin/participants')}
         action={(
           <AudioButton
             compact

@@ -137,6 +137,12 @@ export async function getMyClassContexts() {
   return data;
 }
 
+export async function getAdminClassContexts(): Promise<ClassContext[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_class_contexts');
+  if (error) throw error;
+  return data as ClassContext[];
+}
+
 export async function saveParticipantPreferences(userId: string, preferences: AccessibilityPreferences) {
   const { error } = await getSupabase().from('preferences').update({
     larger_text: preferences.largerText,

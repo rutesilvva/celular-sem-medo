@@ -1,6 +1,6 @@
 # Celular Sem Medo
 
-Base mobile navegável para uma plataforma de letramento digital voltada a pessoas idosas. O produto reúne prática segura para participantes, acompanhamento para monitores e administração global de pessoas e turmas.
+Base mobile navegável para uma plataforma de letramento digital voltada a pessoas idosas. O produto reúne prática segura para alunos e administração global de pessoas, turmas e aprendizagem.
 
 Esta entrega combina um protótipo funcional em Expo/React Native com a fundação
 versionada do backend. As telas ainda usam dados locais, mas a arquitetura
@@ -11,7 +11,7 @@ estão definidos para a integração das próximas issues.
 
 O Celular Sem Medo ajuda uma pessoa a praticar tarefas do dia a dia — como enviar uma foto, conferir um Pix ou compartilhar a localização — em um ambiente que deixa claro que nenhuma ação real será executada. Quando surge uma dificuldade, a interface oferece explicação em áudio, indicação visual e uma nova tentativa.
 
-Para o monitor, o aplicativo organiza o progresso da turma, o uso dos recursos de apoio e as dificuldades mais recorrentes. O objetivo desta base é tornar essa história demonstrável de ponta a ponta em um celular.
+Para o administrador, o aplicativo organiza pessoas e turmas e acompanha progresso, recursos de apoio e dificuldades. O objetivo desta base é tornar essa história demonstrável de ponta a ponta em um celular.
 
 ## Stack
 
@@ -32,7 +32,7 @@ O projeto é mobile-first, em orientação retrato e com tema claro. A versão w
 ### Entrada
 
 1. A tela de abertura apresenta a marca e avança automaticamente para o login; também é possível tocar para continuar.
-2. Participantes, monitores e administradores usam o mesmo botão **Continuar com Google**.
+2. Alunos e administradores usam o mesmo botão **Continuar com Google**.
 3. Depois da autenticação, os papéis são resolvidos pelo servidor; quando houver mais de um acesso, a pessoa escolhe somente entre os papéis autorizados.
 
 ### Participante
@@ -55,9 +55,9 @@ A barra inferior mantém acesso a **Início**, **Missões**, **Progresso** e **P
 - caminho de dificuldade, orientação e nova tentativa;
 - resultado da missão, evolução e perfil/configurações.
 
-### Monitor
+### Administrador
 
-O monitor entra diretamente na visão da turma e pode percorrer:
+O administrador possui acesso global e pode percorrer:
 
 ```text
 Visão geral → Participantes → Detalhes do participante
@@ -77,7 +77,7 @@ app/
 ├── auth/                # Callback do OAuth
 ├── admin/               # Administração global
 ├── participant/         # Jornada e navegação do participante
-└── monitor/             # Painel e navegação do monitor
+└── admin/               # Administração e acompanhamento global
 
 src/
 ├── components/          # Shell de tela, navegação, feedback e UI reutilizável

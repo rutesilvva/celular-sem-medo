@@ -15,7 +15,7 @@ export default function AdminHomeScreen() {
   const { managedUsers } = useApp();
   const { currentUser } = useAuth();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Administrador';
-  const count = (role: 'participant' | 'monitor' | 'admin') => managedUsers.filter((user) => user.role === role).length;
+  const count = (role: 'participant' | 'admin') => managedUsers.filter((user) => user.role === role).length;
 
   return (
     <Screen footer={<AdminNav active="home" />}>
@@ -29,16 +29,18 @@ export default function AdminHomeScreen() {
       </View>
       <View style={styles.grid}>
         <MetricCard icon="person-outline" value={`${count('participant')}`} label="participantes" tone="purple" />
-        <MetricCard icon="people-outline" value={`${count('monitor')}`} label="monitores" tone="green" />
+        <MetricCard icon="school-outline" value={`${managedClasses.length}`} label="turmas" tone="green" />
       </View>
       <View style={styles.grid}>
         <MetricCard icon="shield-outline" value={`${count('admin')}`} label="admins globais" tone="yellow" />
-        <MetricCard icon="school-outline" value={`${managedClasses.length}`} label="turmas" tone="blue" />
+        <MetricCard icon="bar-chart-outline" value="Global" label="escopo de acesso" tone="blue" />
       </View>
       <SectionTitle>Ações rápidas</SectionTitle>
       <Card style={styles.actions}>
         <Action icon="people-outline" label="Gerenciar pessoas" onPress={() => router.push('/admin/users')} />
         <Action icon="school-outline" label="Gerenciar turmas" onPress={() => router.push('/admin/classes')} />
+        <Action icon="people-outline" label="Acompanhar alunos" onPress={() => router.push('/admin/participants')} />
+        <Action icon="people-outline" label="Pedidos de ajuda" onPress={() => router.push('/admin/help-requests')} />
       </Card>
       <Card style={styles.security}>
         <Ionicons name="lock-closed-outline" size={25} color={colors.primary} />

@@ -3,11 +3,11 @@ import { useRouter } from 'expo-router';
 import { useDeferredValue, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { MonitorNav } from '@/components/BottomNav';
+import { AdminNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
-import { useMyClass, useMonitorParticipants } from '@/hooks/useClassData';
+import { useAdminClass, useMonitorParticipants } from '@/hooks/useClassData';
 import type { ClassParticipant, MonitorParticipantSort } from '@/lib/backend';
 import { colors, radius, spacing, type } from '@/theme/tokens';
 
@@ -33,7 +33,7 @@ export default function ParticipantsScreen() {
   const [sort, setSort] = useState<MonitorParticipantSort>('name');
   const [page, setPage] = useState(0);
   const deferredQuery = useDeferredValue(query);
-  const classQuery = useMyClass('monitor');
+  const classQuery = useAdminClass();
   const participantsQuery = useMonitorParticipants(classQuery.data?.class_id ?? null, {
     search: deferredQuery, filter, sort, limit: pageSize, offset: page * pageSize,
   });
@@ -41,11 +41,11 @@ export default function ParticipantsScreen() {
   const total = participantsQuery.data?.total ?? 0;
 
   const openParticipant = (participant: ClassParticipant) => {
-    router.push({ pathname: '/monitor/participant-details', params: { id: participant.id } });
+    router.push({ pathname: '/admin/participant-details', params: { id: participant.id } });
   };
 
   return (
-    <Screen footer={<MonitorNav active="participants" />}>
+    <Screen footer={<AdminNav active="participants" />}>
       <Header
         title="Participantes"
         subtitle={classQuery.data
@@ -64,7 +64,7 @@ export default function ParticipantsScreen() {
           onRetry={classQuery.error ? classQuery.retry : participantsQuery.retry}
         />
       ) : !classQuery.data ? (
-        <DataState kind="empty" title="Nenhuma turma vinculada" message="Peça à administração para cadastrar seu vínculo de monitor." />
+        <DataState kind="empty" title="Nenhuma turma ativa" message="Cadastre ou reative uma turma para acompanhar alunos." />
       ) : (
         <>
 

@@ -2,12 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { MonitorNav } from '@/components/BottomNav';
+import { AdminNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { useMyClass } from '@/hooks/useClassData';
+import { useAdminClass } from '@/hooks/useClassData';
 import { useMonitorProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -30,7 +30,7 @@ const missionIcons = {
 export default function MonitorMissionsScreen() {
   const [filter, setFilter] = useState<MissionFilter>('all');
   const { showNotice } = useApp();
-  const classQuery = useMyClass('monitor');
+  const classQuery = useAdminClass();
   const progressQuery = useMonitorProgress(classQuery.data?.class_id ?? null, 30);
   const missions: MonitorMission[] = progressQuery.missions.data.map((mission) => ({ id: mission.assignment_id, title: mission.title, completion: mission.completion_percent, difficulty: mission.difficulty_percent, audio: mission.audio_usage_percent, status: 'Ativa' }));
   const visibleMissions = filter === 'planned' ? [] : missions;
@@ -40,17 +40,17 @@ export default function MonitorMissionsScreen() {
   );
 
   if (classQuery.loading || progressQuery.missions.loading) {
-    return <Screen footer={<MonitorNav active="missions" />}><Header title="Missões" /><DataState kind="loading" title="Carregando missões" message="Calculando os dados reais da turma." /></Screen>;
+    return <Screen footer={<AdminNav active="missions" />}><Header title="Missões" /><DataState kind="loading" title="Carregando missões" message="Calculando os dados reais da turma." /></Screen>;
   }
   if (classQuery.error || progressQuery.missions.error) {
-    return <Screen footer={<MonitorNav active="missions" />}><Header title="Missões" /><DataState kind="error" title="Não foi possível carregar" message="Verifique a conexão e tente novamente." onRetry={classQuery.error ? classQuery.retry : progressQuery.missions.retry} /></Screen>;
+    return <Screen footer={<AdminNav active="missions" />}><Header title="Missões" /><DataState kind="error" title="Não foi possível carregar" message="Verifique a conexão e tente novamente." onRetry={classQuery.error ? classQuery.retry : progressQuery.missions.retry} /></Screen>;
   }
   if (!classQuery.data) {
-    return <Screen footer={<MonitorNav active="missions" />}><Header title="Missões" /><DataState kind="empty" title="Nenhuma turma vinculada" message="Você não possui uma turma ativa para consultar." /></Screen>;
+    return <Screen footer={<AdminNav active="missions" />}><Header title="Missões" /><DataState kind="empty" title="Nenhuma turma ativa" message="Cadastre ou reative uma turma para consultar." /></Screen>;
   }
 
   return (
-    <Screen footer={<MonitorNav active="missions" />}>
+    <Screen footer={<AdminNav active="missions" />}>
       <Header title="Missões" subtitle="Acompanhe a prática da turma" audio />
       <AppText variant="caption" color={colors.textMuted}>Última atualização: {formatUpdatedAt(progressQuery.missions.updatedAt)}</AppText>
 

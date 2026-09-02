@@ -64,17 +64,17 @@ describe('AuthProvider session lifecycle', () => {
 
   it('rejects a role not returned by the backend and accepts an allowed role', async () => {
     client.auth.getSession.mockResolvedValue(validSession());
-    jest.mocked(loadAuthenticatedAccount).mockResolvedValue({ ...account, roles: ['participant', 'monitor'] } as never);
+    jest.mocked(loadAuthenticatedAccount).mockResolvedValue({ ...account, roles: ['participant', 'admin'] } as never);
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('authenticated'));
-    act(() => expect(result.current.selectSessionRole('admin')).toBe(false));
-    act(() => expect(result.current.selectSessionRole('monitor')).toBe(true));
-    expect(result.current.sessionRole).toBe('monitor');
+    act(() => expect(result.current.selectSessionRole('monitor' as never)).toBe(false));
+    act(() => expect(result.current.selectSessionRole('admin')).toBe(true));
+    expect(result.current.sessionRole).toBe('admin');
   });
 
   it('waits for role selection when the backend authorizes multiple roles', async () => {
     client.auth.getSession.mockResolvedValue(validSession());
-    jest.mocked(loadAuthenticatedAccount).mockResolvedValue({ ...account, roles: ['participant', 'monitor'] } as never);
+    jest.mocked(loadAuthenticatedAccount).mockResolvedValue({ ...account, roles: ['participant', 'admin'] } as never);
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('authenticated'));
     expect(result.current.sessionRole).toBeNull();

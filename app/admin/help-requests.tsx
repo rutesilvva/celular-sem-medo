@@ -2,11 +2,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { MonitorNav } from '@/components/BottomNav';
+import { AdminNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, Tag } from '@/components/ui';
-import { useMyClass } from '@/hooks/useClassData';
+import { useAdminClass } from '@/hooks/useClassData';
 import { useMonitorHelpRequests } from '@/hooks/useHelpRequests';
 import { helpReasonLabels, helpResolutionLabels, helpStatusLabels } from '@/lib/help-copy';
 import { updateHelpRequest, type HelpReason, type HelpResolution, type MonitorHelpRequest } from '@/lib/backend';
@@ -15,16 +15,16 @@ import { enablePushNotifications } from '@/lib/push-notifications';
 
 const resolutions: HelpResolution[] = ['review_hint', 'try_again', 'scheduled_support', 'guided_by_monitor'];
 
-export default function MonitorHelpRequestsScreen() {
+export default function AdminHelpRequestsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const classQuery = useMyClass('monitor');
+  const classQuery = useAdminClass();
   const query = useMonitorHelpRequests(classQuery.data?.class_id ?? null);
   const [pushMessage, setPushMessage] = useState('');
-  if (classQuery.loading || query.loading) return <Screen footer={<MonitorNav active="home" />}><Header title="Pedidos de ajuda" /><DataState kind="loading" title="Carregando pedidos" message="Buscando solicitações da sua turma." /></Screen>;
-  if (classQuery.error || query.error) return <Screen footer={<MonitorNav active="home" />}><Header title="Pedidos de ajuda" /><DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={() => { classQuery.retry(); query.retry(); }} /></Screen>;
-  return <Screen footer={<MonitorNav active="home" />} contentStyle={styles.content}>
-    <Header title="Pedidos de ajuda" subtitle={classQuery.data?.class_name} onBack={() => router.replace('/monitor/home')} />
+  if (classQuery.loading || query.loading) return <Screen footer={<AdminNav active="home" />}><Header title="Pedidos de ajuda" /><DataState kind="loading" title="Carregando pedidos" message="Buscando solicitações da turma." /></Screen>;
+  if (classQuery.error || query.error) return <Screen footer={<AdminNav active="home" />}><Header title="Pedidos de ajuda" /><DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={() => { classQuery.retry(); query.retry(); }} /></Screen>;
+  return <Screen footer={<AdminNav active="home" />} contentStyle={styles.content}>
+    <Header title="Pedidos de ajuda" subtitle={classQuery.data?.class_name} onBack={() => router.replace('/admin/home')} />
     <Button label="Ativar avisos de novos pedidos" icon="notifications-outline" variant="secondary" onPress={() => void enablePushNotifications().then((result) => setPushMessage(result === 'enabled' ? 'Avisos ativados.' : result === 'denied' ? 'Permissão não concedida.' : 'Disponível após configurar o build EAS.')).catch(() => setPushMessage('Não foi possível ativar os avisos agora.'))} />
     {pushMessage ? <AppText variant="small" color={colors.textMuted}>{pushMessage}</AppText> : null}
     {!query.data.length ? <DataState kind="empty" title="Nenhum pedido" message="Novos pedidos dos participantes aparecerão aqui." /> : [...query.data].sort((a, b) => Number(b.help_request_id === id) - Number(a.help_request_id === id)).map((request) => <RequestCard key={request.help_request_id} request={request} retry={query.retry} highlighted={request.help_request_id === id} />)}

@@ -51,7 +51,6 @@ describe('Google login screen', () => {
 
   it.each([
     ['participant', '/participant/home'],
-    ['monitor', '/monitor/home'],
     ['admin', '/admin/home'],
   ] as const)('routes authenticated %s to its protected area', async (role, destination) => {
     mockedAuth.mockReturnValue(authState({ status: 'authenticated', sessionRole: role, participantOnboardingCompleted: true }) as never);

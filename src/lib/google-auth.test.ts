@@ -39,10 +39,10 @@ describe('Google authentication', () => {
   });
 
   it('exchanges a successful callback and returns only server roles', async () => {
-    const client = supabaseMock({ roles: ['participant', 'monitor'] });
+    const client = supabaseMock({ roles: ['participant', 'admin'] });
     mockedBrowser.mockResolvedValue({ type: 'success', url: 'celularsemmedo://auth/callback?code=valid' } as never);
     await expect(signInWithGoogle()).resolves.toMatchObject({
-      roles: ['participant', 'monitor'],
+      roles: ['participant', 'admin'],
       user: { name: 'Pessoa Persistida' },
       preferences: { largerText: false, highContrast: true, autoAudio: false, voiceResponse: true },
       participantOnboardingCompleted: true,

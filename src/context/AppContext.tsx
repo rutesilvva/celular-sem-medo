@@ -5,7 +5,7 @@ import { useOptionalAuth } from '@/context/AuthContext';
 import { saveParticipantPreferences } from '@/lib/backend';
 import { readPreferencesCache, writePreferencesCache } from '@/lib/preferences-cache';
 
-export type Role = 'participant' | 'monitor' | 'admin';
+export type Role = 'participant' | 'admin';
 
 export type AccessibilityPreferences = {
   largerText: boolean;

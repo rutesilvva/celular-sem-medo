@@ -4,6 +4,7 @@ import type { Role } from '@/context/AppContext';
 import {
   ClassContext,
   ClassParticipant,
+  getAdminClassContexts,
   getMonitorParticipant,
   getMonitorParticipantHistory,
   getMonitorParticipantsPage,
@@ -27,6 +28,15 @@ export function useMyClass(role: Role): QueryState<ClassContext> {
     const contexts = await getMyClassContexts();
     return contexts.find((context) => context.access_role === role) ?? null;
   }, [role]);
+  return useQuery(loader);
+}
+
+/** Administradores são globais; a primeira turma ativa inicia o acompanhamento. */
+export function useAdminClass(): QueryState<ClassContext> {
+  const loader = useCallback(async () => {
+    const contexts = await getAdminClassContexts();
+    return contexts[0] ?? null;
+  }, []);
   return useQuery(loader);
 }
 

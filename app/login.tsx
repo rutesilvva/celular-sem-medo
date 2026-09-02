@@ -43,7 +43,6 @@ export default function LoginScreen() {
     if (sessionRole === 'participant') {
       router.replace(participantOnboardingCompleted ? '/participant/home' : '/participant/welcome');
     }
-    if (sessionRole === 'monitor') router.replace('/monitor/home');
     if (sessionRole === 'admin') router.replace('/admin/home');
   }, [participantOnboardingCompleted, router, sessionRole]);
 
@@ -72,7 +71,7 @@ export default function LoginScreen() {
       <Card style={styles.form}>
         <View style={styles.heading}>
           <AppText variant="heading" weight="800" color={colors.primary} style={styles.center}>Entrar na sua conta</AppText>
-          <AppText color={colors.textMuted} style={styles.center}>Participantes, monitores e administradores usam a mesma entrada.</AppText>
+          <AppText color={colors.textMuted} style={styles.center}>Alunos e administradores usam a mesma entrada.</AppText>
         </View>
         {availableRoles.length > 1 && currentUser ? (
           <View style={styles.roleGroup}>
@@ -143,7 +142,7 @@ function UserIdentity() {
 }
 
 function RoleCard({ role, onPress }: { role: Role; onPress: () => void }) {
-  const labels = { participant: 'Participante', monitor: 'Monitor', admin: 'Administrador' };
+  const labels: Record<Role, string> = { participant: 'Aluno', admin: 'Administrador' };
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.roleCard, pressed && styles.pressed]}>
       <AppText weight="800" style={styles.flex}>{labels[role]}</AppText>

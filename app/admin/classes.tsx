@@ -16,7 +16,7 @@ export default function AdminClassesScreen() {
           <View style={styles.icon}><Ionicons name="school-outline" size={25} color={colors.primary} /></View>
           <View style={styles.copy}>
             <View style={styles.row}><AppText weight="800" style={styles.copy}>{item.name}</AppText><Tag label={item.status} tone={item.status === 'Ativa' ? 'green' : 'gray'} /></View>
-            <AppText variant="small" color={colors.textMuted}>Monitor: {item.monitor}</AppText>
+            <AppText variant="small" color={colors.textMuted}>Administrada globalmente</AppText>
             <AppText variant="small" color={colors.textMuted}>{item.participants} participantes</AppText>
           </View>
         </Card>

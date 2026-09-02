@@ -105,7 +105,7 @@ export default function ParticipantProfileScreen() {
           <View style={styles.divider} />
           <MenuRow
             icon="chatbubble-ellipses-outline"
-            label="Falar com meu monitor"
+            label="Pedir ajuda à administração"
             onPress={() => router.push('/participant/help-requests')}
           />
           <View style={styles.divider} />

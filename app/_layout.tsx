@@ -66,21 +66,16 @@ function AppNavigator() {
         <Stack.Screen name="participant/help-requests" />
       </Stack.Protected>
 
-      <Stack.Protected guard={canAccessRole(status, sessionRole, 'monitor')}>
-        <Stack.Screen name="monitor/home" />
-        <Stack.Screen name="monitor/participants" />
-        <Stack.Screen name="monitor/participant-details" />
-        <Stack.Screen name="monitor/missions" />
-        <Stack.Screen name="monitor/reports" />
-        <Stack.Screen name="monitor/profile" />
-        <Stack.Screen name="monitor/help-requests" />
-      </Stack.Protected>
-
       <Stack.Protected guard={canAccessRole(status, sessionRole, 'admin')}>
         <Stack.Screen name="admin/home" />
         <Stack.Screen name="admin/users" />
         <Stack.Screen name="admin/classes" />
         <Stack.Screen name="admin/profile" />
+        <Stack.Screen name="admin/participants" />
+        <Stack.Screen name="admin/participant-details" />
+        <Stack.Screen name="admin/missions" />
+        <Stack.Screen name="admin/reports" />
+        <Stack.Screen name="admin/help-requests" />
       </Stack.Protected>
     </Stack>
   );

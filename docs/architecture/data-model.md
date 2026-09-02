@@ -8,13 +8,12 @@ fonte de verdade; este desenho serve para leitura e revisão do domínio.
 ## Princípios
 
 - `auth.users.id` é a identidade estável. E-mail não é chave de autorização.
-- Os papéis pedagógicos não são globais nem informados pelo aplicativo: pertencem
-  a vínculos ativos em `memberships`. `admin` é o único papel global e existe em
-  `administrators`, separado dos vínculos de turma.
+- O aluno possui vínculo ativo em `memberships`. `admin` é o único papel global,
+  existe em `administrators` e nunca é escolhido ou enviado pelo aplicativo.
 - Pode haver vários administradores globais ativos. O banco impede a revogação
   ou exclusão do último, evitando que o ambiente fique sem administração.
-- Uma pessoa pode ser participante em uma turma e monitor em outra, sem duplicar
-  a conta Google. Uma constraint impede dois papéis na mesma turma.
+- Uma conta pode ser aluno e administrador sem duplicar a identidade Google.
+  Vínculos históricos de monitor são mantidos inativos apenas para integridade.
 - Conteúdo de missão é imutável por versão. Tentativas e eventos apontam para a
   versão praticada, preservando o histórico.
 - IDs são UUIDs e horários são `timestamptz`.
@@ -55,17 +54,17 @@ erDiagram
 | `profiles` | Nome, avatar e estado da conta autenticada | PK/FK para `auth.users`; nasce `pending`, só acessa o domínio quando `active` e perde acesso imediatamente quando `blocked`. |
 | `preferences` | Acessibilidade, áudio, voz, idioma e onboarding | Uma linha por perfil; o usuário só acessa a própria linha. |
 | `classes` | Turma de aprendizagem | Estado `active` ou `archived`; somente membros ativos leem. |
-| `memberships` | Papel de uma pessoa dentro de uma turma | Único por turma e pessoa; `participant` ou `monitor`; revogação é server-side. |
+| `memberships` | Vínculo de um aluno com uma turma | Único por turma e pessoa; novos vínculos ativos são sempre `participant`; revogação é server-side. |
 | `administrators` | Concessão do papel global de maior privilégio | Vários admins podem estar ativos; o último ativo não pode ser removido; escrita apenas server-side. |
 | `admin_audit_events` | Rastro mínimo de operações administrativas | Registra ator, ação, alvo, turma e horário; não armazena nome, e-mail, token ou conteúdo livre. |
 | `invitations` | Autorização prévia para entrar em uma turma | RPC gera token criptográfico, persiste somente SHA-256, limita a sete dias, consome uma vez e não expõe o hash. |
 | `missions` | Identidade estável do item de catálogo | Slug único, categoria, dificuldade, duração e estado. |
 | `mission_versions` | Conteúdo publicável de uma missão | Versão crescente por missão; no máximo uma versão publicada por vez. |
 | `mission_steps` | Passos, instruções, áudio, dicas e ação esperada | Posição única na versão; objetos e listas são validados como JSON. |
-| `class_mission_assignments` | Liberação de uma versão para uma turma | Criada por monitor ativo; janela de disponibilidade e obrigatoriedade opcionais. |
+| `class_mission_assignments` | Liberação de uma versão para uma turma | Criada por administrador; janela de disponibilidade e obrigatoriedade opcionais. |
 | `attempts` | Execução de uma missão por participante | Vínculo, turma, versão e atribuição coerentes por FKs compostas; só uma tentativa em andamento por atribuição. |
 | `attempt_events` | Linha do tempo append-only da tentativa | RPC deriva autoria, valida a janela temporal e oferece retry idempotente sem atualizar a linha. |
-| `help_requests` | Pedido contextual de ajuda ao monitor | Pertence à mesma turma/tentativa; estados `open`, `in_progress`, `resolved` ou `cancelled`. |
+| `help_requests` | Pedido contextual de ajuda à administração | Pertence à mesma turma/tentativa; estados `open`, `in_progress`, `resolved` ou `cancelled`. |
 
 No domínio do produto, `memberships` representa os **class memberships**. O nome
 físico existente foi preservado para evitar renomear FKs e migrações já

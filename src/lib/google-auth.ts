@@ -157,5 +157,5 @@ function hasNetworkError(error: unknown) {
 }
 
 function isRole(value: unknown): value is Role {
-  return value === 'participant' || value === 'monitor' || value === 'admin';
+  return value === 'participant' || value === 'admin';
 }

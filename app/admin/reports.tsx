@@ -2,12 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { MonitorNav } from '@/components/BottomNav';
+import { AdminNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
-import { useMyClass } from '@/hooks/useClassData';
+import { useAdminClass } from '@/hooks/useClassData';
 import { useMonitorProgress } from '@/hooks/useProgressData';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -17,7 +17,7 @@ const periods: readonly ReportPeriod[] = [7, 30, 90];
 export default function ReportsScreen() {
   const [period, setPeriod] = useState<ReportPeriod>(30);
   const { showNotice } = useApp();
-  const classQuery = useMyClass('monitor');
+  const classQuery = useAdminClass();
   const progress = useMonitorProgress(classQuery.data?.class_id ?? null, period);
   const data = progress.summary.data;
   const loading = classQuery.loading || progress.summary.loading || progress.missions.loading || progress.evolution.loading;
@@ -26,7 +26,7 @@ export default function ReportsScreen() {
   const updatedAt = progress.summary.updatedAt;
 
   return (
-    <Screen footer={<MonitorNav active="reports" />}>
+    <Screen footer={<AdminNav active="reports" />}>
       <Header
         title="Relatórios"
         subtitle={classQuery.data ? `Evolução de ${classQuery.data.class_name}` : 'Evolução da turma'}

@@ -8,7 +8,7 @@ import { useApp } from '@/context/AppContext';
 import { ManagedUser, ManagedUserRole } from '@/data/admin';
 import { colors, radius, spacing } from '@/theme/tokens';
 
-const roleLabels: Record<ManagedUserRole, string> = { participant: 'Participante', monitor: 'Monitor', admin: 'Admin global' };
+const roleLabels: Record<ManagedUserRole, string> = { participant: 'Aluno', admin: 'Admin global' };
 
 export default function AdminUsersScreen() {
   const { managedUsers, removeManagedUser, showNotice } = useApp();
@@ -43,7 +43,7 @@ export default function AdminUsersScreen() {
           <View style={styles.copy}>
             <View style={styles.titleRow}>
               <AppText weight="800" style={styles.copy}>{user.name}{user.currentUser ? ' (você)' : ''}</AppText>
-              <Tag label={roleLabels[user.role]} tone={user.role === 'admin' ? 'red' : user.role === 'monitor' ? 'yellow' : 'purple'} />
+              <Tag label={roleLabels[user.role]} tone={user.role === 'admin' ? 'red' : 'purple'} />
             </View>
             <AppText variant="small" color={colors.textMuted}>{user.email}</AppText>
             <AppText variant="caption" color={colors.textMuted}>{user.scope}</AppText>

@@ -37,11 +37,11 @@ export default function ParticipantHelpRequestsScreen() {
     <Screen footer={<ParticipantNav active="profile" />} contentStyle={styles.content}>
       <Header title="Meus pedidos de ajuda" onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/profile')} />
       {canCreate ? <Card style={styles.form}>
-        <AppText variant="subheading" weight="800">Falar com meu monitor</AppText>
+        <AppText variant="subheading" weight="800">Pedir ajuda à administração</AppText>
         <AppText color={colors.textMuted}>O pedido informa somente a missão e o passo atual. Não escreva dados pessoais.</AppText>
         {(Object.keys(helpReasonLabels) as HelpReason[]).map((key) => <Button key={key} label={helpReasonLabels[key]} variant={reason === key ? 'secondary' : 'soft'} onPress={() => setReason(key)} />)}
         <Button label={sending ? 'Enviando…' : 'Enviar pedido'} icon="chatbubble-ellipses-outline" disabled={sending} onPress={() => void submit()} />
-        {confirmed ? <AppText color={colors.successText} weight="800">Pedido confirmado pelo servidor. Seu monitor já pode visualizá-lo.</AppText> : null}
+        {confirmed ? <AppText color={colors.successText} weight="800">Pedido confirmado pelo servidor. A administração já pode visualizá-lo.</AppText> : null}
         {sendError ? <View style={styles.error}><AppText color={colors.danger}>O pedido não foi confirmado. Verifique sua conexão e tente novamente.</AppText><Button label="Tentar novamente" variant="secondary" onPress={() => void submit()} /></View> : null}
       </Card> : null}
       <AppText variant="subheading" weight="800">Andamento</AppText>
@@ -54,7 +54,7 @@ export default function ParticipantHelpRequestsScreen() {
         <View style={styles.row}><AppText weight="800" style={styles.copy}>{request.mission_title}</AppText><Tag label={helpStatusLabels[request.status]} tone={request.status === 'resolved' ? 'green' : request.status === 'open' ? 'yellow' : 'purple'} /></View>
         <AppText variant="small">Passo: {request.step_title}</AppText>
         <AppText variant="small" color={colors.textMuted}>{helpReasonLabels[request.reason_code as HelpReason] ?? 'Pedido de apoio'}</AppText>
-        {request.resolution_code ? <AppText weight="700" color={colors.primary}>{helpResolutionLabels[request.resolution_code as keyof typeof helpResolutionLabels]}</AppText> : <AppText variant="small" color={colors.textMuted}>Aguardando atualização do monitor.</AppText>}
+        {request.resolution_code ? <AppText weight="700" color={colors.primary}>{helpResolutionLabels[request.resolution_code as keyof typeof helpResolutionLabels]}</AppText> : <AppText variant="small" color={colors.textMuted}>Aguardando atualização da administração.</AppText>}
       </Card>)}
     </Screen>
   );
