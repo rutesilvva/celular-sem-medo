@@ -115,9 +115,9 @@ export default function AdminMissionsScreen() {
           <Ionicons name="information-circle-outline" size={23} color={colors.blue} />
           <AppText weight="800">Como interpretar</AppText>
         </View>
-        <LegendRow color={colors.success} label="Conclusão" description="Participantes que concluíram a missão" />
-        <LegendRow color={colors.warning} label="Dificuldade" description="Participantes que solicitaram ajuda" />
-        <LegendRow color={colors.blue} label="Áudio" description="Participantes que ouviram instruções" />
+        <LegendRow color={colors.success} label="Conclusão" description="Alunos que concluíram a missão" />
+        <LegendRow color={colors.warning} label="Dificuldade" description="Alunos que solicitaram ajuda" />
+        <LegendRow color={colors.blue} label="Áudio" description="Alunos que ouviram instruções" />
       </Card>
     </Screen>
   );

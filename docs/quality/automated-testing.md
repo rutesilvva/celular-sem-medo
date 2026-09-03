@@ -44,16 +44,19 @@ regra administrativa do repositório e não fica dentro do commit.
 
 ## Smoke E2E
 
-Os fluxos `.maestro/participant-smoke.yaml` e `.maestro/monitor-smoke.yaml`
+Os fluxos `.maestro/participant-smoke.yaml` e `.maestro/admin-smoke.yaml`
 rodam em Android e iOS sobre um development/preview build de staging. Eles
 pressupõem duas instalações ou sessões já autenticadas com as contas sintéticas
 de cada papel; não armazenam senha nem automatizam a interface externa do Google.
 
 ```bash
-maestro test .maestro/participant-smoke.yaml
-maestro test .maestro/monitor-smoke.yaml
+npm run e2e:smoke
+npm run e2e:regression
 ```
 
 Depois da conclusão da issue #3, execute ambos em Android e iOS e anexe os
 relatórios ao release de staging. Falhas de login são cobertas deterministicamente
 por Jest; o smoke valida navegação, missão, progresso e painel no binário real.
+`role-guard.yaml` cobre o deep link administrativo com uma sessão de aluno e
+`offline-recovery.yaml` confirma que a fila local continua consultável. Esses
+cenários não substituem a evidência manual de Google, notificações e leitores de tela.

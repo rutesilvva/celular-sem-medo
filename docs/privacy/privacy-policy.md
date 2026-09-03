@@ -14,7 +14,7 @@ Vigência pública: **não iniciada**
 O Celular Sem Medo ajuda pessoas adultas, especialmente pessoas idosas, a
 praticar o uso do celular em um ambiente seguro. Usamos os dados necessários para
 criar a conta, organizar turmas, salvar o progresso, personalizar a experiência e
-permitir que o monitor da turma ofereça apoio.
+permitir que a equipe administradora ofereça apoio.
 
 Não vendemos dados, não exibimos publicidade e não acompanhamos a pessoa em
 outros aplicativos. As simulações não realizam Pix, não enviam mensagens, fotos
@@ -41,11 +41,11 @@ No MVP, podemos tratar:
 
 - identidade básica recebida no login Google: identificador da conta, e-mail
   verificado, nome e avatar;
-- perfil no aplicativo, papel de participante, monitor ou administrador global, turmas e convites;
+- perfil no aplicativo, papel de aluno ou administrador global, turmas e convites;
 - missões atribuídas, tentativas, conclusões, pontuação, passos e uso dos recursos
   de apoio;
 - preferências de idioma, tamanho de texto, contraste, áudio e onboarding;
-- pedido de ajuda com motivo/contexto estruturado, estado e resposta do monitor;
+- pedido de ajuda com motivo/contexto estruturado, estado e resposta administrativa;
 - informações técnicas mínimas para autenticação, proteção da conta, prevenção e
   investigação de falhas ou incidentes.
 
@@ -58,8 +58,8 @@ coletamos localização, contatos, dados bancários, gravações de voz, transcr
 nem o conteúdo real das ações simuladas. Também não usamos as preferências de
 acessibilidade para inferir saúde, deficiência ou diagnóstico.
 
-O pedido de ajuda conectado usa motivos estruturados. Texto livre de participante
-ou monitor não será persistido no MVP enquanto não houver controles e hipótese
+O pedido de ajuda conectado usa motivos estruturados. Texto livre de aluno ou
+administrador não será persistido no MVP enquanto não houver controles e hipótese
 adequada para eventual dado sensível inserido no campo.
 
 O inventário completo, com armazenamento e prazos, está em
@@ -103,9 +103,9 @@ passo ou resposta. Novos fornecedores, como observabilidade ou transcrição,
 exigem atualização prévia desta política e do
 inventário.
 
-O monitor vê somente dados necessários dos participantes das turmas em que tem
-vínculo ativo. A exportação pessoal do monitor não inclui automaticamente dados
-dos participantes. Se uma instituição parceira usar dados para finalidade
+O administrador global vê somente os dados necessários para operar turmas,
+acompanhar alunos e atender solicitações. Sua exportação pessoal não inclui
+automaticamente dados dos alunos. Se uma instituição parceira usar dados para finalidade
 própria, a relação e a responsabilidade serão explicadas antes do tratamento.
 
 ## Tratamento em outros países

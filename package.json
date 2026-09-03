@@ -27,6 +27,8 @@
     "test": "jest",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "test:mission-engine": "jest src/features/mission-engine/executor.test.ts --runInBand",
+    "e2e:smoke": "maestro test .maestro/participant-smoke.yaml .maestro/admin-smoke.yaml",
+    "e2e:regression": "maestro test .maestro",
     "backend:start": "supabase start",
     "backend:stop": "supabase stop",
     "backend:status": "supabase status",

@@ -18,7 +18,7 @@ export default function ParticipantProfileScreen() {
   const { preferences, preferencesSyncStatus, retryPreferencesSync, setPreference, showNotice } = useApp();
   const { currentUser, signOut } = useAuth();
   const classQuery = useMyClass('participant');
-  const displayName = currentUser?.name || 'Participante';
+  const displayName = currentUser?.name || 'Aluno';
   const [diagnosticsOptOut, setDiagnosticsOptOut] = useState(false);
   useEffect(() => { void initializeObservabilityPreference().then((value) => setDiagnosticsOptOut(value.optedOut)); }, []);
 
@@ -42,7 +42,7 @@ export default function ParticipantProfileScreen() {
           <AppText variant="subheading" weight="800">{displayName}</AppText>
           <AppText variant="small" color={colors.textMuted}>{currentUser?.email || 'E-mail não informado'}</AppText>
           <AppText variant="small" color={colors.textMuted}>
-            Participante{classQuery.data ? ` · ${classQuery.data.class_name}` : ''}
+            Aluno{classQuery.data ? ` · ${classQuery.data.class_name}` : ''}
           </AppText>
         </View>
       </Card>

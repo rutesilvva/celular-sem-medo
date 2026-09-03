@@ -12,6 +12,7 @@ import { useMissionContent } from '@/hooks/useMissionData';
 import { useAuth } from '@/context/AuthContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 import { startAssessmentResilient } from '@/lib/offline-assessments';
+import { resolveMissionPresentation } from '@/features/mission-engine/presentation';
 
 const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
@@ -39,8 +40,9 @@ export default function ParticipantMissionDetailsScreen() {
     } finally { setStarting(false); }
   };
 
-  const isWhatsAppPhotoFlow = details.title.toLowerCase().includes('foto') || details.title.toLowerCase().includes('whatsapp');
-  const isPixFlow = details.title.toLowerCase().includes('pix');
+  const presentation = resolveMissionPresentation(details.missionId);
+  const isWhatsAppPhotoFlow = presentation === 'whatsapp-photo';
+  const isPixFlow = presentation === 'pix';
 
   if (isPixFlow) {
     return (
@@ -94,6 +96,7 @@ export default function ParticipantMissionDetailsScreen() {
             </View>
           </View>
 
+          <Card><ConfidencePicker label="Antes de começar, quanta confiança você sente?" value={confidence} onChange={setConfidence} /></Card>
           <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={!confidence || starting} accessibilityHint="Abre o simulador seguro" onPress={() => void beginTraining()} style={styles.pixButton} />
         </Card>
       </Screen>

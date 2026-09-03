@@ -35,7 +35,7 @@ export default function ParticipantDetailsScreen() {
     return (
       <Screen footer={<AdminNav active="participants" />}>
         <Header title="Detalhes" onBack={() => router.replace('/admin/participants')} />
-        <DataState kind="loading" title="Carregando participante" message="Consultando o vínculo e o progresso permitido." />
+        <DataState kind="loading" title="Carregando aluno" message="Consultando o vínculo e o progresso permitido." />
       </Screen>
     );
   }
@@ -56,7 +56,7 @@ export default function ParticipantDetailsScreen() {
         <Card style={styles.notFoundCard}>
           <Ionicons name="person-remove-outline" size={42} color={colors.primary} />
           <AppText variant="subheading" weight="800" style={styles.center}>Não encontramos este cadastro</AppText>
-          <AppText color={colors.textMuted} style={styles.center}>Volte à lista e escolha um participante disponível.</AppText>
+          <AppText color={colors.textMuted} style={styles.center}>Volte à lista e escolha um aluno disponível.</AppText>
           <Button label="Voltar aos alunos" onPress={() => router.replace('/admin/participants')} />
         </Card>
       </Screen>

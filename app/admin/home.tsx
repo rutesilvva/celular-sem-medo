@@ -5,22 +5,29 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { AdminNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, Card, Header, MetricCard, SectionTitle, Tag } from '@/components/ui';
-import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { managedClasses } from '@/data/admin';
+import { DataState } from '@/components/DataState';
+import { useAdminClasses, useAdminImpact, useAdminUsers } from '@/hooks/useAdminManagement';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function AdminHomeScreen() {
   const router = useRouter();
-  const { managedUsers } = useApp();
   const { currentUser } = useAuth();
+  const users = useAdminUsers();
+  const classes = useAdminClasses();
+  const impact = useAdminImpact();
   const firstName = currentUser?.name.split(/\s+/)[0] || 'Administrador';
-  const count = (role: 'participant' | 'admin') => managedUsers.filter((user) => user.role === role).length;
+  const activeClasses = classes.data.filter((item) => item.class_status === 'active').length;
+  const administrators = users.data.filter((user) => user.is_administrator).length;
+  const summary = impact.data;
   const activityFeed = [
-    { title: 'Pedido de ajuda pendente', meta: '3 alunos aguardando resposta', tone: 'yellow' as const },
-    { title: 'Turma Conectados ativa', meta: '89% de conclusão geral', tone: 'green' as const },
-    { title: 'Nova inscrição confirmada', meta: '1 participante entrou nesta semana', tone: 'purple' as const },
+    { title: 'Pedidos aguardando atendimento', meta: `${summary?.open_help_requests ?? 0} solicitação(ões) aberta(s)`, tone: 'yellow' as const },
+    { title: 'Práticas concluídas', meta: `${summary?.completed_missions ?? 0} missão(ões) concluída(s)`, tone: 'green' as const },
+    { title: 'Confiança acompanhada', meta: `${summary?.confidence_responses ?? 0} avaliação(ões) antes e depois`, tone: 'purple' as const },
   ];
+
+  if (users.loading || classes.loading || impact.loading) return <Screen footer={<AdminNav active="home" />}><Header title="Administração" /><DataState kind="loading" title="Preparando visão geral" message="Calculando indicadores reais do ambiente." /></Screen>;
+  if (users.error || classes.error || impact.error) return <Screen footer={<AdminNav active="home" />}><Header title="Administração" /><DataState kind="error" title="Não foi possível carregar a visão geral" message="Verifique a conexão e tente novamente." onRetry={() => { users.retry(); classes.retry(); impact.retry(); }} /></Screen>;
 
   return (
     <Screen footer={<AdminNav active="home" />}>
@@ -33,12 +40,12 @@ export default function AdminHomeScreen() {
         </View>
       </View>
       <View style={styles.grid}>
-        <MetricCard icon="person-outline" value={`${count('participant')}`} label="participantes" tone="purple" />
-        <MetricCard icon="school-outline" value={`${managedClasses.length}`} label="turmas ativas" tone="green" />
+        <MetricCard icon="person-outline" value={`${summary?.participants ?? 0}`} label="alunos" tone="purple" />
+        <MetricCard icon="school-outline" value={`${activeClasses}`} label="turmas ativas" tone="green" />
       </View>
       <View style={styles.grid}>
-        <MetricCard icon="shield-outline" value={`${count('admin')}`} label="admins globais" tone="yellow" />
-        <MetricCard icon="bar-chart-outline" value="Visão" label="acompanhamento geral" tone="blue" />
+        <MetricCard icon="shield-outline" value={`${administrators}`} label="admins globais" tone="yellow" />
+        <MetricCard icon="bar-chart-outline" value={`${Number(summary?.average_confidence_gain ?? 0).toFixed(1)}`} label="ganho de confiança" tone="blue" />
       </View>
       <SectionTitle>Ações rápidas</SectionTitle>
       <Card style={styles.actions}>

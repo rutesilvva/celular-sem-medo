@@ -1,4 +1,5 @@
 import type { ParticipantMissionDetails, ParticipantMissionStep } from '@/lib/backend';
+import type { MissionPresentation } from '@/features/mission-engine/presentation';
 
 export type AiMissionSession = {
   id: string;
@@ -6,6 +7,7 @@ export type AiMissionSession = {
   steps: ParticipantMissionStep[];
   topic: string;
   createdAt: number;
+  presentation?: MissionPresentation;
 };
 
 const aiSessionCache = new Map<string, AiMissionSession>();

@@ -10,6 +10,7 @@ import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import type { MissionAction } from '@/features/mission-engine/executor';
+import { resolveMissionPresentation, type MissionPresentation } from '@/features/mission-engine/presentation';
 import { useMissionContent } from '@/hooks/useMissionData';
 import { useMissionEngine } from '@/hooks/useMissionEngine';
 import { getAiMissionSession } from '@/lib/ai-mission-cache';
@@ -22,7 +23,7 @@ export default function ParticipantSimulatorScreen() {
   const query = useMissionContent(aiSession ? null : (assignmentId ?? null));
 
   if (aiSession) {
-    return <MissionExecutor assignmentId={aiSession.id} assessmentId={assessmentId} details={aiSession.details} steps={aiSession.steps} />;
+    return <MissionExecutor assignmentId={aiSession.id} assessmentId={assessmentId} details={aiSession.details} steps={aiSession.steps} presentation={aiSession.presentation} />;
   }
 
   if (query.loading) return <SimulatorState kind="loading" retry={query.retry} />;
@@ -31,7 +32,7 @@ export default function ParticipantSimulatorScreen() {
   return <MissionExecutor assignmentId={query.data.details.assignmentId} assessmentId={assessmentId} details={query.data.details} steps={query.data.steps} />;
 }
 
-function MissionExecutor({ assignmentId, assessmentId, details, steps }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[] }) {
+function MissionExecutor({ assignmentId, assessmentId, details, steps, presentation: requestedPresentation }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; presentation?: MissionPresentation }) {
   const router = useRouter();
   const { playInstruction, preferences, stopInstruction } = useApp();
   const engine = useMissionEngine(assignmentId, steps);
@@ -54,15 +55,13 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps }: { assig
   if (engine.loading) return <SimulatorState kind="loading" retry={engine.retry} />;
   if (!step) return <SimulatorState kind="empty" retry={engine.retry} />;
 
-  const isWhatsAppPhotoFlow = details.title.toLowerCase().includes('foto') || details.title.toLowerCase().includes('whatsapp');
-  const isPixFlow = details.title.toLowerCase().includes('pix');
-  const isGovFlow = details.title.toLowerCase().includes('gov') || details.summary.toLowerCase().includes('gov') || details.category.toLowerCase().includes('gov');
+  const presentation = resolveMissionPresentation(details.missionId, requestedPresentation);
 
-  if (isGovFlow) {
+  if (presentation === 'gov-br') {
     return <GovFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} />;
   }
 
-  if (isWhatsAppPhotoFlow) {
+  if (presentation === 'whatsapp-photo') {
     const target = asObject(step.expectedAction).target;
     const isAttachmentStep = target === 'attachment_button' || step.title.toLowerCase().includes('clipe') || step.title.toLowerCase().includes('anex');
     const hasOptions = Array.isArray(step.options) && step.options.length > 0;
@@ -104,25 +103,25 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps }: { assig
             {showPhotoSheet ? (
               <View style={styles.attachmentScene}>
                 {isAttachmentStep ? (
-                  <Pressable style={styles.cameraButton} disabled={engine.busy} onPress={() => void handlePhotoAction('attachment_button')}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Abrir opções de anexo" style={styles.cameraButton} disabled={engine.busy} onPress={() => void handlePhotoAction('attachment_button')}>
                     <Ionicons name="camera-outline" size={62} color={colors.surface} />
                   </Pressable>
                 ) : (
-                  <Pressable style={styles.cameraButton} disabled={engine.busy} onPress={() => void handlePhotoChoice(optionTarget)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher foto de treinamento" style={styles.cameraButton} disabled={engine.busy} onPress={() => void handlePhotoChoice(optionTarget)}>
                     <Ionicons name="camera-outline" size={62} color={colors.surface} />
                   </Pressable>
                 )}
 
                 <View style={styles.actionSheet}>
-                  <Pressable style={styles.optionRowSelected} disabled={engine.busy} onPress={() => void handlePhotoChoice(optionTarget)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher foto" style={styles.optionRowSelected} disabled={engine.busy} onPress={() => void handlePhotoChoice(optionTarget)}>
                     <Ionicons name="images-outline" size={20} color={colors.primary} />
                     <AppText weight="800" color={colors.primary}>Foto</AppText>
                   </Pressable>
-                  <Pressable style={styles.optionRow} disabled={engine.busy} onPress={() => void engine.submit({ action: 'select', target: 'video_option', optionId: 'video_option' })}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher vídeo" style={styles.optionRow} disabled={engine.busy} onPress={() => void engine.submit({ action: 'select', target: 'video_option', optionId: 'video_option' })}>
                     <Ionicons name="videocam-outline" size={20} color={colors.textMuted} />
                     <AppText color={colors.textMuted}>Vídeo</AppText>
                   </Pressable>
-                  <Pressable style={styles.optionRow} disabled={engine.busy} onPress={() => void engine.submit({ action: 'select', target: 'document_option', optionId: 'document_option' })}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher documento" style={styles.optionRow} disabled={engine.busy} onPress={() => void engine.submit({ action: 'select', target: 'document_option', optionId: 'document_option' })}>
                     <Ionicons name="document-outline" size={20} color={colors.textMuted} />
                     <AppText color={colors.textMuted}>Documento</AppText>
                   </Pressable>
@@ -170,7 +169,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps }: { assig
     );
   }
 
-  if (isPixFlow) {
+  if (presentation === 'pix') {
     return <PixFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} />;
   }
 
@@ -304,7 +303,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="subheading" weight="800">Vamos criar sua conta gov.br</AppText>
               <AppText variant="small">Vai ser simples! Vamos te guiar durante o processo.</AppText>
 
-              <Pressable style={styles.govCheckRow} onPress={() => setTermsAgreed(!termsAgreed)}>
+              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: termsAgreed }} accessibilityLabel="Li e concordo com os termos simulados" style={styles.govCheckRow} onPress={() => setTermsAgreed(!termsAgreed)}>
                 <Ionicons name={termsAgreed ? 'checkbox' : 'square-outline'} size={22} color="#1351B4" />
                 <AppText variant="small" style={styles.flex1}>Li e estou de acordo com o <AppText variant="small" color="#1351B4" weight="700">Termo de Uso e Política de Privacidade</AppText></AppText>
               </Pressable>
@@ -366,7 +365,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="small" weight="700">1. Qual é o primeiro nome da sua mãe?</AppText>
               <View style={styles.govPillGrid}>
                 {['MARIA', 'LEONA', 'ESTRELA', 'JEWEL', 'LILA', 'CARMEZINDA', 'NADINA'].map((name) => (
-                  <Pressable key={name} onPress={() => setSelectedMother(name)} style={[styles.govPillItem, selectedMother === name && styles.govPillItemActive]}>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedMother === name }} accessibilityLabel={`Escolher ${name} como nome fictício`} key={name} onPress={() => setSelectedMother(name)} style={[styles.govPillItem, selectedMother === name && styles.govPillItemActive]}>
                     <AppText variant="small" weight="800" color={selectedMother === name ? '#1351B4' : colors.text}>{name}</AppText>
                   </Pressable>
                 ))}
@@ -375,7 +374,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="small" weight="700">2. Qual é o seu mês de nascimento ?</AppText>
               <View style={styles.govPillGrid}>
                 {['MAIO', 'FEVEREIRO', 'DEZEMBRO', 'ABRIL'].map((m) => (
-                  <Pressable key={m} onPress={() => setSelectedMonth(m)} style={[styles.govPillItem, selectedMonth === m && styles.govPillItemActive]}>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedMonth === m }} accessibilityLabel={`Escolher mês fictício ${m}`} key={m} onPress={() => setSelectedMonth(m)} style={[styles.govPillItem, selectedMonth === m && styles.govPillItemActive]}>
                     <AppText variant="small" weight="800" color={selectedMonth === m ? '#1351B4' : colors.text}>{m}</AppText>
                   </Pressable>
                 ))}
@@ -384,7 +383,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="small" weight="700">3. Qual é o seu ano de nascimento ?</AppText>
               <View style={styles.govPillGrid}>
                 {['1964', '1966', '1962', '1967', '1968', '1963', '1965'].map((y) => (
-                  <Pressable key={y} onPress={() => setSelectedYear(y)} style={[styles.govPillItem, selectedYear === y && styles.govPillItemActive]}>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedYear === y }} accessibilityLabel={`Escolher ano fictício ${y}`} key={y} onPress={() => setSelectedYear(y)} style={[styles.govPillItem, selectedYear === y && styles.govPillItemActive]}>
                     <AppText variant="small" weight="800" color={selectedYear === y ? '#1351B4' : colors.text}>{y}</AppText>
                   </Pressable>
                 ))}
@@ -452,13 +451,13 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="subheading" weight="800">Enviaremos um código para ativar sua conta gov.br.</AppText>
               <AppText variant="small" color={colors.textMuted}>Informe um contato para recebê-lo.</AppText>
 
-              <Pressable style={styles.govRadioRow} onPress={() => setSelectedChannel('email')}>
+              <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedChannel === 'email' }} accessibilityLabel="Receber código fictício por e-mail" style={styles.govRadioRow} onPress={() => setSelectedChannel('email')}>
                 <Ionicons name={selectedChannel === 'email' ? 'radio-button-on' : 'radio-button-off'} size={22} color="#1351B4" />
                 <Ionicons name="mail-outline" size={20} color="#1351B4" />
                 <AppText weight="700">Por e-mail</AppText>
               </Pressable>
 
-              <Pressable style={styles.govRadioRow} onPress={() => setSelectedChannel('phone')}>
+              <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedChannel === 'phone' }} accessibilityLabel="Receber código fictício por telefone" style={styles.govRadioRow} onPress={() => setSelectedChannel('phone')}>
                 <Ionicons name={selectedChannel === 'phone' ? 'radio-button-on' : 'radio-button-off'} size={22} color="#1351B4" />
                 <Ionicons name="phone-portrait-outline" size={20} color="#1351B4" />
                 <AppText weight="700">Por telefone celular</AppText>
@@ -479,7 +478,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                     O contato que você informar será o <AppText weight="800">contato cadastrado para sua conta gov.br</AppText>. Ele será usado para recuperar senha, ativar a conta e confirmar outras transações.
                   </AppText>
 
-                  <Pressable style={styles.govOutlineBtn} onPress={() => setShowWarningModal(false)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Fechar aviso" style={styles.govOutlineBtn} onPress={() => setShowWarningModal(false)}>
                     <AppText weight="800" color="#1351B4">OK</AppText>
                   </Pressable>
                 </View>
@@ -518,8 +517,8 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
 
-              <Pressable style={styles.govOutlineBtn} onPress={() => {}}>
-                <AppText weight="800" color="#1351B4">Voltar à tela anterior</AppText>
+              <Pressable accessibilityRole="button" accessibilityLabel="Sair do treino e voltar aos detalhes" style={styles.govOutlineBtn} onPress={() => router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })}>
+                <AppText weight="800" color="#1351B4">Voltar aos detalhes da missão</AppText>
               </Pressable>
 
               <AppText variant="small" color="#1351B4" style={styles.centerText}>Voltar ao início</AppText>

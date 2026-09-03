@@ -6,11 +6,12 @@ tags:
 ---
 - launchApp:
     clearState: false
-- assertVisible: "Sua trilha está avançando"
+- assertVisible: "Seu progresso geral"
 - tapOn: "Missões"
-- assertVisible: "Escolher missão"
+- assertVisible: "Escolha uma missão"
 - tapOn:
     text: ".*Enviar uma foto.*"
+- tapOn: "3 de 5"
 - tapOn: "Começar treino"
 - assertVisible: "Simulação segura"
 - repeat:
@@ -20,5 +21,7 @@ tags:
           text: "Continuar|Tocar no clipe|Flores"
           optional: true
 - assertVisible: "Você conseguiu!"
-- tapOn: "Continuar minha trilha"
+- tapOn: "3 de 5"
+- tapOn: "Registrar minha evolução"
+- tapOn: "Continuar"
 - assertVisible: "Meu progresso"

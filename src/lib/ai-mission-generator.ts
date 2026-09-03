@@ -162,6 +162,7 @@ export async function generateAiMission(userQuery: string): Promise<string> {
       steps: govSteps,
       topic: query,
       createdAt: Date.now(),
+      presentation: 'gov-br',
     });
 
     return sessionId;

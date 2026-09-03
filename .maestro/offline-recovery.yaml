@@ -1,0 +1,14 @@
+appId: br.com.celularsemmedo.app
+name: Aluno consulta atividades preservadas no aparelho
+tags:
+  - regression
+  - offline
+---
+- launchApp:
+    clearState: false
+- tapOn: "Perfil"
+- assertVisible: "Perfil e configurações"
+- tapOn: "Atividades salvas no aparelho"
+- assertVisible: "Atividades salvas"
+- assertVisible:
+    text: "Nenhuma atividade salva|Missão salva"

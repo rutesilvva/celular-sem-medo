@@ -241,21 +241,19 @@ A interface foi desenhada para leitura e toque confortáveis em telas pequenas:
 
 As preferências são carregadas do backend após a autenticação, aplicadas pelos componentes compartilhados e mantidas em cache seguro por usuário. A base ainda não captura voz; a preferência apenas prepara a experiência para recursos futuros sujeitos aos controles de privacidade.
 
-## Dados mockados e limitações
+## Estado do produto e limitações
 
-Identidade, vínculos, missões, tentativas, progresso e preferências do participante vêm do Supabase. Mocks restantes são limitados às áreas administrativas ainda não migradas e ao modo explícito de desenvolvimento.
+Identidade, vínculos, missões, tentativas, progresso, preferências e indicadores
+administrativos vêm do Supabase. Dados sintéticos são restritos a testes, seeds e
+ao modo demonstração explicitamente habilitado fora de produção.
 
 Nesta versão da interface:
 
 - o Google OAuth ainda depende dos clientes nativos e fingerprints da issue de configuração por ambiente;
-- áudio e fala são representados por feedback visual, sem reprodução ou captura real;
+- instruções usam TTS real com transcrição; captura de voz continua em homologação;
 - o simulador não envia mensagens, fotos, localização ou transações;
-- filtros, notificações, exportação e algumas opções de perfil são demonstrativos;
-- algumas ações administrativas ainda usam dados demonstrativos explícitos.
+- push, compartilhamento e acessibilidade ainda exigem validação em aparelhos físicos;
+- observabilidade externa, builds assinados e materiais das lojas dependem de configuração da equipe.
 
-Para evoluir esta base para produção, os próximos passos são integrar o cliente
-Supabase, configurar Google OAuth, persistir a sessão com armazenamento seguro,
-conectar os fluxos ao modelo criado, implementar os controles de privacidade e
-testes RLS definidos em `docs/privacy/`, adicionar testes automatizados e validar
-acessibilidade com usuários. Captura/transcrição de voz permanece bloqueada até
-cumprir os gates jurídicos, técnicos e das lojas.
+Consulte [`docs/architecture/current-product-state.md`](docs/architecture/current-product-state.md)
+para o inventário conciso do que está entregue e do que depende de homologação.

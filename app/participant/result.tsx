@@ -109,7 +109,7 @@ export default function ParticipantResultScreen() {
       <View style={styles.actions}>
         <AudioButton
           label="Ouvir resultado"
-          message={`Parabéns, ${currentUser?.name || 'participante'}. Você concluiu a missão ${details.title}.`}
+          message={`Parabéns, ${currentUser?.name || 'aluno'}. Você concluiu a missão ${details.title}.`}
         />
         <Button
           label="Continuar"

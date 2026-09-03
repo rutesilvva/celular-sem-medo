@@ -1,5 +1,11 @@
 # ADR-0001: Backend do MVP, autenticação Google e autorização de papéis
 
+> Emendada em 3 de setembro de 2026: a escolha de Supabase permanece vigente,
+> mas o papel de monitor descrito nesta decisão histórica foi removido pela issue
+> #23. O modelo atual possui somente aluno (`participant`) e administrador global
+> (`admin`). Consulte `docs/architecture/current-product-state.md` antes de usar
+> exemplos de autorização deste ADR.
+
 - **Status:** Aceita para implementação do MVP
 - **Data:** 2026-08-23
 - **Decisores:** equipe do Celular Sem Medo

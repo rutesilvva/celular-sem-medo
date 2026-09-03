@@ -113,7 +113,7 @@ Para validar Google OAuth em aparelhos físicos, prefira o projeto remoto de sta
 
 ## Google OAuth
 
-Participante e monitor usam o mesmo provedor Google. O papel não é escolhido nem confiado pelo cliente; ele é resolvido pelo backend a partir do vínculo autorizado do usuário.
+Aluno e administrador usam o mesmo provedor Google. O papel não é escolhido nem confiado pelo cliente; ele é resolvido pelo backend a partir do vínculo ou da concessão global autorizada.
 
 No Google Cloud e no Supabase de cada ambiente:
 
@@ -187,7 +187,7 @@ Regras:
 Staging usa `supabase/seeds/staging.sql`. Antes da execução, uma pessoa autorizada
 marca as contas Google sintéticas em `auth.users.raw_app_meta_data` com
 `csm_staging_role` e `csm_staging_class`, sem registrar e-mail no arquivo. O seed
-falha se não encontrar ao menos monitor e participante, ativa seus perfis e cria
+falha se não encontrar ao menos administrador e aluno, ativa seus perfis e cria
 turma/vínculos idempotentes. Ele nunca deve ser executado em production.
 
 Produção recebe apenas dados mínimos de catálogo ou configuração por migração

@@ -21,7 +21,7 @@ export default function ParticipantHomeScreen() {
   const categoryQuery = useParticipantCategoryProgress();
   const recommendedMission = missionQuery.data?.[0];
   const progress = progressQuery.data;
-  const displayName = currentUser?.name || 'Participante';
+  const displayName = currentUser?.name || 'Aluno';
   const firstName = displayName.split(/\s+/)[0];
   const milestones = getMilestones(progress);
   const weeklyMomentum = getWeeklyMomentum(progress);

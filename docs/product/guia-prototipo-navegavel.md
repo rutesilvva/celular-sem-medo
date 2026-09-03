@@ -1,5 +1,9 @@
 GUIA DO PROTÓTIPO NAVEGÁVEL — CELULAR SEM MEDO
 
+Estado funcional atualizado em 3 de setembro de 2026. Este arquivo orienta o
+Figma; para saber o que está implementado e o que exige homologação, consulte
+`docs/architecture/current-product-state.md`.
+
 Objetivo
 Este documento orienta a equipe na montagem do protótipo navegável do Celular Sem Medo no Figma. A pasta abaixo deve ser usada como referência visual oficial das telas. O objetivo do protótipo é demonstrar o fluxo principal do aluno e do administrador sem exigir que todas as funções estejam implementadas de verdade.
 
@@ -32,6 +36,10 @@ B. Aluno
 • Resultado da missão
 • Meu progresso
 • Perfil e Configurações
+• Avaliação de confiança antes e depois
+• Quero aprender isto e plano personalizado
+• Pedidos de ajuda e atividades offline
+• Cartão de conquista
 
 C. Administrador
 • Visão geral
@@ -42,6 +50,8 @@ C. Administrador
 • Relatórios
 • Pedidos de ajuda
 • Perfil do administrador
+• Painel de impacto
+• Modo oficina
 
 D. Componentes e overlays
 • Estado de botão pressionado
@@ -110,12 +120,12 @@ Este é o fluxo mais importante do projeto porque demonstra o diferencial do Cel
 6. INTERAÇÕES DO ALUNO
 Boas-vindas
 • Botão “Começar” → Acessibilidade.
-• Ícone de áudio → simular reprodução de áudio.
+• Ícone de áudio → no Figma, representar reprodução; no aplicativo, usar TTS real.
 
 Acessibilidade
 • Switches podem mudar visualmente de estado.
 • Botão “Salvar e continuar” → Início.
-• “Ouvir esta tela” → simular reprodução da instrução.
+• “Ouvir esta tela” → no Figma, representar reprodução da instrução; o aplicativo usa TTS real.
 
 Início
 • Card de missão recomendada → Detalhes da missão ou Escolher missão.
@@ -124,15 +134,16 @@ Início
   - Missões → Escolher missão
   - Progresso → Meu progresso
   - Perfil → Perfil do aluno
-• Ícones de áudio → simular reprodução.
+• Ícones de áudio → representar o TTS real existente no aplicativo.
 
 Escolher missão
-• “Enviar uma foto” → Detalhes da missão.
-• As demais missões podem permanecer como opções visuais sem fluxo completo no MVP, desde que não sejam usadas durante a apresentação.
+• Cada card publicado abre detalhes e uma execução orientada por dados.
+• O catálogo inclui foto, Uber, download de aplicativo, Shopee, Pix, localização,
+  gov.br e cenários contra golpes. Nenhuma opção executa uma ação real.
 
 Detalhes da missão
 • “Começar treino” → Simulador seguro.
-• Botão de áudio → simular explicação.
+• Botão de áudio → representar explicação em TTS.
 
 Simulador seguro
 • O clique esperado para anexar deve avançar no fluxo.
@@ -158,7 +169,8 @@ Meu progresso
 • Próxima missão recomendada → Detalhes da missão.
 
 Perfil do aluno
-• As configurações podem ser apenas demonstrativas.
+• As preferências devem refletir os mesmos estados do onboarding; no aplicativo,
+  elas são persistidas por conta e mantidas em cache seguro.
 • Acessibilidade deve mostrar os mesmos tipos de preferências definidos no início.
 • “Sair da conta” → Login.
 
@@ -209,7 +221,8 @@ Visão geral
 
 Alunos
 • Tocar em um aluno → Detalhes do aluno.
-• Filtro pode apenas mudar visualmente ou permanecer demonstrativo.
+• O filtro deve mudar visualmente; no aplicativo, pesquisa, filtro, ordenação e
+  paginação consultam dados autorizados do backend.
 • Botão voltar, quando houver → Visão geral.
 
 Detalhes do aluno
@@ -223,7 +236,8 @@ Missões do administrador
 • A tela precisa deixar evidente: progresso da turma, dificuldade e uso de áudio.
 
 Relatórios
-• Filtro de período pode ser demonstrativo.
+• O filtro de período deve mudar visualmente; no aplicativo, os totais são
+  recalculados pelo backend para 7, 30 ou 90 dias.
 • “Exportar” não precisa gerar PDF no protótipo; pode abrir um overlay “Relatório pronto para exportação”.
 • Gráficos devem permanecer visíveis como parte da análise da turma.
 

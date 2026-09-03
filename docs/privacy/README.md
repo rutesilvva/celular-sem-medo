@@ -7,10 +7,10 @@ decisões se aplicam ao aplicativo mobile, Supabase, autenticação Google, roti
 administrativas e fornecedores contratados. Elas também orientam as próximas
 migrações e os formulários das lojas.
 
-O aplicativo atual ainda é um protótipo com dados mockados. Por isso, estes
-documentos definem o comportamento obrigatório antes de conectar pessoas reais,
-mas não afirmam que exclusão, exportação, revogação global e todos os testes RLS
-já estejam implementados.
+O aplicativo já possui persistência, RLS, exportação, exclusão, revogação e testes
+automatizados. Dados sintéticos ficam restritos a testes, seeds e demonstração
+explicitamente habilitada. Estes documentos continuam condicionando o uso de
+dados reais às decisões institucionais e homologações externas listadas abaixo.
 
 ## Documentos
 
@@ -30,7 +30,7 @@ já estejam implementados.
 1. O MVP é destinado a pessoas com 18 anos ou mais e o acesso é provisionado por
    convite ou vínculo administrativo. Não se coleta data de nascimento ou
    documento apenas para comprovar idade.
-2. Participantes e monitores autenticam com Google, mas o Google não define o
+2. Alunos e administradores autenticam com Google, mas o Google não define o
    papel. No iOS, Sign in with Apple deverá ser oferecido se a exceção estrita da
    loja não for comprovada. Em qualquer provedor, o backend consulta vínculos
    ativos em cada operação e nunca mescla contas apenas pelo e-mail.

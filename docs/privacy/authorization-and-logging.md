@@ -1,5 +1,12 @@
 # Autorização server-side, cenários de teste e logs
 
+> Nota de atualização (3 de setembro de 2026): o modelo de monitor por turma foi
+> substituído pelos papéis `participant` e `admin` global na issue #23. Os casos
+> históricos `MON-*` abaixo permanecem como rastreabilidade da decisão anterior,
+> mas não definem o comportamento atual. Para implementação e homologação, valem
+> as migrações mais recentes, os testes pgTAP e
+> [`../architecture/current-product-state.md`](../architecture/current-product-state.md).
+
 Este é o contrato de segurança para o backend. A interface mobile melhora a
 experiência, mas não autoriza nada: rota, papel, UUID, turma ou payload enviados
 pelo cliente são sempre não confiáveis.

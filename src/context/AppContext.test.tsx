@@ -37,15 +37,6 @@ describe('AppProvider preferences', () => {
     expect(result.current.preferences).toEqual({ largerText: true, highContrast: true, autoAudio: true, voiceResponse: false, audioRate: 0.9, reduceMotion: false, hapticFeedback: true, repeatInstructions: false });
   });
 
-  it('protects the current administrator and permits removing another user', () => {
-    const { result } = renderHook(() => useApp(), { wrapper: AppProvider });
-    const current = result.current.managedUsers.find((user) => user.currentUser)!;
-    expect(result.current.removeManagedUser(current.id)).toBe(false);
-    const removable = result.current.managedUsers.find((user) => !user.currentUser)!;
-    act(() => { expect(result.current.removeManagedUser(removable.id)).toBe(true); });
-    expect(result.current.managedUsers.some((user) => user.id === removable.id)).toBe(false);
-  });
-
   it('shows and automatically clears feedback', () => {
     jest.useFakeTimers();
     const { result } = renderHook(() => useApp(), { wrapper: AppProvider });
@@ -62,6 +53,15 @@ describe('AppProvider preferences', () => {
     await waitFor(() => expect(result.current.preferencesReady).toBe(true));
     expect(result.current.preferences).toEqual(serverPreferences);
     expect(writePreferencesCache).toHaveBeenCalledWith('user-1', serverPreferences);
+  });
+
+  it('clears account-owned preferences after logout', async () => {
+    jest.mocked(useOptionalAuth).mockReturnValue(authState(serverPreferences) as never);
+    const { result, rerender } = renderHook(() => useApp(), { wrapper: AppProvider });
+    await waitFor(() => expect(result.current.preferencesReady).toBe(true));
+    jest.mocked(useOptionalAuth).mockReturnValue(null);
+    rerender(undefined);
+    await waitFor(() => expect(result.current.preferences).toEqual(expect.objectContaining({ autoAudio: true, voiceResponse: false })));
   });
 
   it('synchronizes a changed preference with the authenticated account', async () => {
@@ -149,6 +149,15 @@ describe('AppProvider preferences', () => {
     act(() => result.current.playInstruction('Texto disponível'));
     await waitFor(() => expect(result.current.audioStatus).toBe('error'));
     expect(result.current.audioMessage).toBe('Texto disponível');
+  });
+
+  it('exposes a recoverable state when the speech engine reports an error', async () => {
+    const { result } = renderHook(() => useApp(), { wrapper: AppProvider });
+    act(() => result.current.playInstruction('Ainda pode ser lido'));
+    await waitFor(() => expect(Speech.speak).toHaveBeenCalled());
+    act(() => jest.mocked(Speech.speak).mock.calls[0]![1]!.onError?.({} as never));
+    expect(result.current.audioStatus).toBe('error');
+    expect(result.current.audioMessage).toBe('Ainda pode ser lido');
   });
 });
 

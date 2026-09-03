@@ -72,6 +72,9 @@ export default function ParticipantMissionsScreen() {
 
     return list;
   }, [query.data, recommendations, selectedCategory]);
+  const recommendationReasons = useMemo(() => new Map(
+    (recommendations ?? []).map((item) => [item.assignment_id, item.recommendation_reason]),
+  ), [recommendations]);
 
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
@@ -103,6 +106,9 @@ export default function ParticipantMissionsScreen() {
             const active = cat === selectedCategory;
             return (
               <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Filtrar por ${cat}`}
                 key={cat}
                 onPress={() => setSelectedCategory(cat)}
                 style={[styles.pill, active && styles.pillActive]}
@@ -132,6 +138,7 @@ export default function ParticipantMissionsScreen() {
                 key={mission.assignmentId}
                 mission={mission}
                 recommended={index === 0 && selectedCategory === 'Todas' && !recommendations}
+                recommendationReason={recommendationReasons.get(mission.assignmentId) ?? (mission.required ? 'Esta atividade faz parte da trilha da sua turma.' : index === 0 && !recommendations ? 'Uma boa próxima habilidade para continuar sua trilha.' : undefined)}
                 onPress={() => router.push({
                   pathname: '/participant/mission-details',
                   params: { assignmentId: mission.assignmentId },
@@ -159,15 +166,16 @@ function iconForCategory(category: string): keyof typeof Ionicons.glyphMap {
   return 'school-outline';
 }
 
-function MissionCard({ mission, recommended, onPress }: {
+function MissionCard({ mission, recommended, recommendationReason, onPress }: {
   mission: ParticipantMission;
   recommended: boolean;
+  recommendationReason?: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${mission.title}. ${mission.category}. ${mission.estimatedMinutes} minutos. Dificuldade ${difficultyLabels[mission.difficulty]}.`}
+      accessibilityLabel={`${mission.title}. ${mission.category}. ${mission.estimatedMinutes} minutos. Dificuldade ${difficultyLabels[mission.difficulty]}. ${recommendationReason ?? ''}`}
       accessibilityHint="Abre os detalhes da versão publicada"
       onPress={onPress}
       style={({ pressed }) => [styles.mission, recommended && styles.missionRecommended, pressed && styles.pressed]}
@@ -181,6 +189,7 @@ function MissionCard({ mission, recommended, onPress }: {
           {recommended ? <Tag label="Recomendada" tone="purple" /> : null}
         </View>
         <AppText variant="small" color={colors.textMuted}>{mission.category}</AppText>
+        {recommendationReason ? <View style={styles.reason}><Ionicons name="sparkles-outline" size={16} color={colors.primary} /><AppText variant="small" color={colors.primary} style={styles.reasonCopy}>{recommendationReason}</AppText></View> : null}
         <View style={styles.metaRow}>
           <View style={styles.metaItem}><Ionicons name="time-outline" size={18} color={colors.iconMuted} /><AppText variant="small" color={colors.textMuted}>{mission.estimatedMinutes} min</AppText></View>
           <View style={styles.metaItem}><Ionicons name="leaf-outline" size={18} color={colors.success} /><AppText variant="small" color={colors.textMuted}>{difficultyLabels[mission.difficulty]}</AppText></View>
@@ -201,6 +210,8 @@ const styles = StyleSheet.create({
   missionRecommended: { borderColor: colors.primary, borderWidth: 2, backgroundColor: '#FBF7FF' },
   missionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, height: 58, justifyContent: 'center', width: 58 },
   missionBody: { flex: 1, gap: spacing.xs },
+  reason: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
+  reasonCopy: { flex: 1 },
   missionHeading: { alignItems: 'flex-start', gap: spacing.sm },
   missionTitle: { flexShrink: 1 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginTop: spacing.xs },
@@ -210,6 +221,6 @@ const styles = StyleSheet.create({
   searchActions: { gap: spacing.md },
   input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontFamily: type.family, fontSize: type.body, minHeight: 56, paddingHorizontal: spacing.md },
   pillsContainer: { gap: spacing.sm, paddingVertical: spacing.xs },
-  pill: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.round, borderWidth: 1.5, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  pill: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.round, borderWidth: 1.5, justifyContent: 'center', minHeight: 48, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   pillActive: { backgroundColor: colors.primary, borderColor: colors.primaryDark },
 });

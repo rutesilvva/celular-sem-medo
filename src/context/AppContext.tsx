@@ -2,7 +2,6 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
 
-import { initialManagedUsers, ManagedUser } from '@/data/admin';
 import { useOptionalAuth } from '@/context/AuthContext';
 import { saveParticipantPreferences } from '@/lib/backend';
 import { readPreferencesCache, writePreferencesCache } from '@/lib/preferences-cache';
@@ -36,8 +35,6 @@ type AppContextValue = {
   stopInstruction: () => void;
   repeatInstruction: () => void;
   showNotice: (message: string) => void;
-  managedUsers: ManagedUser[];
-  removeManagedUser: (userId: string) => boolean;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -63,7 +60,6 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [audioStatus, setAudioStatus] = useState<AppContextValue['audioStatus']>('idle');
   const [audioError, setAudioError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [managedUsers, setManagedUsers] = useState(initialManagedUsers);
   const lastInstruction = useRef<string | null>(null);
   const speechGeneration = useRef(0);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -220,14 +216,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     noticeTimer.current = setTimeout(() => setNotice(null), 2400);
   }, []);
 
-  const removeManagedUser = useCallback((userId: string) => {
-    const target = managedUsers.find((user) => user.id === userId);
-    if (!target || target.currentUser) return false;
-    if (target.role === 'admin' && managedUsers.filter((user) => user.role === 'admin').length <= 1) return false;
-    setManagedUsers((current) => current.filter((user) => user.id !== userId));
-    return true;
-  }, [managedUsers]);
-
   const value = useMemo(() => ({
     preferences,
     preferencesReady: !userId || preferencesOwnerId === userId,
@@ -235,11 +223,11 @@ export function AppProvider({ children }: PropsWithChildren) {
     setPreference,
     retryPreferencesSync,
     audioMessage, audioStatus, audioError, notice, playInstruction, pauseInstruction,
-    resumeInstruction, stopInstruction, repeatInstruction, showNotice, managedUsers, removeManagedUser,
+    resumeInstruction, stopInstruction, repeatInstruction, showNotice,
   }), [
-    audioError, audioMessage, audioStatus, managedUsers, notice, pauseInstruction, playInstruction, preferences, preferencesOwnerId,
+    audioError, audioMessage, audioStatus, notice, pauseInstruction, playInstruction, preferences, preferencesOwnerId,
     preferencesSyncStatus, retryPreferencesSync, userId,
-    removeManagedUser, repeatInstruction, resumeInstruction, setPreference, showNotice, stopInstruction,
+    repeatInstruction, resumeInstruction, setPreference, showNotice, stopInstruction,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

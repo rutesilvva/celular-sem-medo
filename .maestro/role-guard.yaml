@@ -1,0 +1,12 @@
+appId: br.com.celularsemmedo.app
+name: Aluno não acessa rota administrativa por deep link
+tags:
+  - security
+  - participant
+---
+- launchApp:
+    clearState: false
+- openLink: "celularsemmedo://admin/home"
+- assertNotVisible: "Acesso global ao aplicativo"
+- assertVisible:
+    text: "Entrar na sua conta|Início|Olá,"

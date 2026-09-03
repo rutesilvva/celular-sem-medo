@@ -1,0 +1,19 @@
+appId: br.com.celularsemmedo.app
+name: Administrador consulta operação e impacto
+tags:
+  - smoke
+  - admin
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Administração"
+- assertVisible: "Acesso global ao aplicativo"
+- tapOn: "Alunos"
+- assertVisible: "Alunos"
+- tapOn: "Relatórios"
+- assertVisible: "Relatórios"
+- tapOn: "Missões"
+- assertVisible: "Acompanhe a prática da turma"
+- tapOn: "Visão geral"
+- tapOn: "Painel de impacto"
+- assertVisible: "Impacto social"

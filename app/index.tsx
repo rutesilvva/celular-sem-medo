@@ -36,11 +36,7 @@ export default function SplashScreen() {
         </View>
 
         <View style={styles.menuRow}>
-          <AppText variant="small" color="#D8D8D8">API Keys</AppText>
-          <AppText variant="small" color="#D8D8D8">|</AppText>
-          <AppText variant="small" color="#D8D8D8">Settings</AppText>
-          <AppText variant="small" color="#D8D8D8">|</AppText>
-          <AppText variant="small" color="#D8D8D8">Celular Sem Medo</AppText>
+          <AppText variant="small" color="#D8D8D8">Celular Sem Medo · aprender com segurança</AppText>
         </View>
 
         <View style={styles.urlChip}>

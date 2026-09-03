@@ -95,7 +95,7 @@ export default function ParticipantProgressScreen() {
         <Ionicons name="chevron-forward" size={24} color={colors.primary} />
       </Pressable> : <DataState kind="empty" title="Nenhuma missão disponível" message="Sua turma ainda não possui outra missão publicada." />}
 
-      <AudioButton label="Ouvir meu progresso" message={`${currentUser?.name || 'Participante'}, você concluiu ${progress.completed_missions} missões, tem ${progress.practice_streak_days} dias de sequência e chegou a ${progress.progress_percent} por cento da trilha.`} />
+      <AudioButton label="Ouvir meu progresso" message={`${currentUser?.name || 'Aluno'}, você concluiu ${progress.completed_missions} missões, tem ${progress.practice_streak_days} dias de sequência e chegou a ${progress.progress_percent} por cento da trilha.`} />
     </Screen>
   );
 }
