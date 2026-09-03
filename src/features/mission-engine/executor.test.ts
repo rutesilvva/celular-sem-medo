@@ -1,4 +1,4 @@
-import { completionKind, initialMissionRunState, isExpectedAction, missionRunReducer } from './executor.ts';
+import { completionKind, initialMissionRunState, isExpectedAction, missionRunReducer } from './executor';
 
 test('valida ações usando somente a definição do passo', () => {
   expect(isExpectedAction({ action: 'choose', option_id: 'safe' }, { action: 'choose', optionId: 'safe' })).toBe(true);

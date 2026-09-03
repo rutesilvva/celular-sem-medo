@@ -3,7 +3,6 @@
   "compilerOptions": {
     "strict": true,
     "types": ["jest", "node"],
-    "allowImportingTsExtensions": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
       "@/*": ["./src/*"]
@@ -14,5 +13,6 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+  ],
+  "exclude": ["node_modules", "dist"]
 }
