@@ -28,7 +28,7 @@ export default function ParticipantAccessibilityScreen() {
     if (saved) {
       showNotice('Preferências salvas');
       router.dismissAll();
-      router.replace('/participant/home');
+      router.replace('/participant/diagnostic');
     } else {
       showNotice('Não foi possível salvar. Verifique sua conexão e tente novamente.');
     }
@@ -164,7 +164,7 @@ export default function ParticipantAccessibilityScreen() {
         <Button
           label={saving ? 'Salvando…' : 'Salvar e começar'}
           icon="checkmark"
-          accessibilityHint="Salva as preferências e abre a tela inicial de aprendizagem"
+          accessibilityHint="Salva as preferências e abre o diagnóstico inicial"
           onPress={save}
           disabled={saving}
         />

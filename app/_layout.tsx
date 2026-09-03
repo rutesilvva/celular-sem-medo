@@ -113,6 +113,7 @@ function AppNavigator() {
       <Stack.Protected guard={canAccessRole(status, sessionRole, 'participant')}>
         <Stack.Screen name="participant/welcome" />
         <Stack.Screen name="participant/accessibility" />
+        <Stack.Screen name="participant/diagnostic" />
         <Stack.Screen name="participant/home" />
         <Stack.Screen name="participant/missions" />
         <Stack.Screen name="participant/mission-details" />

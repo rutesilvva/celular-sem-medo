@@ -5,9 +5,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
-import { AppText, AudioButton, Card, ProgressBar, SectionTitle, Tag } from '@/components/ui';
+import { AppText, AudioButton, Button, Card, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useMissionCatalog } from '@/hooks/useMissionData';
+import { useLearningPath } from '@/hooks/useLearningPath';
 import { useParticipantCategoryProgress, useParticipantProgress } from '@/hooks/useProgressData';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
@@ -19,6 +20,7 @@ export default function ParticipantHomeScreen() {
   const missionQuery = useMissionCatalog();
   const progressQuery = useParticipantProgress();
   const categoryQuery = useParticipantCategoryProgress();
+  const learningPath = useLearningPath();
   const recommendedMission = missionQuery.data?.[0];
   const progress = progressQuery.data;
   const displayName = currentUser?.name || 'Aluno';
@@ -27,6 +29,7 @@ export default function ParticipantHomeScreen() {
   const weeklyMomentum = getWeeklyMomentum(progress);
   const challenge = getDailyChallenge(progress);
   const evolutionSummary = getEvolutionSummary(progress);
+  const nextReview = learningPath.reviews[0];
 
   return (
     <Screen footer={<ParticipantNav active="home" />} contentStyle={styles.content}>
@@ -75,6 +78,23 @@ export default function ParticipantHomeScreen() {
           <AppText variant="small" weight="700">{progress?.practice_streak_days ?? 0}d streak</AppText>
         </View>
       </View>
+
+      {!learningPath.loading && !learningPath.diagnostic && !learningPath.draft ? <Card style={styles.pathCard}>
+        <View style={styles.pathHeader}><Ionicons name="compass-outline" size={28} color={colors.primary} /><View style={styles.progressCopy}><AppText weight="800">Descubra seu ponto de partida</AppText><AppText variant="small" color={colors.textMuted}>Responda três perguntas para receber recomendações mais adequadas.</AppText></View></View>
+        <Button label="Fazer diagnóstico inicial" variant="secondary" onPress={() => router.push('/participant/diagnostic')} />
+      </Card> : null}
+
+      {learningPath.loading ? <DataState kind="loading" title="Preparando sua prática" message="Escolhendo uma atividade para hoje." /> : learningPath.daily ? <Card style={styles.dailyCard}>
+        <View style={styles.pathHeader}><View style={styles.dailyIcon}><Ionicons name={learningPath.daily.is_review ? 'refresh-outline' : 'today-outline'} size={26} color={colors.primary} /></View><View style={styles.progressCopy}><AppText variant="small" weight="800" color={colors.primary}>{learningPath.daily.is_review ? 'REVISÃO DO DIA' : 'MISSÃO RÁPIDA DO DIA'}</AppText><AppText variant="subheading" weight="800">{learningPath.daily.title}</AppText></View><Tag label={`${learningPath.daily.estimated_minutes} min`} tone="purple" /></View>
+        <AppText variant="small" color={colors.textMuted}>{learningPath.daily.daily_reason}</AppText>
+        {learningPath.offline ? <AppText variant="caption" color={colors.warning}>Exibindo o plano salvo neste aparelho.</AppText> : null}
+        <Button label={learningPath.daily.is_review ? 'Revisar agora' : 'Começar prática'} icon="arrow-forward" onPress={() => router.push({ pathname: '/participant/mission-details', params: { assignmentId: learningPath.daily!.assignment_id } })} />
+      </Card> : learningPath.error ? <DataState kind="error" title="Plano indisponível" message="Não foi possível carregar sua atividade do dia." onRetry={learningPath.retry} /> : null}
+
+      {nextReview ? <Card style={styles.reviewCard}>
+        <View style={styles.pathHeader}><Ionicons name="calendar-outline" size={25} color={colors.blue} /><View style={styles.progressCopy}><AppText weight="800">Próxima revisão</AppText><AppText variant="small" color={colors.textMuted}>{nextReview.title}</AppText></View><Tag label={nextReview.is_due ? 'Hoje' : new Date(nextReview.next_review_at).toLocaleDateString('pt-BR')} tone={nextReview.is_due ? 'yellow' : 'blue'} /></View>
+        <AppText variant="small" color={colors.textMuted}>{nextReview.review_reason}</AppText>
+      </Card> : null}
 
       <SectionTitle>Seu ritmo atual</SectionTitle>
       <View style={styles.milestoneGrid}>
@@ -402,6 +422,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
   },
+  pathCard: { backgroundColor: '#FFFDFD', borderColor: colors.primaryMuted, gap: spacing.md },
+  dailyCard: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, gap: spacing.md },
+  reviewCard: { backgroundColor: colors.blueSoft, borderColor: colors.blue, gap: spacing.md },
+  pathHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  dailyIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 50, justifyContent: 'center', width: 50 },
   missionCard: {
     backgroundColor: '#FDF8FF',
     borderColor: colors.primary,

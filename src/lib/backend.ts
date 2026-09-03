@@ -18,6 +18,9 @@ export type AdminClass = Database['public']['Functions']['get_admin_classes']['R
 export type AdminUser = Database['public']['Functions']['get_admin_users']['Returns'][number];
 export type HelpRequestHistory = Database['public']['Functions']['get_help_request_history']['Returns'][number];
 export type MissionRecommendation = Database['public']['Functions']['get_personalized_mission_recommendations']['Returns'][number];
+export type LearningDiagnostic = Database['public']['Functions']['get_my_learning_diagnostic']['Returns'][number];
+export type MissionReview = Database['public']['Functions']['get_my_review_plan']['Returns'][number];
+export type DailyMission = Database['public']['Functions']['get_my_daily_mission']['Returns'][number];
 export type AdminImpactSummary = Database['public']['Functions']['get_admin_impact_summary']['Returns'][number];
 export type WorkshopParticipant = Database['public']['Functions']['get_admin_workshop_status']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
@@ -129,6 +132,43 @@ export async function getMissionRecommendations(query = ''): Promise<MissionReco
   const { data, error } = await getSupabase().rpc('get_personalized_mission_recommendations', { search_query: query });
   if (error) throw error;
   return data;
+}
+
+export type LearningDiagnosticInput = {
+  experienceLevel: 'beginner' | 'sometimes' | 'independent';
+  preferredFormat: 'read' | 'listen' | 'practice';
+  goals: string[];
+  categoryConfidence: Record<string, number>;
+};
+
+export async function saveLearningDiagnostic(input: LearningDiagnosticInput, requestedId = createUuid()) {
+  const { data, error } = await getSupabase().rpc('save_my_learning_diagnostic', {
+    requested_id: requestedId,
+    selected_experience: input.experienceLevel,
+    selected_format: input.preferredFormat,
+    selected_goals: input.goals,
+    selected_confidence: input.categoryConfidence,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function getLearningDiagnostic(): Promise<LearningDiagnostic | null> {
+  const { data, error } = await getSupabase().rpc('get_my_learning_diagnostic');
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function getMissionReviewPlan(): Promise<MissionReview[]> {
+  const { data, error } = await getSupabase().rpc('get_my_review_plan');
+  if (error) throw error;
+  return data;
+}
+
+export async function getDailyMission(): Promise<DailyMission | null> {
+  const { data, error } = await getSupabase().rpc('get_my_daily_mission');
+  if (error) throw error;
+  return data[0] ?? null;
 }
 
 export async function createLearningRequest(query: string) {

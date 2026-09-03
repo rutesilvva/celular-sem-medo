@@ -131,6 +131,24 @@ export type Database = {
           },
         ]
       }
+      ai_generation_usage: {
+        Row: {
+          request_count: number
+          user_id: string
+          window_started_at: string
+        }
+        Insert: {
+          request_count: number
+          user_id: string
+          window_started_at: string
+        }
+        Update: {
+          request_count?: number
+          user_id?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       attempt_events: {
         Row: {
           attempt_id: string
@@ -379,6 +397,45 @@ export type Database = {
           },
         ]
       }
+      daily_mission_choices: {
+        Row: {
+          assignment_id: string
+          choice_date: string
+          created_at: string
+          participant_id: string
+          reason_code: string
+        }
+        Insert: {
+          assignment_id: string
+          choice_date?: string
+          created_at?: string
+          participant_id: string
+          reason_code: string
+        }
+        Update: {
+          assignment_id?: string
+          choice_date?: string
+          created_at?: string
+          participant_id?: string
+          reason_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_mission_choices_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "class_mission_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_mission_choices_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_request_history: {
         Row: {
           actor_id: string
@@ -600,6 +657,47 @@ export type Database = {
           },
         ]
       }
+      learning_diagnostics: {
+        Row: {
+          category_confidence: Json
+          created_at: string
+          experience_level: string
+          goals: string[]
+          id: string
+          participant_id: string
+          preferred_format: string
+          updated_at: string
+        }
+        Insert: {
+          category_confidence: Json
+          created_at?: string
+          experience_level: string
+          goals: string[]
+          id: string
+          participant_id: string
+          preferred_format: string
+          updated_at?: string
+        }
+        Update: {
+          category_confidence?: Json
+          created_at?: string
+          experience_level?: string
+          goals?: string[]
+          id?: string
+          participant_id?: string
+          preferred_format?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_diagnostics_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learning_requests: {
         Row: {
           class_id: string
@@ -690,6 +788,54 @@ export type Database = {
           {
             foreignKeyName: "memberships_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mission_review_schedules: {
+        Row: {
+          assignment_id: string
+          completed_count: number
+          interval_days: number
+          last_completed_at: string
+          next_review_at: string
+          participant_id: string
+          reason_code: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          completed_count: number
+          interval_days: number
+          last_completed_at: string
+          next_review_at: string
+          participant_id: string
+          reason_code: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          completed_count?: number
+          interval_days?: number
+          last_completed_at?: string
+          next_review_at?: string
+          participant_id?: string
+          reason_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_review_schedules_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "class_mission_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_review_schedules_participant_id_fkey"
+            columns: ["participant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1183,6 +1329,7 @@ export type Database = {
         }
         Returns: number
       }
+      consume_ai_generation_quota: { Args: never; Returns: boolean }
       consume_class_invitation: {
         Args: { plain_token: string }
         Returns: {
@@ -1518,6 +1665,17 @@ export type Database = {
           membership_id: string
         }[]
       }
+      get_my_daily_mission: {
+        Args: never
+        Returns: {
+          assignment_id: string
+          category: string
+          daily_reason: string
+          estimated_minutes: number
+          is_review: boolean
+          title: string
+        }[]
+      }
       get_my_help_requests: {
         Args: never
         Returns: {
@@ -1530,6 +1688,28 @@ export type Database = {
           resolved_at: string
           status: Database["public"]["Enums"]["help_request_status"]
           step_title: string
+        }[]
+      }
+      get_my_learning_diagnostic: {
+        Args: never
+        Returns: {
+          category_confidence: Json
+          diagnostic_id: string
+          experience_level: string
+          goals: string[]
+          preferred_format: string
+          updated_at: string
+        }[]
+      }
+      get_my_review_plan: {
+        Args: never
+        Returns: {
+          assignment_id: string
+          interval_days: number
+          is_due: boolean
+          next_review_at: string
+          review_reason: string
+          title: string
         }[]
       }
       get_participant_category_progress: {
@@ -1667,6 +1847,16 @@ export type Database = {
       purge_closed_invitation_personal_data: { Args: never; Returns: number }
       register_push_device: {
         Args: { target_platform: string; target_token: string }
+        Returns: string
+      }
+      save_my_learning_diagnostic: {
+        Args: {
+          requested_id: string
+          selected_confidence: Json
+          selected_experience: string
+          selected_format: string
+          selected_goals: string[]
+        }
         Returns: string
       }
       set_mission_attempt_progress: {
