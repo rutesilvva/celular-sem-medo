@@ -23,7 +23,7 @@ const formats = [
   { value: 'listen', label: 'Ouvir', icon: 'volume-high-outline' },
   { value: 'practice', label: 'Praticar', icon: 'hand-left-outline' },
 ] as const;
-const fallbackCategories = ['Segurança digital', 'Comunicação', 'Serviços públicos', 'Compras e pagamentos'];
+const fallbackCategories = ['Segurança digital', 'Comunicação', 'Serviços Públicos', 'Compras e pagamentos'];
 
 export default function ParticipantDiagnosticScreen() {
   const router = useRouter();
