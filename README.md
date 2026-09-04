@@ -2,10 +2,11 @@
 
 Base mobile navegável para uma plataforma de letramento digital voltada a pessoas idosas. O produto reúne prática segura para alunos e administração global de pessoas, turmas e aprendizagem.
 
-Esta entrega combina um protótipo funcional em Expo/React Native com a fundação
-versionada do backend. As telas ainda usam dados locais, mas a arquitetura
-Supabase, o esquema relacional, as regras de acesso, as migrações e os seeds já
-estão definidos para a integração das próximas issues.
+Esta entrega combina um aplicativo funcional em Expo/React Native com backend
+Supabase versionado. Identidade, turmas, missões, progresso, pedidos de ajuda,
+diagnóstico inicial, revisão espaçada e missão diária usam serviços tipados,
+migrações e regras de acesso no banco. Dados sintéticos permanecem somente em
+testes, seeds e no modo demonstração explicitamente habilitado.
 
 ## Visão do produto
 
@@ -40,7 +41,7 @@ O projeto é mobile-first, em orientação retrato e com tema claro. A versão w
 O fluxo principal demonstra a jornada de aprender, praticar, pedir ajuda e acompanhar a própria evolução:
 
 ```text
-Boas-vindas → Acessibilidade → Início → Missões → Detalhes da missão
+Boas-vindas → Acessibilidade → Diagnóstico inicial → Início → Missões → Detalhes da missão
 → Simulador seguro → Dificuldade/Ajuda → Resultado → Progresso
 ```
 
@@ -48,7 +49,8 @@ A barra inferior mantém acesso a **Início**, **Missões**, **Progresso** e **P
 
 - introdução aos princípios de prática segura, passo a passo e apoio em áudio;
 - preferências de acessibilidade e estados ligados/desligados;
-- resumo do progresso e missão recomendada;
+- diagnóstico inicial, recomendações personalizadas, missão diária e revisões espaçadas;
+- resumo do progresso e evolução de confiança e autonomia;
 - grade de áreas de aprendizagem com progresso por tema;
 - catálogo e detalhe de missões;
 - simulação guiada de uma tarefa, sem envio de dados reais;
@@ -75,14 +77,15 @@ app/
 ├── index.tsx            # Splash
 ├── login.tsx            # Entrada única com Google
 ├── auth/                # Callback do OAuth
-├── admin/               # Administração global
-├── participant/         # Jornada e navegação do participante
-└── admin/               # Administração e acompanhamento global
+├── admin/               # Administração e acompanhamento global
+└── participant/         # Jornada e navegação do aluno
 
 src/
 ├── components/          # Shell de tela, navegação, feedback e UI reutilizável
 ├── context/             # Sessão, perfil, preferências e avisos
-├── data/                # Participantes, missões e métricas mockadas
+├── features/            # Regras de autenticação e motor genérico de missões
+├── hooks/               # Consultas tipadas, cache e estados de carregamento
+├── lib/                 # Backend, offline, TTS, observabilidade e integrações
 ├── theme/               # Cores, tipografia, espaçamento, raios e sombras
 └── types/               # Tipos TypeScript gerados a partir do Postgres
 
@@ -109,7 +112,7 @@ As rotas ficam em `app/`, seguindo as convenções do Expo Router. Regras visuai
 - opcionalmente, Android Studio para emulador Android;
 - opcionalmente, macOS com Xcode para simulador iOS.
 
-## Instalação
+## Instalação e execução
 
 Na raiz do projeto:
 
@@ -118,7 +121,62 @@ npm install
 npm run start
 ```
 
-O Expo exibirá um QR code e os atalhos disponíveis. No dispositivo físico, mantenha o computador e o celular na mesma rede e leia o QR code pelo Expo Go.
+O terminal abrirá o Metro Bundler e exibirá um QR Code. Esse código serve apenas
+para conectar o celular ao servidor de desenvolvimento que está rodando no
+computador. Ele não é um QR Code de login nem de convite para turma.
+
+### Opção 1 — revisão rápida com Expo Go
+
+Use esta opção para navegar e revisar telas que não dependem das integrações
+nativas de produção:
+
+1. instale o aplicativo **Expo Go** no celular;
+2. mantenha celular e computador na mesma rede Wi-Fi;
+3. execute `npm run start`;
+4. se o terminal mostrar `Using development build`, pressione `s` para alternar
+   para `Using Expo Go`;
+5. no Android, abra o Expo Go e escolha **Scan QR code**; no iPhone, leia o QR
+   Code usando a câmera do sistema;
+6. aguarde o bundle carregar.
+
+O Expo Go não é o ambiente de homologação do login Google deste projeto. Ele é
+adequado somente para revisão visual e fluxos compatíveis.
+
+### Opção 2 — aplicativo completo em development build
+
+Para validar Google OAuth, callbacks, armazenamento seguro e demais recursos
+nativos, instale primeiro uma development build no aparelho:
+
+```bash
+npm run build:development
+```
+
+Depois de instalar o artefato gerado pelo EAS, inicie o Metro especificamente
+para o development client:
+
+```bash
+npx expo start --dev-client
+```
+
+Leia o novo QR Code no celular. Ele abrirá a development build instalada do
+**Celular Sem Medo**, e não o Expo Go. Se o celular não encontrar o computador,
+confirme a mesma rede Wi-Fi e a permissão de rede local. Como alternativa:
+
+```bash
+npx expo start --dev-client --tunnel
+```
+
+O tunnel depende da internet e pode ser mais lento. Para login real, as URLs,
+clientes OAuth, fingerprints e callbacks do ambiente precisam estar configurados
+conforme [`docs/auth/google-oauth.md`](docs/auth/google-oauth.md).
+
+### Opção 3 — navegador
+
+Para abrir a versão web sem QR Code:
+
+```bash
+npm run web
+```
 
 Se o Metro estiver com cache antigo, use:
 
@@ -200,8 +258,8 @@ development build conforme o guia de autenticação.
 
 1. Aguarde a splash ou toque nela para abrir o login.
 2. Toque em **Continuar com Google** usando uma conta cadastrada como aluno.
-3. Avance pelas boas-vindas e configure as preferências de acessibilidade.
-4. Na tela inicial, abra a missão recomendada ou use a aba **Missões**.
+3. Avance pelas boas-vindas, configure a acessibilidade e responda ao diagnóstico inicial.
+4. Na tela inicial, abra a missão rápida diária, uma revisão ou use a aba **Missões**.
 5. Entre nos detalhes, inicie o treino e percorra o simulador.
 6. Acione os recursos de áudio e o caminho de ajuda para conferir o feedback visual.
 7. Conclua a missão e abra **Progresso** e **Perfil** pela barra inferior.
