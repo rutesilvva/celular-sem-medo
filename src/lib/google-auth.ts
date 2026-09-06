@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import type { AccessibilityPreferences, Role } from '@/context/AppContext';
 import { getSupabase } from '@/lib/supabase';
+import { clearPendingInvitation, readPendingInvitation } from '@/lib/pending-invitation';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -85,6 +86,15 @@ export async function loadAuthenticatedAccount(): Promise<AuthenticatedAccount> 
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !sessionData.session?.user) throw new GoogleAuthError('temporary_failure');
 
+  const pendingInvitation = await readPendingInvitation();
+  if (pendingInvitation) {
+    const { error: invitationError } = await supabase.rpc('consume_class_invitation', { plain_token: pendingInvitation });
+    if (invitationError) {
+      await supabase.auth.signOut({ scope: 'local' });
+      throw new GoogleAuthError('not_provisioned');
+    }
+    await clearPendingInvitation();
+  }
   const authContext = await getCurrentAuthContext();
   if (authContext.errorCode === 'ACCOUNT_BLOCKED') {
     await supabase.auth.signOut({ scope: 'local' });

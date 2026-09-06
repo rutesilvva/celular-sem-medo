@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { colors, radius, spacing } from '@/theme/tokens';
 import { startAssessmentResilient } from '@/lib/offline-assessments';
 import { resolveMissionPresentation } from '@/features/mission-engine/presentation';
+import { downloadMissionPackage } from '@/lib/mission-downloads';
 
 const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
@@ -23,6 +24,8 @@ export default function ParticipantMissionDetailsScreen() {
   const query = useMissionContent(assignmentId ?? null);
   const [confidence, setConfidence] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadMessage, setDownloadMessage] = useState('');
 
   if (query.loading) return <State kind="loading" onRetry={query.retry} />;
   if (query.error) return <State kind="error" onRetry={query.retry} />;
@@ -97,6 +100,8 @@ export default function ParticipantMissionDetailsScreen() {
           </View>
 
           <Card><ConfidencePicker label="Antes de começar, quanta confiança você sente?" value={confidence} onChange={setConfidence} /></Card>
+          <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
+          {downloadMessage ? <AppText variant="small" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
           <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={!confidence || starting} accessibilityHint="Abre o simulador seguro" onPress={() => void beginTraining()} style={styles.pixButton} />
         </Card>
       </Screen>
@@ -155,6 +160,8 @@ export default function ParticipantMissionDetailsScreen() {
       <View style={styles.actions}>
         <Card><ConfidencePicker label="Antes de começar, quanta confiança você sente?" value={confidence} onChange={setConfidence} /></Card>
         <AudioButton label="Ouvir explicação" message={steps.map((step) => step.audioText).join(' ')} />
+        <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
+        {downloadMessage ? <AppText variant="small" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
         <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={!confidence || starting} accessibilityHint="Abre o simulador seguro" onPress={() => void beginTraining()} />
       </View>
     </Screen>

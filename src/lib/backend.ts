@@ -23,6 +23,7 @@ export type MissionReview = Database['public']['Functions']['get_my_review_plan'
 export type DailyMission = Database['public']['Functions']['get_my_daily_mission']['Returns'][number];
 export type AdminImpactSummary = Database['public']['Functions']['get_admin_impact_summary']['Returns'][number];
 export type WorkshopParticipant = Database['public']['Functions']['get_admin_workshop_status']['Returns'][number];
+export type AiMissionDraft = Database['public']['Functions']['get_admin_ai_mission_drafts']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
 export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
 export type AdminParticipantHistory = Database['public']['Functions']['get_admin_participant_history']['Returns'][number];
@@ -185,6 +186,24 @@ export async function getAdminImpactSummary(classId?: string): Promise<AdminImpa
 
 export async function getWorkshopStatus(classId: string): Promise<WorkshopParticipant[]> {
   const { data, error } = await getSupabase().rpc('get_admin_workshop_status', { target_class_id: classId });
+  if (error) throw error;
+  return data;
+}
+
+export async function getAdminAiMissionDrafts(): Promise<AiMissionDraft[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_ai_mission_drafts');
+  if (error) throw error;
+  return data;
+}
+
+export async function updateAdminAiMissionDraft(draftId: string, title: string, summary: string, content: unknown) {
+  const { data, error } = await getSupabase().rpc('update_admin_ai_mission_draft', { target_draft_id: draftId, edited_title: title, edited_summary: summary, edited_content: content as Json });
+  if (error) throw error;
+  return data;
+}
+
+export async function reviewAdminAiMissionDraft(draftId: string, decision: 'approved' | 'rejected') {
+  const { data, error } = await getSupabase().rpc('review_admin_ai_mission_draft', { target_draft_id: draftId, decision });
   if (error) throw error;
   return data;
 }

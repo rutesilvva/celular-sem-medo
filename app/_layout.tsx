@@ -106,6 +106,7 @@ function AppNavigator() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="invite" />
       <Stack.Screen name="demo" />
       <Stack.Screen name="auth/callback" />
       <Stack.Screen name="+not-found" />

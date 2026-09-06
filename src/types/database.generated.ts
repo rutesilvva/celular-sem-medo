@@ -149,6 +149,79 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_mission_drafts: {
+        Row: {
+          created_at: string
+          difficulty: Database["public"]["Enums"]["mission_difficulty"]
+          estimated_minutes: number
+          generated_content: Json
+          id: string
+          published_mission_id: string | null
+          requested_by: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_query: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty: Database["public"]["Enums"]["mission_difficulty"]
+          estimated_minutes: number
+          generated_content: Json
+          id?: string
+          published_mission_id?: string | null
+          requested_by: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_query: string
+          summary: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["mission_difficulty"]
+          estimated_minutes?: number
+          generated_content?: Json
+          id?: string
+          published_mission_id?: string | null
+          requested_by?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_query?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_mission_drafts_published_mission_id_fkey"
+            columns: ["published_mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_mission_drafts_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_mission_drafts_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attempt_events: {
         Row: {
           attempt_id: string
@@ -1366,6 +1439,20 @@ export type Database = {
         Returns: string
       }
       expire_invitation_secrets: { Args: never; Returns: number }
+      get_admin_ai_mission_drafts: {
+        Args: never
+        Returns: {
+          created_at: string
+          difficulty: Database["public"]["Enums"]["mission_difficulty"]
+          draft_id: string
+          estimated_minutes: number
+          generated_content: Json
+          review_status: string
+          source_query: string
+          summary: string
+          title: string
+        }[]
+      }
       get_admin_attempt_event_summaries: {
         Args: { target_attempt_id: string; target_class_id: string }
         Returns: {
@@ -1849,6 +1936,10 @@ export type Database = {
         Args: { target_platform: string; target_token: string }
         Returns: string
       }
+      review_admin_ai_mission_draft: {
+        Args: { decision: string; target_draft_id: string }
+        Returns: string
+      }
       save_my_learning_diagnostic: {
         Args: {
           requested_id: string
@@ -1889,6 +1980,15 @@ export type Database = {
       }
       unregister_push_device: {
         Args: { target_token: string }
+        Returns: boolean
+      }
+      update_admin_ai_mission_draft: {
+        Args: {
+          edited_content: Json
+          edited_summary: string
+          edited_title: string
+          target_draft_id: string
+        }
         Returns: boolean
       }
       update_help_request: {

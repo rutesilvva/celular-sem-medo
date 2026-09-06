@@ -48,7 +48,17 @@ Responda apenas JSON: {"title":string,"summary":string,"difficulty":"easy"|"medi
     const text = provider?.candidates?.[0]?.content?.parts?.[0]?.text;
     const generated = typeof text === 'string' ? JSON.parse(text) : null;
     if (!isValidMission(generated) || unsafeOutput.test(JSON.stringify(generated))) return json({ error: 'unsafe_generation' }, 422, headers);
-    return json(generated, 200, headers);
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    let draftId: string | null = null;
+    if (serviceKey) {
+      const admin = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
+      const { data: savedDraft } = await admin.from('ai_mission_drafts').insert({
+        requested_by: user.id, source_query: query, title: generated.title, summary: generated.summary,
+        difficulty: generated.difficulty, estimated_minutes: generated.estimatedMinutes, generated_content: generated.steps,
+      }).select('id').single();
+      draftId = savedDraft?.id ?? null;
+    }
+    return json({ ...generated, draftId }, 200, headers);
   } catch {
     return json({ error: 'generation_failed' }, 502, headers);
   }

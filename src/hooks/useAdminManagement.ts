@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getAdminClasses, getAdminImpactSummary, getAdminUsers, getWorkshopStatus, type AdminClass, type AdminImpactSummary, type AdminUser, type WorkshopParticipant } from '@/lib/backend';
+import { getAdminAiMissionDrafts, getAdminClasses, getAdminImpactSummary, getAdminUsers, getWorkshopStatus, type AiMissionDraft, type AdminClass, type AdminImpactSummary, type AdminUser, type WorkshopParticipant } from '@/lib/backend';
 
 function useAdminQuery<T>(loader: () => Promise<T>, empty: T) {
   const [data, setData] = useState(empty);
@@ -27,6 +27,10 @@ export function useAdminClasses() {
 
 export function useAdminUsers() {
   return useAdminQuery<AdminUser[]>(useCallback(() => getAdminUsers(), []), []);
+}
+
+export function useAdminAiMissionDrafts() {
+  return useAdminQuery<AiMissionDraft[]>(useCallback(() => getAdminAiMissionDrafts(), []), []);
 }
 
 export function useAdminImpact(classId?: string) {

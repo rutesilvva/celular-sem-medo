@@ -25,6 +25,7 @@ export type OfflineAttempt = {
 };
 
 type MissionContent = { details: ParticipantMissionDetails; steps: ParticipantMissionStep[] };
+export type DownloadedMission = { assignmentId: string; title: string; stepCount: number; downloadedAt: string };
 const namespace = 'csm-offline-v1';
 const key = (ownerId: string, kind: string) => `${namespace}:${ownerId}:${kind}`;
 
@@ -39,6 +40,18 @@ export async function cacheMissionContent(ownerId: string, assignmentId: string,
 }
 export async function readMissionContent(ownerId: string, assignmentId: string): Promise<MissionContent | null> {
   return readJson(key(ownerId, `mission:${assignmentId}`));
+}
+export async function markMissionDownloaded(ownerId: string, mission: DownloadedMission) {
+  const current = await listDownloadedMissions(ownerId);
+  await AsyncStorage.setItem(key(ownerId, 'downloads'), JSON.stringify([mission, ...current.filter((item) => item.assignmentId !== mission.assignmentId)]));
+}
+export async function listDownloadedMissions(ownerId: string): Promise<DownloadedMission[]> {
+  return (await readJson<DownloadedMission[]>(key(ownerId, 'downloads'))) ?? [];
+}
+export async function removeDownloadedMission(ownerId: string, assignmentId: string) {
+  const current = await listDownloadedMissions(ownerId);
+  await AsyncStorage.multiRemove([key(ownerId, `mission:${assignmentId}`), key(ownerId, `attempt:${assignmentId}`)]);
+  await AsyncStorage.setItem(key(ownerId, 'downloads'), JSON.stringify(current.filter((item) => item.assignmentId !== assignmentId)));
 }
 export async function readOfflineAttempt(ownerId: string, assignmentId: string): Promise<OfflineAttempt | null> {
   const value = await readJson<OfflineAttempt>(key(ownerId, `attempt:${assignmentId}`));
