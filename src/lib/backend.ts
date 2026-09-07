@@ -18,7 +18,7 @@ export type AdminClass = Database['public']['Functions']['get_admin_classes']['R
 export type AdminUser = Database['public']['Functions']['get_admin_users']['Returns'][number];
 export type HelpRequestHistory = Database['public']['Functions']['get_help_request_history']['Returns'][number];
 export type MissionRecommendation = Database['public']['Functions']['get_personalized_mission_recommendations']['Returns'][number];
-export type LearningDiagnostic = Database['public']['Functions']['get_my_learning_diagnostic']['Returns'][number];
+export type LearningDiagnostic = Database['public']['Functions']['get_my_learning_diagnostic_v2']['Returns'][number];
 export type MissionReview = Database['public']['Functions']['get_my_review_plan']['Returns'][number];
 export type DailyMission = Database['public']['Functions']['get_my_daily_mission']['Returns'][number];
 export type AdminImpactSummary = Database['public']['Functions']['get_admin_impact_summary']['Returns'][number];
@@ -140,22 +140,26 @@ export type LearningDiagnosticInput = {
   preferredFormat: 'read' | 'listen' | 'practice';
   goals: string[];
   categoryConfidence: Record<string, number>;
+  barriers: ('fear_wrong_tap' | 'small_text' | 'unclear_symbols' | 'forget_steps' | 'scam_fear' | 'prefer_audio' | 'unsure')[];
+  scamResponse: 'verify_known_contact' | 'send_money' | 'open_link' | 'ask_help' | 'unsure';
 };
 
 export async function saveLearningDiagnostic(input: LearningDiagnosticInput, requestedId = createUuid()) {
-  const { data, error } = await getSupabase().rpc('save_my_learning_diagnostic', {
+  const { data, error } = await getSupabase().rpc('save_my_learning_diagnostic_v2', {
     requested_id: requestedId,
     selected_experience: input.experienceLevel,
     selected_format: input.preferredFormat,
     selected_goals: input.goals,
     selected_confidence: input.categoryConfidence,
+    selected_barriers: input.barriers,
+    selected_scam_response: input.scamResponse,
   });
   if (error) throw error;
   return data;
 }
 
 export async function getLearningDiagnostic(): Promise<LearningDiagnostic | null> {
-  const { data, error } = await getSupabase().rpc('get_my_learning_diagnostic');
+  const { data, error } = await getSupabase().rpc('get_my_learning_diagnostic_v2');
   if (error) throw error;
   return data[0] ?? null;
 }

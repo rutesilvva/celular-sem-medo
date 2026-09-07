@@ -24,11 +24,27 @@ const formats = [
   { value: 'practice', label: 'Praticar', icon: 'hand-left-outline' },
 ] as const;
 const fallbackCategories = ['Segurança digital', 'Comunicação', 'Serviços Públicos', 'Compras e pagamentos'];
+const barrierOptions: { value: LearningDiagnosticInput['barriers'][number]; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { value: 'fear_wrong_tap', label: 'Tenho medo de tocar no lugar errado', icon: 'hand-left-outline' },
+  { value: 'small_text', label: 'Tenho dificuldade para ler as letras', icon: 'text-outline' },
+  { value: 'unclear_symbols', label: 'Não entendo alguns símbolos e botões', icon: 'help-circle-outline' },
+  { value: 'forget_steps', label: 'Esqueço a ordem dos passos', icon: 'list-outline' },
+  { value: 'scam_fear', label: 'Tenho receio de golpes', icon: 'shield-outline' },
+  { value: 'prefer_audio', label: 'Prefiro receber ajuda em áudio', icon: 'volume-high-outline' },
+  { value: 'unsure', label: 'Ainda não sei dizer', icon: 'ellipsis-horizontal-outline' },
+];
+const scamOptions: { value: LearningDiagnosticInput['scamResponse']; label: string }[] = [
+  { value: 'send_money', label: 'Enviaria o dinheiro para ajudar rapidamente' },
+  { value: 'verify_known_contact', label: 'Ligaria para o número antigo para confirmar' },
+  { value: 'open_link', label: 'Abriria o link recebido na mensagem' },
+  { value: 'ask_help', label: 'Pediria ajuda a alguém de confiança' },
+  { value: 'unsure', label: 'Ainda não sei o que faria' },
+];
 
 export default function ParticipantDiagnosticScreen() {
   const router = useRouter();
   const { currentUser } = useAuth();
-  const { showNotice } = useApp();
+  const { setPreference, showNotice } = useApp();
   const catalog = useMissionCatalog();
   const categories = useMemo(() => {
     const available = Array.from(new Set((catalog.data ?? []).map((item) => item.category))).slice(0, 6);
@@ -38,14 +54,20 @@ export default function ParticipantDiagnosticScreen() {
   const [preferredFormat, setFormat] = useState<LearningDiagnosticInput['preferredFormat'] | null>(null);
   const [goals, setGoals] = useState<string[]>([]);
   const [confidence, setConfidence] = useState<Record<string, number>>({});
+  const [barriers, setBarriers] = useState<LearningDiagnosticInput['barriers']>([]);
+  const [scamResponse, setScamResponse] = useState<LearningDiagnosticInput['scamResponse'] | null>(null);
   const [saving, setSaving] = useState(false);
-  const valid = Boolean(currentUser && experienceLevel && preferredFormat && goals.length && goals.every((goal) => confidence[goal]));
+  const valid = Boolean(currentUser && experienceLevel && preferredFormat && goals.length && goals.every((goal) => confidence[goal]) && barriers.length && scamResponse);
 
   const toggleGoal = (goal: string) => setGoals((current) => current.includes(goal) ? current.filter((item) => item !== goal) : [...current, goal]);
+  const toggleBarrier = (barrier: LearningDiagnosticInput['barriers'][number]) => setBarriers((current) => current.includes(barrier) ? current.filter((item) => item !== barrier) : [...current.filter((item) => item !== 'unsure'), barrier]);
   const save = async () => {
-    if (!valid || saving || !currentUser || !experienceLevel || !preferredFormat) return;
+    if (!valid || saving || !currentUser || !experienceLevel || !preferredFormat || !scamResponse) return;
     setSaving(true);
-    const synced = await saveDiagnosticResilient(currentUser.id, { experienceLevel, preferredFormat, goals, categoryConfidence: confidence });
+    if (barriers.includes('small_text')) setPreference('largerText', true);
+    if (barriers.includes('prefer_audio')) setPreference('autoAudio', true);
+    if (barriers.includes('forget_steps')) setPreference('repeatInstructions', true);
+    const synced = await saveDiagnosticResilient(currentUser.id, { experienceLevel, preferredFormat, goals, categoryConfidence: confidence, barriers, scamResponse });
     showNotice(synced ? 'Plano de aprendizagem criado' : 'Plano salvo no aparelho e será sincronizado depois');
     router.dismissAll();
     router.replace('/participant/home');
@@ -64,6 +86,14 @@ export default function ParticipantDiagnosticScreen() {
     <Question title="Como você prefere aprender?">
       {formats.map((item) => <Choice key={item.value} selected={preferredFormat === item.value} label={item.label} icon={item.icon} onPress={() => setFormat(item.value)} />)}
     </Question>
+    <Question title="O que mais dificulta quando você usa o celular?" helper="Você pode escolher mais de uma opção.">
+      {barrierOptions.map((item) => <Choice key={item.value} selected={barriers.includes(item.value)} label={item.label} icon={item.icon} onPress={() => item.value === 'unsure' ? setBarriers(['unsure']) : toggleBarrier(item.value)} />)}
+    </Question>
+    <Card style={styles.scenario}>
+      <View style={styles.scenarioTitle}><Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.warning} /><AppText variant="subheading" weight="800" style={styles.flex}>Uma mensagem urgente diz ser de um familiar e pede dinheiro. O que você faria primeiro?</AppText></View>
+      <AppText variant="small" color={colors.textMuted}>É apenas uma situação de aprendizagem, não uma prova.</AppText>
+      <View style={styles.options}>{scamOptions.map((item) => <Choice key={item.value} selected={scamResponse === item.value} label={item.label} icon="radio-button-on-outline" onPress={() => setScamResponse(item.value)} />)}</View>
+    </Card>
     <Question title="O que você quer aprender primeiro?" helper="Escolha uma ou mais áreas.">
       {categories.map((category) => <Choice key={category} selected={goals.includes(category)} label={category} icon="checkmark-circle-outline" onPress={() => toggleGoal(category)} />)}
     </Question>
@@ -84,5 +114,5 @@ const styles = StyleSheet.create({
   content: { gap: spacing.xl }, flex: { flex: 1 }, intro: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   question: { gap: spacing.sm }, options: { gap: spacing.sm },
   choice: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 2, flexDirection: 'row', gap: spacing.md, minHeight: 56, paddingHorizontal: spacing.md },
-  choiceSelected: { backgroundColor: colors.primary, borderColor: colors.primary }, confidence: { gap: spacing.md },
+  choiceSelected: { backgroundColor: colors.primary, borderColor: colors.primary }, confidence: { gap: spacing.md }, scenario: { backgroundColor: colors.warningSoft, gap: spacing.md }, scenarioTitle: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
 });

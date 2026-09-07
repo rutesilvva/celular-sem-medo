@@ -6,7 +6,16 @@ Os três recursos formam uma trilha simples e explicável: o diagnóstico regist
 
 ## Diagnóstico inicial
 
-O aluno informa nível de experiência, formato preferido, uma ou mais categorias de interesse e confiança de 1 a 5 em cada categoria. Não é uma avaliação clínica nem uma prova. A interface salva primeiro no aparelho e sincroniza quando houver conexão. Apenas o próprio aluno e administradores globais podem ler o registro; escrita direta nas tabelas é bloqueada por RLS e a validação ocorre na RPC.
+O aluno informa nível de experiência, formato preferido, uma ou mais categorias de interesse e confiança de 1 a 5 em cada categoria. Também pode indicar as dificuldades que encontra (leitura, símbolos, memória dos passos, receio de golpes ou preferência por áudio) e responde a um cenário prático sobre uma mensagem urgente que pede dinheiro. Não é uma avaliação clínica nem uma prova.
+
+As respostas estruturadas têm efeitos explicáveis:
+
+- dificuldade de leitura ativa texto maior;
+- preferência por áudio ativa a leitura automática;
+- dificuldade para lembrar a ordem ativa a repetição de instruções;
+- uma resposta insegura ou incerta ao cenário prioriza missões de segurança digital.
+
+A interface salva primeiro no aparelho e sincroniza quando houver conexão. Apenas o próprio aluno e administradores globais podem ler o registro; escrita direta nas tabelas é bloqueada por RLS e a validação ocorre na RPC versionada.
 
 ## Revisão espaçada
 
@@ -29,4 +38,4 @@ O diagnóstico contém apenas opções estruturadas; não há campo livre nem en
 
 ## Cobertura
 
-`supabase/tests/learning_path.sql` valida autorização, RLS, entradas inválidas, personalização, agendamento e idempotência. `src/lib/learning-path-cache.test.ts` cobre gravação offline, sincronização posterior e leitura do plano em cache.
+`supabase/tests/learning_path.sql` valida autorização, RLS, respostas adicionais, entradas inválidas, personalização, agendamento e idempotência. `src/lib/learning-path-cache.test.ts` cobre gravação offline, sincronização posterior e leitura do plano em cache.

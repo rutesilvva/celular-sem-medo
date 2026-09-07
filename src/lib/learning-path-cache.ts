@@ -63,6 +63,8 @@ function toInput(value: LearningDiagnostic): LearningDiagnosticInput {
     preferredFormat: value.preferred_format as LearningDiagnosticInput['preferredFormat'],
     goals: value.goals,
     categoryConfidence: value.category_confidence as Record<string, number>,
+    barriers: value.barriers as LearningDiagnosticInput['barriers'],
+    scamResponse: value.scam_response as LearningDiagnosticInput['scamResponse'],
   };
 }
 
