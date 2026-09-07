@@ -30,6 +30,9 @@ export type CertificateStatus = Database['public']['Functions']['get_my_certific
 export type VerifiedCertificate = Database['public']['Functions']['verify_participation_certificate']['Returns'][number];
 export type MissionFeedbackSummary = Database['public']['Functions']['get_admin_mission_feedback_summary']['Returns'][number];
 export type AdminCertificate = Database['public']['Functions']['get_admin_certificates']['Returns'][number];
+export type MissionQualityRank = Database['public']['Functions']['get_admin_mission_quality_ranking']['Returns'][number];
+export type AdminAuditItem = Database['public']['Functions']['get_admin_audit_timeline']['Returns'][number];
+export type CertificateCorrection = Database['public']['Functions']['get_admin_certificate_corrections']['Returns'][number];
 export type AiMissionDraft = Database['public']['Functions']['get_admin_ai_mission_drafts']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
 export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
@@ -258,6 +261,12 @@ export async function revokeCertificate(certificateId: string, reason: string) {
   if (error) throw error;
   return data;
 }
+
+export async function requestCertificateCorrection(certificateId: string, name: string, reason: string) { const { data,error }=await getSupabase().rpc('request_certificate_name_correction',{requested_id:createUuid(),target_certificate_id:certificateId,desired_name:name,request_reason:reason});if(error)throw error;return data; }
+export async function getCertificateCorrections():Promise<CertificateCorrection[]>{const{data,error}=await getSupabase().rpc('get_admin_certificate_corrections');if(error)throw error;return data;}
+export async function reviewCertificateCorrection(requestId:string,approve:boolean){const{data,error}=await getSupabase().rpc('review_certificate_correction',{target_request_id:requestId,approve,new_verification_code:createUuid()});if(error)throw error;return data;}
+export async function getMissionQualityRanking(classId?:string,days=30):Promise<MissionQualityRank[]>{const{data,error}=await getSupabase().rpc('get_admin_mission_quality_ranking',{target_class_id:classId,period_days:days});if(error)throw error;return data;}
+export async function getAdminAuditTimeline(days=30):Promise<AdminAuditItem[]>{const{data,error}=await getSupabase().rpc('get_admin_audit_timeline',{period_days:days});if(error)throw error;return data;}
 
 export async function createLearningRequest(query: string) {
   const { data, error } = await getSupabase().rpc('create_learning_request', { requested_id: createUuid(), query });

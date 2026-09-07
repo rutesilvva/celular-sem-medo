@@ -1,0 +1,12 @@
+appId: br.com.celularsemmedo.app
+name: Roteiro previsível para apresentação
+---
+- launchApp:
+    clearState: true
+- tapOn: "Ver demonstração"
+- assertVisible: "APRESENTAÇÃO PARA A BANCA"
+- assertVisible: "1. Diagnóstico acessível"
+- tapOn: "Próximo"
+- assertVisible: "2. Recomendação explicável"
+- tapOn: "Próximo"
+- assertVisible: "3. Simulação sem risco"

@@ -122,6 +122,8 @@ export default function ParticipantProfileScreen() {
           <MenuRow icon="compass-outline" label="Atualizar meu diagnóstico" onPress={() => router.push('/participant/diagnostic')} />
           <View style={styles.divider} />
           <MenuRow icon="cloud-offline-outline" label="Atividades salvas no aparelho" onPress={() => router.push('/participant/offline-activities')} />
+          <View style={styles.divider} />
+          <MenuRow icon="ribbon-outline" label="Solicitar correção do certificado" onPress={() => router.push('/participant/certificate-correction')} />
         </Card>
         <Card>
           <SwitchRow title="Não enviar diagnósticos anônimos" description="Desativa eventos técnicos sem nome, e-mail ou conteúdo." icon="analytics-outline" value={diagnosticsOptOut} onValueChange={(value) => { setDiagnosticsOptOut(value); void setObservabilityOptOut(value); }} />
@@ -140,7 +142,7 @@ export default function ParticipantProfileScreen() {
 }
 
 function MenuRow({ icon, label, onPress }: {
-  icon: 'help-circle-outline' | 'chatbubble-ellipses-outline' | 'shield-checkmark-outline' | 'compass-outline' | 'cloud-offline-outline';
+  icon: 'help-circle-outline' | 'chatbubble-ellipses-outline' | 'shield-checkmark-outline' | 'compass-outline' | 'cloud-offline-outline' | 'ribbon-outline';
   label: string;
   onPress: () => void;
 }) {

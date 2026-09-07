@@ -129,6 +129,7 @@ function AppNavigator() {
         <Stack.Screen name="participant/offline-activities" />
         <Stack.Screen name="participant/retention" />
         <Stack.Screen name="participant/certificate" />
+        <Stack.Screen name="participant/certificate-correction" />
       </Stack.Protected>
 
       <Stack.Protected guard={canAccessRole(status, sessionRole, 'admin')}>
@@ -137,6 +138,7 @@ function AppNavigator() {
         <Stack.Screen name="admin/classes" />
         <Stack.Screen name="admin/profile" />
         <Stack.Screen name="admin/certificates" />
+        <Stack.Screen name="admin/governance" />
         <Stack.Screen name="admin/participants" />
         <Stack.Screen name="admin/participant-details" />
         <Stack.Screen name="admin/missions" />

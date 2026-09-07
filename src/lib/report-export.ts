@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import QRCode from 'qrcode';
+import { buildCertificateVerificationUrl } from './certificate-url';
 
 export { createUsageEventSummary, sanitizeEventPayload } from './observability';
 
@@ -98,7 +99,9 @@ export async function exportCertificatePdf(rows: ReportExportRow[], title: strin
   const storageDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
   if (!storageDir) throw new Error('REPORT_STORAGE_UNAVAILABLE');
   const pdfPath = `${storageDir}certificado-${stamp}.pdf`;
-  await FileSystem.writeAsStringAsync(pdfPath, buildCertificatePdfDocument(title, rows, verificationUrl), { encoding: FileSystem.EncodingType.UTF8 });
+  const code = verificationUrl.split('code=')[1];
+  const publicUrl = code ? buildCertificateVerificationUrl(decodeURIComponent(code)) : verificationUrl;
+  await FileSystem.writeAsStringAsync(pdfPath, buildCertificatePdfDocument(title, rows, publicUrl), { encoding: FileSystem.EncodingType.UTF8 });
   return pdfPath;
 }
 

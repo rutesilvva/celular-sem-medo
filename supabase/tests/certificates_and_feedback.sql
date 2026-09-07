@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(28);
 
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at,raw_app_meta_data,raw_user_meta_data) values
 ('ba000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','cert-admin@test.invalid','',now(),now(),now(),'{}','{"name":"Admin Cert"}'),
@@ -30,6 +30,8 @@ select is((select verification_code from public.get_my_certificate_status()),'c1
 select lives_ok($$select public.submit_mission_quality_feedback('c2000000-0000-4000-8000-000000000001','bf000000-0000-4000-8000-000000000001',5::smallint,4::smallint,array['none'])$$,'student evaluates a completed mission');
 select throws_ok($$select public.submit_mission_quality_feedback(gen_random_uuid(),'bf000000-0000-4000-8000-000000000002',5::smallint,4::smallint,array['none','too_long'])$$,'22023','INVALID_MISSION_FEEDBACK','none cannot be combined with an issue');
 select is((select count(*) from public.mission_quality_feedback),1::bigint,'student reads only submitted feedback');
+select lives_ok($$select public.request_certificate_name_correction('c3000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001','Aluno Nome Corrigido','Meu sobrenome estava incompleto')$$,'student requests a certificate correction');
+select is((select count(*) from public.certificate_correction_requests),1::bigint,'student sees the own correction request');
 
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
@@ -44,11 +46,16 @@ select is((select response_count from public.get_admin_mission_feedback_summary(
 select is((select average_helpful from public.get_admin_mission_feedback_summary('bb000000-0000-4000-8000-000000000001')),5.00::numeric,'admin sees aggregate helpfulness');
 select is((select average_clarity from public.get_admin_mission_feedback_summary('bb000000-0000-4000-8000-000000000001')),4.00::numeric,'admin sees aggregate clarity');
 select is((select count(*) from public.participation_certificates),1::bigint,'admin can audit issued certificates');
+select is((select count(*) from public.get_admin_certificate_corrections() where status='pending'),1::bigint,'admin sees pending corrections');
+select ok(public.review_certificate_correction('c3000000-0000-4000-8000-000000000001',true,'c1000000-0000-4000-8000-000000000002'),'admin approves and reissues certificate');
+select is((select participant_name from public.participation_certificates where id='c0000000-0000-4000-8000-000000000001'),'Aluno Nome Corrigido','reissued certificate freezes corrected name');
+select is((select count(*) from public.get_admin_mission_quality_ranking(null,30)),1::bigint,'quality ranking groups feedback by mission');
 select is((select count(*) from public.get_admin_certificates(null,null,'valid')),1::bigint,'admin lists valid certificates');
 select throws_ok($$select public.admin_revoke_certificate('c0000000-0000-4000-8000-000000000001','não')$$,'22023','INVALID_REVOCATION_REASON','revocation requires a meaningful reason');
 select ok(public.admin_revoke_certificate('c0000000-0000-4000-8000-000000000001','Nome do participante corrigido'),'admin revokes a certificate');
 select is((select reason from public.certificate_revocation_history where certificate_id='c0000000-0000-4000-8000-000000000001'),'Nome do participante corrigido','revocation reason is audited');
 select is((select count(*) from public.get_admin_certificates(null,null,'revoked')),1::bigint,'revoked filter returns revoked certificate');
+select ok((select count(*)>=2 from public.get_admin_audit_timeline(30)),'unified audit timeline includes certificate governance');
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select isnt((select valid from public.verify_participation_certificate('c1000000-0000-4000-8000-000000000001')),true,'revoked QR no longer validates');

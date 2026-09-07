@@ -365,6 +365,64 @@ export type Database = {
           },
         ]
       }
+      certificate_correction_requests: {
+        Row: {
+          certificate_id: string
+          created_at: string
+          id: string
+          participant_id: string
+          reason: string
+          requested_name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["certificate_correction_status"]
+        }
+        Insert: {
+          certificate_id: string
+          created_at?: string
+          id: string
+          participant_id: string
+          reason: string
+          requested_name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["certificate_correction_status"]
+        }
+        Update: {
+          certificate_id?: string
+          created_at?: string
+          id?: string
+          participant_id?: string
+          reason?: string
+          requested_name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["certificate_correction_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_correction_requests_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "participation_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_correction_requests_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_correction_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificate_revocation_history: {
         Row: {
           certificate_id: string
@@ -1802,6 +1860,26 @@ export type Database = {
           status: Database["public"]["Enums"]["attempt_status"]
         }[]
       }
+      get_admin_audit_timeline: {
+        Args: { period_days?: number }
+        Returns: {
+          description: string
+          event_type: string
+          occurred_at: string
+        }[]
+      }
+      get_admin_certificate_corrections: {
+        Args: never
+        Returns: {
+          certificate_id: string
+          created_at: string
+          current_name: string
+          reason: string
+          request_id: string
+          requested_name: string
+          status: Database["public"]["Enums"]["certificate_correction_status"]
+        }[]
+      }
       get_admin_certificates: {
         Args: {
           search_term?: string
@@ -1934,6 +2012,17 @@ export type Database = {
           difficulty_percent: number
           participant_count: number
           title: string
+        }[]
+      }
+      get_admin_mission_quality_ranking: {
+        Args: { period_days?: number; target_class_id?: string }
+        Returns: {
+          average_clarity: number
+          average_helpful: number
+          issue_count: number
+          mission_title: string
+          needs_review: boolean
+          response_count: number
         }[]
       }
       get_admin_participant: {
@@ -2382,9 +2471,26 @@ export type Database = {
         Args: { target_platform: string; target_token: string }
         Returns: string
       }
+      request_certificate_name_correction: {
+        Args: {
+          desired_name: string
+          request_reason: string
+          requested_id: string
+          target_certificate_id: string
+        }
+        Returns: string
+      }
       review_admin_ai_mission_draft: {
         Args: { decision: string; target_draft_id: string }
         Returns: string
+      }
+      review_certificate_correction: {
+        Args: {
+          approve: boolean
+          new_verification_code: string
+          target_request_id: string
+        }
+        Returns: boolean
       }
       save_my_learning_diagnostic: {
         Args: {
@@ -2531,6 +2637,7 @@ export type Database = {
         | "attempt_completed"
         | "attempt_abandoned"
       attempt_status: "in_progress" | "completed" | "abandoned"
+      certificate_correction_status: "pending" | "approved" | "rejected"
       class_status: "active" | "archived"
       help_request_status: "open" | "in_progress" | "resolved" | "cancelled"
       membership_status: "active" | "inactive"
@@ -2700,6 +2807,7 @@ export const Constants = {
         "attempt_abandoned",
       ],
       attempt_status: ["in_progress", "completed", "abandoned"],
+      certificate_correction_status: ["pending", "approved", "rejected"],
       class_status: ["active", "archived"],
       help_request_status: ["open", "in_progress", "resolved", "cancelled"],
       membership_status: ["active", "inactive"],

@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Redirect, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
@@ -59,6 +59,9 @@ export default function DemoScreen() {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>('pix');
   const [presentationStep, setPresentationStep] = useState(0);
+  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  useEffect(() => { const timer=setInterval(()=>setElapsedSeconds(Math.floor((Date.now()-startedAt)/1000)),1000);return()=>clearInterval(timer); }, [startedAt]);
 
   const selected = useMemo<DemoMission>(() => {
     return missions.find((mission) => mission.id === selectedId) ?? {
@@ -81,13 +84,13 @@ export default function DemoScreen() {
       <Tag label="Modo seguro de teste" tone="green" />
 
       <Card style={styles.presentationCard}>
-        <View style={styles.missionHeader}><Tag label={`Roteiro ${presentationStep + 1} de ${presentationSteps.length}`} tone="purple" /><AppText variant="caption" weight="800" color={colors.primary}>APRESENTAÇÃO PARA A BANCA</AppText></View>
+        <View style={styles.missionHeader}><Tag label={`Roteiro ${presentationStep + 1} de ${presentationSteps.length}`} tone="purple" /><Tag label={`${Math.floor(elapsedSeconds/60)}:${String(elapsedSeconds%60).padStart(2,'0')}`} tone="green"/><AppText variant="caption" weight="800" color={colors.primary}>APRESENTAÇÃO PARA A BANCA</AppText></View>
         <AppText variant="heading" weight="800">{presentation.title}</AppText>
         <AppText>{presentation.text}</AppText>
         <Tag label={presentation.metric} tone="green" />
         <View style={styles.detailActions}>
           <Button label="Anterior" variant="secondary" disabled={presentationStep === 0} onPress={() => setPresentationStep((value) => Math.max(0, value - 1))} />
-          <Button label={presentationStep === presentationSteps.length - 1 ? 'Recomeçar roteiro' : 'Próximo'} onPress={() => setPresentationStep((value) => value === presentationSteps.length - 1 ? 0 : value + 1)} />
+          <Button label={presentationStep === presentationSteps.length - 1 ? 'Recomeçar roteiro' : 'Próximo'} onPress={() => setPresentationStep((value) => {if(value===presentationSteps.length-1){setStartedAt(Date.now());setElapsedSeconds(0);return 0;}return value+1;})} />
         </View>
       </Card>
 
