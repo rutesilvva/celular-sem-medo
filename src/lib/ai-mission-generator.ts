@@ -1,4 +1,4 @@
-import type { ParticipantMissionDetails, ParticipantMissionStep } from '@/lib/backend';
+import { getFeatureFlags, type ParticipantMissionDetails, type ParticipantMissionStep } from '@/lib/backend';
 import { setAiMissionSession } from '@/lib/ai-mission-cache';
 import { getSupabase } from '@/lib/supabase';
 
@@ -11,6 +11,8 @@ function generateUuid(): string {
 }
 
 export async function generateAiMission(userQuery: string): Promise<string> {
+  const flags = await getFeatureFlags();
+  if (flags.some((flag) => flag.flag_key === 'ai_missions' && !flag.enabled)) throw new Error('AI_MISSIONS_DISABLED');
   const query = userQuery.trim();
   const sessionId = generateUuid();
   const missionId = generateUuid();

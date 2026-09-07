@@ -7,6 +7,7 @@ import { AppFeedback } from '@/components/AppFeedback';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { NotificationRouter } from '@/components/NotificationRouter';
 import { OfflineSyncManager } from '@/components/OfflineSyncManager';
+import { SyncStatusBanner } from '@/components/SyncStatusBanner';
 import { ObservabilityManager } from '@/components/ObservabilityManager';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -35,6 +36,7 @@ export default function RootLayout() {
             <AppNavigator />
             <NotificationRouter />
             <OfflineSyncManager />
+            <SyncStatusBanner />
             <ObservabilityManager />
             <StatusBar style="dark" />
             <AppFeedback />
@@ -139,6 +141,7 @@ function AppNavigator() {
         <Stack.Screen name="admin/profile" />
         <Stack.Screen name="admin/certificates" />
         <Stack.Screen name="admin/governance" />
+        <Stack.Screen name="admin/system-health" />
         <Stack.Screen name="admin/participants" />
         <Stack.Screen name="admin/participant-details" />
         <Stack.Screen name="admin/missions" />

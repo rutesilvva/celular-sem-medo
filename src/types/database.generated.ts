@@ -641,6 +641,38 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          description: string
+          enabled: boolean
+          flag_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string
+          enabled?: boolean
+          flag_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string
+          enabled?: boolean
+          flag_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flags_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_request_history: {
         Row: {
           actor_id: string
@@ -1393,6 +1425,27 @@ export type Database = {
           },
         ]
       }
+      operation_rate_limits: {
+        Row: {
+          id: number
+          occurred_at: string
+          operation: string
+          user_id: string
+        }
+        Insert: {
+          id?: never
+          occurred_at?: string
+          operation: string
+          user_id: string
+        }
+        Update: {
+          id?: never
+          occurred_at?: string
+          operation?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       participation_certificates: {
         Row: {
           class_id: string
@@ -1900,6 +1953,22 @@ export type Database = {
           verification_code: string
         }[]
       }
+      get_admin_certificates_page: {
+        Args: {
+          page_limit?: number
+          page_offset?: number
+          search_term?: string
+          selected_status?: string
+        }
+        Returns: {
+          certificate_id: string
+          class_name: string
+          issued_at: string
+          participant_name: string
+          revoked_at: string
+          total_count: number
+        }[]
+      }
       get_admin_class_contexts: {
         Args: never
         Returns: {
@@ -2147,6 +2216,14 @@ export type Database = {
           participants: number
           retention_percent: number
           scam_recognition_percent: number
+        }[]
+      }
+      get_admin_system_health: {
+        Args: never
+        Returns: {
+          component: string
+          details: string
+          status: string
         }[]
       }
       get_admin_users: {
@@ -2423,6 +2500,13 @@ export type Database = {
           title: string
         }[]
       }
+      get_public_feature_flags: {
+        Args: never
+        Returns: {
+          enabled: boolean
+          flag_key: string
+        }[]
+      }
       has_active_class_role: {
         Args: {
           required_role?: Database["public"]["Enums"]["app_role"]
@@ -2585,6 +2669,10 @@ export type Database = {
           selected_signer: string
           selected_title: string
         }
+        Returns: boolean
+      }
+      update_feature_flag: {
+        Args: { next_enabled: boolean; target_key: string }
         Returns: boolean
       }
       update_help_request: {

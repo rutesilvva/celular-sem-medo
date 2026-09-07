@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { cleanupOfflineAttempts, listOfflineAttempts, syncBackoffMs } from '@/lib/offline-store';
 import { synchronizeOfflineAttempt } from '@/lib/offline-sync';
 import { synchronizeAssessments } from '@/lib/offline-assessments';
+import { publishSyncState } from '@/lib/sync-status';
 
 export function OfflineSyncManager() {
   const { currentUser } = useAuth();
@@ -18,7 +19,8 @@ export function OfflineSyncManager() {
     const sync = async () => {
       if (!active) return;
       const network = await NetInfo.fetch();
-      if (!network.isConnected || network.isInternetReachable === false) return;
+      if (!network.isConnected || network.isInternetReachable === false) { publishSyncState('offline'); return; }
+      publishSyncState('syncing');
       let sent = 0;
       try {
         await cleanupOfflineAttempts(currentUser.id);
@@ -31,7 +33,9 @@ export function OfflineSyncManager() {
         await synchronizeAssessments(currentUser.id);
         retryCount = 0;
         if (sent) showNotice(`${sent} atividade(s) offline sincronizada(s).`);
+        publishSyncState('saved');
       } catch {
+        publishSyncState('error');
         retryCount += 1;
         retryTimer = setTimeout(() => void sync(), syncBackoffMs(retryCount));
       } finally { /* o lock por tentativa é liberado pelo coordenador */ }

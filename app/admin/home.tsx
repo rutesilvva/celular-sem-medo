@@ -56,6 +56,7 @@ export default function AdminHomeScreen() {
         <Action icon="pulse-outline" label="Modo oficina ao vivo" onPress={() => router.push('/admin/workshop')} />
         <Action icon="analytics-outline" label="Painel de impacto" onPress={() => router.push('/admin/impact')} />
         <Action icon="shield-outline" label="Qualidade e governança" onPress={() => router.push('/admin/governance')} />
+        <Action icon="pulse-outline" label="Saúde do sistema" onPress={() => router.push('/admin/system-health')} />
       </Card>
       <SectionTitle>Atividade recente</SectionTitle>
       <Card style={styles.activityCard}>

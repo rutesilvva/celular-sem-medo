@@ -6,7 +6,10 @@ name: Roteiro previsível para apresentação
 - tapOn: "Ver demonstração"
 - assertVisible: "APRESENTAÇÃO PARA A BANCA"
 - assertVisible: "1. Diagnóstico acessível"
+- takeScreenshot: presentation-01-diagnostic
 - tapOn: "Próximo"
 - assertVisible: "2. Recomendação explicável"
+- takeScreenshot: presentation-02-recommendation
 - tapOn: "Próximo"
 - assertVisible: "3. Simulação sem risco"
+- takeScreenshot: presentation-03-simulation
