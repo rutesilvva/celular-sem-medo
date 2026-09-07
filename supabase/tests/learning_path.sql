@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(23);
 
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at,raw_app_meta_data,raw_user_meta_data) values
 ('f1000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','path-admin@test.invalid','',now(),now(),now(),'{}','{"name":"Admin Trilha"}'),
@@ -19,10 +19,13 @@ select throws_ok($$select public.save_my_learning_diagnostic(gen_random_uuid(),'
 select is((select count(*) from public.get_my_learning_diagnostic()),0::bigint,'unlinked account has no diagnostic');
 
 select set_config('request.jwt.claims','{"sub":"f1000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
-select lives_ok($$select public.save_my_learning_diagnostic_v2('f4000000-0000-4000-8000-000000000001','beginner','practice',array['Segurança digital'],'{"Segurança digital":2}',array['fear_wrong_tap','scam_fear'],'verify_known_contact')$$,'student saves expanded structured diagnostic');
+select lives_ok($$select public.save_my_learning_diagnostic_v3('f4000000-0000-4000-8000-000000000001','beginner','practice',array['Segurança digital'],'{"Segurança digital":2}',array['fear_wrong_tap','scam_fear'],'verify_known_contact',array['whatsapp','photos'],'ask_help')$$,'student saves complete structured diagnostic');
 select is((select experience_level from public.get_my_learning_diagnostic()),'beginner','student reads own diagnostic');
 select is((select barriers from public.get_my_learning_diagnostic_v2()),array['fear_wrong_tap','scam_fear']::text[],'student reads own barriers');
 select is((select scam_response from public.get_my_learning_diagnostic_v2()),'verify_known_contact','student reads own scam response');
+select is((select independent_actions from public.get_my_learning_diagnostic_v3()),array['whatsapp','photos']::text[],'student reads own independent actions');
+select is((select support_response from public.get_my_learning_diagnostic_v3()),'ask_help','student reads own support response');
+select throws_ok($$select public.save_my_learning_diagnostic_v3(gen_random_uuid(),'beginner','practice',array['Segurança digital'],'{"Segurança digital":2}',array['scam_fear'],'unsure',array['none','pix'],'ask_help')$$,'22023','INVALID_DIAGNOSTIC_BEHAVIOR_ANSWERS','none cannot be combined with independent actions');
 select throws_ok($$select public.save_my_learning_diagnostic_v2(gen_random_uuid(),'beginner','practice',array['Segurança digital'],'{"Segurança digital":2}',array['not_allowed'],'unsure')$$,'22023','INVALID_DIAGNOSTIC_ADDITIONAL_ANSWERS','invalid barrier is rejected');
 select throws_ok($$select public.save_my_learning_diagnostic(gen_random_uuid(),'invalid','practice',array['Segurança digital'],'{"Segurança digital":2}')$$,'22023','INVALID_DIAGNOSTIC','invalid experience is rejected');
 select throws_ok($$select public.save_my_learning_diagnostic(gen_random_uuid(),'beginner','practice',array['Segurança digital'],'{"Outra categoria":2}')$$,'22023','INVALID_DIAGNOSTIC','confidence must match the selected goals');

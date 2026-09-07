@@ -6,7 +6,7 @@ Os três recursos formam uma trilha simples e explicável: o diagnóstico regist
 
 ## Diagnóstico inicial
 
-O aluno informa nível de experiência, formato preferido, uma ou mais categorias de interesse e confiança de 1 a 5 em cada categoria. Também pode indicar as dificuldades que encontra (leitura, símbolos, memória dos passos, receio de golpes ou preferência por áudio) e responde a um cenário prático sobre uma mensagem urgente que pede dinheiro. Não é uma avaliação clínica nem uma prova.
+O aluno responde sete perguntas principais: nível de experiência, formato preferido, ações que já realiza sozinho, dificuldades, reação habitual quando precisa de apoio, objetivos e um cenário prático sobre uma mensagem urgente que pede dinheiro. Para cada categoria escolhida, também informa a confiança de 1 a 5. Não é uma avaliação clínica nem uma prova.
 
 As respostas estruturadas têm efeitos explicáveis:
 
@@ -16,6 +16,8 @@ As respostas estruturadas têm efeitos explicáveis:
 - uma resposta insegura ou incerta ao cenário prioriza missões de segurança digital.
 
 A interface salva primeiro no aparelho e sincroniza quando houver conexão. Apenas o próprio aluno e administradores globais podem ler o registro; escrita direta nas tabelas é bloqueada por RLS e a validação ocorre na RPC versionada.
+
+Antes de salvar, a interface apresenta um resumo em linguagem simples com preferências, habilidades atuais, objetivos e ajustes sugeridos. O aluno pode tocar nas respostas anteriores, corrigi-las e conferir novamente o resumo.
 
 ## Revisão espaçada
 

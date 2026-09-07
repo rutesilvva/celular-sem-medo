@@ -738,9 +738,11 @@ export type Database = {
           experience_level: string
           goals: string[]
           id: string
+          independent_actions: string[]
           participant_id: string
           preferred_format: string
           scam_response: string | null
+          support_response: string | null
           updated_at: string
         }
         Insert: {
@@ -750,9 +752,11 @@ export type Database = {
           experience_level: string
           goals: string[]
           id: string
+          independent_actions?: string[]
           participant_id: string
           preferred_format: string
           scam_response?: string | null
+          support_response?: string | null
           updated_at?: string
         }
         Update: {
@@ -762,9 +766,11 @@ export type Database = {
           experience_level?: string
           goals?: string[]
           id?: string
+          independent_actions?: string[]
           participant_id?: string
           preferred_format?: string
           scam_response?: string | null
+          support_response?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1807,6 +1813,21 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_my_learning_diagnostic_v3: {
+        Args: never
+        Returns: {
+          barriers: string[]
+          category_confidence: Json
+          diagnostic_id: string
+          experience_level: string
+          goals: string[]
+          independent_actions: string[]
+          preferred_format: string
+          scam_response: string
+          support_response: string
+          updated_at: string
+        }[]
+      }
       get_my_review_plan: {
         Args: never
         Returns: {
@@ -1978,6 +1999,20 @@ export type Database = {
           selected_format: string
           selected_goals: string[]
           selected_scam_response: string
+        }
+        Returns: string
+      }
+      save_my_learning_diagnostic_v3: {
+        Args: {
+          requested_id: string
+          selected_barriers: string[]
+          selected_confidence: Json
+          selected_experience: string
+          selected_format: string
+          selected_goals: string[]
+          selected_independent_actions: string[]
+          selected_scam_response: string
+          selected_support_response: string
         }
         Returns: string
       }

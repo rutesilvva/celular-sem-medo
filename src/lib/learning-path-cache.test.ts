@@ -7,8 +7,8 @@ import { loadDiagnosticResilient, loadPathResilient, saveDiagnosticResilient } f
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('./backend', () => ({ getDailyMission: jest.fn(), getLearningDiagnostic: jest.fn(), getMissionReviewPlan: jest.fn(), saveLearningDiagnostic: jest.fn() }));
 
-const input: LearningDiagnosticInput = { experienceLevel: 'beginner', preferredFormat: 'practice', goals: ['Segurança'], categoryConfidence: { Segurança: 2 }, barriers: ['scam_fear'], scamResponse: 'ask_help' };
-const diagnostic = { diagnostic_id: 'd1', experience_level: 'beginner', preferred_format: 'practice', goals: ['Segurança'], category_confidence: { Segurança: 2 }, barriers: ['scam_fear'], scam_response: 'ask_help', updated_at: '2026-09-03T00:00:00Z' };
+const input: LearningDiagnosticInput = { experienceLevel: 'beginner', preferredFormat: 'practice', goals: ['Segurança'], categoryConfidence: { Segurança: 2 }, barriers: ['scam_fear'], scamResponse: 'ask_help', independentActions: ['whatsapp'], supportResponse: 'ask_help' };
+const diagnostic = { diagnostic_id: 'd1', experience_level: 'beginner', preferred_format: 'practice', goals: ['Segurança'], category_confidence: { Segurança: 2 }, barriers: ['scam_fear'], scam_response: 'ask_help', independent_actions: ['whatsapp'], support_response: 'ask_help', updated_at: '2026-09-03T00:00:00Z' };
 
 describe('learning path cache', () => {
   beforeEach(async () => { await AsyncStorage.clear(); jest.clearAllMocks(); });

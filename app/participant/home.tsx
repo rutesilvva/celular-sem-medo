@@ -80,7 +80,7 @@ export default function ParticipantHomeScreen() {
       </View>
 
       {!learningPath.loading && !learningPath.diagnostic && !learningPath.draft ? <Card style={styles.pathCard}>
-        <View style={styles.pathHeader}><Ionicons name="compass-outline" size={28} color={colors.primary} /><View style={styles.progressCopy}><AppText weight="800">Descubra seu ponto de partida</AppText><AppText variant="small" color={colors.textMuted}>Responda cinco perguntas para receber recomendações mais adequadas.</AppText></View></View>
+        <View style={styles.pathHeader}><Ionicons name="compass-outline" size={28} color={colors.primary} /><View style={styles.progressCopy}><AppText weight="800">Descubra seu ponto de partida</AppText><AppText variant="small" color={colors.textMuted}>Responda sete perguntas para receber recomendações mais adequadas.</AppText></View></View>
         <Button label="Fazer diagnóstico inicial" variant="secondary" onPress={() => router.push('/participant/diagnostic')} />
       </Card> : null}
 
