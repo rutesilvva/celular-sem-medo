@@ -111,6 +111,7 @@ function AppNavigator() {
       <Stack.Screen name="invite" />
       <Stack.Screen name="certificate" />
       <Stack.Screen name="demo" />
+      <Stack.Screen name="dynamic-mission" />
       <Stack.Screen name="auth/callback" />
       <Stack.Screen name="+not-found" />
 

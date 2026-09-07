@@ -78,6 +78,11 @@ export default function DemoScreen() {
       <Header title="Missões de demonstração" subtitle="Modo controlado e sem dados reais" onBack={() => router.replace('/login')} />
       <Tag label="Modo seguro de teste" tone="green" />
 
+      <Card style={styles.dynamicCard}>
+        <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name="sparkles-outline" size={28} color={colors.primary}/></View><View style={styles.flex}><AppText variant="subheading" weight="800">Missões montadas por JSON seguro</AppText><AppText variant="small" color={colors.textMuted}>Funcionam offline e usam somente componentes permitidos pelo aplicativo.</AppText></View></View>
+        <View style={styles.detailActions}><Button label="Assistir e buscar vídeos" onPress={()=>router.push({pathname:'/dynamic-mission',params:{id:'video'}})}/><Button label="Abrir fallback" variant="secondary" onPress={()=>router.push({pathname:'/dynamic-mission',params:{id:'fallback'}})}/></View>
+      </Card>
+
       <Card style={styles.presentationCard}>
         <View style={styles.missionHeader}><Tag label={`Roteiro ${presentationStep + 1} de ${presentationSteps.length}`} tone="purple" /><Tag label={`${Math.floor(elapsedSeconds/60)}:${String(elapsedSeconds%60).padStart(2,'0')} / 3:00`} tone={elapsedSeconds <= COMPETITION_DEMO_TARGET_SECONDS ? 'green' : 'yellow'}/><AppText variant="caption" weight="800" color={colors.primary}>APRESENTAÇÃO PARA A BANCA</AppText></View>
         <View style={styles.stepTrack}>{presentationSteps.map((step,index)=><View accessibilityLabel={`${step.title}${index===presentationStep?', etapa atual':''}`} key={step.key} style={[styles.stepDot,index<=presentationStep&&styles.stepDotActive]}/>)}</View>
@@ -154,6 +159,7 @@ const styles = StyleSheet.create({
   content: { gap: spacing.lg },
   headerCard: { gap: spacing.sm },
   presentationCard: { backgroundColor: colors.primarySoft, borderColor: colors.primary, gap: spacing.md },
+  dynamicCard: { borderColor: colors.primaryMuted, gap: spacing.md },
   list: { gap: spacing.md },
   missionCard: {
     alignItems: 'center',

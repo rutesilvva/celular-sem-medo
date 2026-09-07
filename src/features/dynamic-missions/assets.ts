@@ -1,0 +1,2 @@
+import type { AllowedAssetId } from './types';
+export const allowedAssetRegistry:Record<AllowedAssetId,{icon:'videocam-outline'|'shield-checkmark-outline'|'cube-outline';label:string}>={video_learning_01:{icon:'videocam-outline',label:'Miniatura de vídeo educativo'},safe_shield_01:{icon:'shield-checkmark-outline',label:'Proteção educativa'},generic_product_01:{icon:'cube-outline',label:'Produto fictício'}};
