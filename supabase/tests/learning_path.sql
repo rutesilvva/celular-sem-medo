@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(28);
 
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at,raw_app_meta_data,raw_user_meta_data) values
 ('f1000000-0000-4000-8000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','path-admin@test.invalid','',now(),now(),now(),'{}','{"name":"Admin Trilha"}'),
@@ -26,6 +26,9 @@ select is((select scam_response from public.get_my_learning_diagnostic_v2()),'ve
 select is((select independent_actions from public.get_my_learning_diagnostic_v3()),array['whatsapp','photos']::text[],'student reads own independent actions');
 select is((select support_response from public.get_my_learning_diagnostic_v3()),'ask_help','student reads own support response');
 select throws_ok($$select public.save_my_learning_diagnostic_v3(gen_random_uuid(),'beginner','practice',array['Segurança digital'],'{"Segurança digital":2}',array['scam_fear'],'unsure',array['none','pix'],'ask_help')$$,'22023','INVALID_DIAGNOSTIC_BEHAVIOR_ANSWERS','none cannot be combined with independent actions');
+select is((select count(*) from public.learning_diagnostic_history),1::bigint,'first complete diagnostic creates one history revision');
+select lives_ok($$select public.save_my_learning_diagnostic_v3('f4000000-0000-4000-8000-000000000001','beginner','practice',array['Segurança digital'],'{"Segurança digital":2}',array['fear_wrong_tap','scam_fear'],'verify_known_contact',array['whatsapp','photos'],'try_again')$$,'student can update the diagnostic later');
+select is((select count(*) from public.learning_diagnostic_history),2::bigint,'updating preserves both diagnostic revisions');
 select throws_ok($$select public.save_my_learning_diagnostic_v2(gen_random_uuid(),'beginner','practice',array['Segurança digital'],'{"Segurança digital":2}',array['not_allowed'],'unsure')$$,'22023','INVALID_DIAGNOSTIC_ADDITIONAL_ANSWERS','invalid barrier is rejected');
 select throws_ok($$select public.save_my_learning_diagnostic(gen_random_uuid(),'invalid','practice',array['Segurança digital'],'{"Segurança digital":2}')$$,'22023','INVALID_DIAGNOSTIC','invalid experience is rejected');
 select throws_ok($$select public.save_my_learning_diagnostic(gen_random_uuid(),'beginner','practice',array['Segurança digital'],'{"Outra categoria":2}')$$,'22023','INVALID_DIAGNOSTIC','confidence must match the selected goals');
@@ -50,10 +53,12 @@ select is((select count(*) from public.daily_mission_choices where participant_i
 select set_config('request.jwt.claims','{"sub":"f1000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 select is((select count(*) from public.mission_review_schedules),0::bigint,'outsider cannot read review schedules');
 select is((select count(*) from public.daily_mission_choices),0::bigint,'outsider cannot read daily choices');
+select is((select count(*) from public.learning_diagnostic_history),0::bigint,'outsider cannot read diagnostic history');
 
 select set_config('request.jwt.claims','{"sub":"f1000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is((select count(*) from public.learning_diagnostics),1::bigint,'global admin can read diagnostic aggregate source');
 select is((select count(*) from public.mission_review_schedules),1::bigint,'global admin can read review schedule for support');
+select is((select count(*) from public.learning_diagnostic_history),2::bigint,'global admin can read diagnostic history');
 
 select * from finish();
 rollback;

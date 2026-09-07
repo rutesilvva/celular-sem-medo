@@ -119,6 +119,8 @@ export default function ParticipantProfileScreen() {
             onPress={() => showNotice('Seus treinos são simulações seguras')}
           />
           <View style={styles.divider} />
+          <MenuRow icon="compass-outline" label="Atualizar meu diagnóstico" onPress={() => router.push('/participant/diagnostic')} />
+          <View style={styles.divider} />
           <MenuRow icon="cloud-offline-outline" label="Atividades salvas no aparelho" onPress={() => router.push('/participant/offline-activities')} />
         </Card>
         <Card>
@@ -138,7 +140,7 @@ export default function ParticipantProfileScreen() {
 }
 
 function MenuRow({ icon, label, onPress }: {
-  icon: 'help-circle-outline' | 'chatbubble-ellipses-outline' | 'shield-checkmark-outline' | 'cloud-offline-outline';
+  icon: 'help-circle-outline' | 'chatbubble-ellipses-outline' | 'shield-checkmark-outline' | 'compass-outline' | 'cloud-offline-outline';
   label: string;
   onPress: () => void;
 }) {

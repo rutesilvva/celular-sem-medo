@@ -17,7 +17,9 @@ As respostas estruturadas têm efeitos explicáveis:
 
 A interface salva primeiro no aparelho e sincroniza quando houver conexão. Apenas o próprio aluno e administradores globais podem ler o registro; escrita direta nas tabelas é bloqueada por RLS e a validação ocorre na RPC versionada.
 
-Antes de salvar, a interface apresenta um resumo em linguagem simples com preferências, habilidades atuais, objetivos e ajustes sugeridos. O aluno pode tocar nas respostas anteriores, corrigi-las e conferir novamente o resumo.
+O preenchimento é dividido em sete etapas, com indicador de progresso e foco anunciado ao leitor de tela. Respostas únicas usam controles de rádio; respostas múltiplas usam caixas de seleção, com áreas de toque ampliadas. Cada alteração fica em um rascunho local separado por usuário, permitindo fechar o aplicativo e continuar depois.
+
+Antes de salvar, a interface apresenta um resumo em linguagem simples com preferências, habilidades atuais, objetivos e ajustes sugeridos. O aluno pode voltar, corrigir as respostas e conferir novamente o resumo. A opção **Atualizar meu diagnóstico**, no perfil, abre o mesmo fluxo preenchido com os dados atuais. Cada confirmação acrescenta uma revisão ao histórico protegido no banco, sem apagar as versões anteriores.
 
 ## Revisão espaçada
 
@@ -40,4 +42,4 @@ O diagnóstico contém apenas opções estruturadas; não há campo livre nem en
 
 ## Cobertura
 
-`supabase/tests/learning_path.sql` valida autorização, RLS, respostas adicionais, entradas inválidas, personalização, agendamento e idempotência. `src/lib/learning-path-cache.test.ts` cobre gravação offline, sincronização posterior e leitura do plano em cache.
+`supabase/tests/learning_path.sql` valida autorização, RLS, histórico, respostas adicionais, entradas inválidas, personalização, agendamento e idempotência. `src/lib/learning-path-cache.test.ts` cobre gravação offline, sincronização posterior e leitura do plano em cache. `src/lib/diagnostic-draft.test.ts` e `__tests__/diagnostic-screen.test.tsx` cobrem restauração do formulário, isolamento por usuário, progresso, foco anunciado, seleção única e múltipla, áreas semânticas e texto ampliado.

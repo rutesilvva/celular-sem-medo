@@ -730,6 +730,48 @@ export type Database = {
           },
         ]
       }
+      learning_diagnostic_history: {
+        Row: {
+          changed_at: string
+          diagnostic_id: string
+          id: string
+          participant_id: string
+          revision: number
+          snapshot: Json
+        }
+        Insert: {
+          changed_at?: string
+          diagnostic_id: string
+          id?: string
+          participant_id: string
+          revision: number
+          snapshot: Json
+        }
+        Update: {
+          changed_at?: string
+          diagnostic_id?: string
+          id?: string
+          participant_id?: string
+          revision?: number
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_diagnostic_history_diagnostic_id_fkey"
+            columns: ["diagnostic_id"]
+            isOneToOne: false
+            referencedRelation: "learning_diagnostics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_diagnostic_history_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learning_diagnostics: {
         Row: {
           barriers: string[]
