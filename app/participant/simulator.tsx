@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
+import { SimulationIdentityNotice } from '@/components/SimulationIdentityNotice';
 import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import type { MissionAction } from '@/features/mission-engine/executor';
@@ -80,6 +81,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
     return (
       <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
         <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+        <SimulationIdentityNotice reference="serviços de mensagens" />
         <SyncStatusCard engine={engine} />
 
         <Card style={styles.whatsappFrame}>
@@ -87,7 +89,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
             <View style={styles.headerLeft}>
               <Ionicons name="chevron-back" size={22} color={colors.surface} />
               <View style={styles.avatarMini} />
-              <AppText weight="800" color={colors.surface}>Kate Tanner</AppText>
+              <AppText weight="800" color={colors.surface}>Contato de treino</AppText>
             </View>
             <View style={styles.headerRight}>
               <Ionicons name="call-outline" size={18} color={colors.surface} />
@@ -176,6 +178,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+      <SimulationIdentityNotice />
       <SyncStatusCard engine={engine} />
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
@@ -243,7 +246,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4"><AppText variant="heading" weight="900" color="#1351B4">gov</AppText><AppText variant="heading" weight="900" color="#E6AC00">.</AppText><AppText variant="heading" weight="900" color="#009B3A">br</AppText></AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
               <View style={styles.govNavIcons}>
                 <Ionicons name="contrast-outline" size={18} color="#1351B4" />
                 <Ionicons name="hand-left-outline" size={18} color="#1351B4" />
@@ -296,7 +299,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
             </View>
 
             <View style={styles.govCardInternal}>
@@ -312,7 +315,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 <Ionicons name="checkmark-circle" size={24} color={colors.success} />
                 <View style={styles.flex1}>
                   <AppText weight="700">Sou humano</AppText>
-                  <AppText variant="caption" color={colors.textMuted}>hCaptcha - Privacidade e Termos</AppText>
+                  <AppText variant="caption" color={colors.textMuted}>Verificação fictícia · nenhum dado enviado</AppText>
                 </View>
               </View>
 
@@ -329,7 +332,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
             </View>
 
             <View style={styles.govCardInternal}>
@@ -337,10 +340,10 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="caption" color={colors.textMuted}>Não teremos acesso a seus dados bancários, apenas a seu nome e CPF. Escolha o banco que você já usa pela internet:</AppText>
 
               <View style={styles.govBankGrid}>
-                <View style={styles.govBankTile}><Ionicons name="briefcase-outline" size={20} color="#1351B4" /><AppText variant="small" weight="700">Banco do Brasil</AppText></View>
-                <View style={styles.govBankTile}><Ionicons name="card-outline" size={20} color="#EC7000" /><AppText variant="small" weight="700">Itaú</AppText></View>
-                <View style={styles.govBankTile}><Ionicons name="shield-outline" size={20} color="#CC092F" /><AppText variant="small" weight="700">Bradesco</AppText></View>
-                <View style={styles.govBankTile}><Ionicons name="wallet-outline" size={20} color="#005CA9" /><AppText variant="small" weight="700">Caixa Econômica</AppText></View>
+                <View style={styles.govBankTile}><Ionicons name="briefcase-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino A</AppText></View>
+                <View style={styles.govBankTile}><Ionicons name="card-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino B</AppText></View>
+                <View style={styles.govBankTile}><Ionicons name="shield-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino C</AppText></View>
+                <View style={styles.govBankTile}><Ionicons name="wallet-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino D</AppText></View>
               </View>
 
               <Pressable style={styles.govOutlineBtn} disabled={engine.busy} onPress={handleNextStep}>
@@ -356,7 +359,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
             </View>
 
             <View style={styles.govCardInternal}>
@@ -401,7 +404,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
             </View>
 
             <View style={styles.govCardInternal}>
@@ -429,7 +432,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
               <View style={styles.govNavIcons}>
                 <Ionicons name="contrast-outline" size={18} color="#1351B4" />
                 <Ionicons name="hand-left-outline" size={18} color="#1351B4" />
@@ -498,7 +501,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
             </View>
 
             <View style={styles.govCardInternal}>
@@ -531,7 +534,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
             </View>
 
             <View style={styles.govCardInternal}>
@@ -576,7 +579,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
-              <AppText variant="heading" weight="900" color="#1351B4">gov.br</AppText>
+              <AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText>
               <View style={styles.govAccessibilityBadge}>
                 <Ionicons name="accessibility" size={22} color="#ffffff" />
               </View>
@@ -623,6 +626,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+      <SimulationIdentityNotice reference="Gov.br" />
       <SyncStatusCard engine={engine} />
       <Card style={styles.govFrame}>{renderGovScreen()}</Card>
       <Card style={styles.instructionCard}>
@@ -780,6 +784,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   return (
     <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+      <SimulationIdentityNotice reference="serviços Pix e aplicativos bancários" />
       <SyncStatusCard engine={engine} />
       <Card style={styles.pixMockCard}>{renderPixScreen()}</Card>
       <Card style={styles.instructionCard}>
@@ -892,16 +897,16 @@ const styles = StyleSheet.create({
   hints: { backgroundColor: colors.primarySoft, gap: spacing.sm },
   supportActions: { gap: spacing.md },
   syncCard: { alignItems: 'center', backgroundColor: colors.warningSoft, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  whatsappFrame: { backgroundColor: '#0d1e2d', borderColor: '#1c2f3e', borderRadius: 28, overflow: 'hidden', padding: 0 },
-  whatsappHeader: { alignItems: 'center', backgroundColor: '#0e2a3c', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  whatsappFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: 28, borderWidth: 2, overflow: 'hidden', padding: 0 },
+  whatsappHeader: { alignItems: 'center', backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerLeft: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
   headerRight: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   avatarMini: { backgroundColor: '#c4d6d5', borderRadius: 999, height: 24, width: 24 },
-  chatBody: { backgroundColor: '#0f2434', gap: spacing.sm, padding: spacing.md },
+  chatBody: { backgroundColor: '#F8F3FF', gap: spacing.sm, padding: spacing.md },
   chatBubbleRow: { flexDirection: 'row' },
   chatBubbleRowRight: { flexDirection: 'row', justifyContent: 'flex-end' },
-  chatBubble: { backgroundColor: '#1d2f3f', borderRadius: 16, maxWidth: '78%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  chatBubbleGreen: { backgroundColor: '#1b7a5a', borderRadius: 16, maxWidth: '78%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  chatBubble: { backgroundColor: colors.surface, borderRadius: 16, maxWidth: '78%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  chatBubbleGreen: { backgroundColor: colors.primarySoft, borderRadius: 16, maxWidth: '78%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   photoCard: { alignItems: 'center', backgroundColor: '#24394d', borderRadius: 18, height: 180, justifyContent: 'center', overflow: 'hidden' },
   photoScene: { backgroundColor: '#2b9ac0', borderRadius: 18, height: '100%', width: '100%' },
   attachmentScene: { alignItems: 'center', gap: spacing.md, justifyContent: 'center', minHeight: 220, paddingBottom: spacing.sm, paddingTop: spacing.md },
@@ -909,14 +914,14 @@ const styles = StyleSheet.create({
   actionSheet: { alignSelf: 'stretch', backgroundColor: '#f0f3f8', borderRadius: 22, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   optionRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.sm },
   optionRowSelected: { alignItems: 'center', backgroundColor: '#e6eefb', borderRadius: 14, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
-  chatInputRow: { alignItems: 'center', backgroundColor: '#132c3e', flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  chatInputRow: { alignItems: 'center', backgroundColor: colors.primary, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   inputBox: { backgroundColor: '#1d3747', borderRadius: 14, flex: 1, height: 36 },
   pixMockCard: { backgroundColor: '#e9e9e9', borderColor: '#d8d8d8', borderRadius: 28, overflow: 'hidden', padding: 0 },
   phoneShell: { backgroundColor: '#f5f5f5', minHeight: 660, paddingHorizontal: 18, paddingTop: 18, width: '100%' },
   statusBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18, paddingHorizontal: 6 },
   signalGroup: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   signal: { backgroundColor: '#1f1f1f', borderRadius: 8, height: 8, width: 8 },
-  pixHeaderPurple: { backgroundColor: '#6d1bbf', borderRadius: 18, marginBottom: 16, padding: 18 },
+  pixHeaderPurple: { backgroundColor: colors.primary, borderRadius: 18, marginBottom: 16, padding: 18 },
   headerRow: { alignItems: 'center', flexDirection: 'row', gap: 12 },
   avatarSmall: { backgroundColor: '#d8d5d8', borderRadius: 999, height: 32, width: 32 },
   headerProfile: { flex: 1 },
@@ -952,16 +957,16 @@ const styles = StyleSheet.create({
   successTable: { backgroundColor: '#ffffff', borderRadius: 16, gap: 12, marginBottom: 18, padding: 18 },
   successRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   bottomAction: { marginTop: 24 },
-  govFrame: { backgroundColor: '#ffffff', borderColor: '#1351B4', borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
+  govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
   govScreenContainer: { backgroundColor: '#F8FAFC', paddingBottom: spacing.lg },
-  govTopNav: { alignItems: 'center', backgroundColor: '#ffffff', borderBottomColor: '#E2E8F0', borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  govTopNav: { alignItems: 'center', backgroundColor: colors.primarySoft, borderBottomColor: colors.primaryMuted, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   govNavIcons: { flexDirection: 'row', gap: spacing.md },
   govCardInternal: { gap: spacing.md, padding: spacing.lg },
   govSectionRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
   govFieldBlock: { gap: spacing.xs, marginTop: spacing.xs },
   govInputMock: { backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, height: 48, justifyContent: 'center', paddingHorizontal: spacing.md },
-  govPrimaryBtn: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, height: 50, justifyContent: 'center', marginTop: spacing.sm },
-  govOutlineBtn: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#1351B4', borderRadius: radius.round, borderWidth: 1.5, height: 48, justifyContent: 'center', marginTop: spacing.sm },
+  govPrimaryBtn: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 50, justifyContent: 'center', marginTop: spacing.sm },
+  govOutlineBtn: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.round, borderWidth: 1.5, height: 48, justifyContent: 'center', marginTop: spacing.sm },
   govDividerLine: { backgroundColor: '#E2E8F0', height: 1, marginVertical: spacing.xs },
   govOptionList: { gap: spacing.sm },
   govOptionRow: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
@@ -971,11 +976,11 @@ const styles = StyleSheet.create({
   govBankTile: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, width: '48%' },
   govPillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   govPillItem: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.round, borderWidth: 1.5, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
-  govPillItemActive: { backgroundColor: '#E8F0FE', borderColor: '#1351B4' },
+  govPillItemActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
   govMaskedBox: { alignItems: 'center', backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, gap: spacing.xs, padding: spacing.lg },
   govStepperRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'center', marginVertical: spacing.sm },
   govStepCircle: { backgroundColor: '#CBD5E1', borderRadius: radius.round, height: 12, width: 12 },
-  govStepCircleActive: { backgroundColor: '#1351B4', height: 16, width: 16 },
+  govStepCircleActive: { backgroundColor: colors.primary, height: 16, width: 16 },
   govStepLine: { backgroundColor: '#CBD5E1', height: 2, width: 24 },
   govRadioRow: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   govInputMockGreen: { backgroundColor: '#ECFDF3', borderColor: colors.success, borderRadius: radius.md, borderWidth: 1, minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.md },
@@ -984,7 +989,7 @@ const styles = StyleSheet.create({
   govInputMockRow: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: spacing.md },
   govChecklistBlock: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, gap: spacing.xs, padding: spacing.md },
   govCheckItem: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
-  govAccessibilityBadge: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.md, height: 42, justifyContent: 'center', width: 42 },
+  govAccessibilityBadge: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.md, height: 42, justifyContent: 'center', width: 42 },
   govSuccessContent: { alignItems: 'stretch', paddingVertical: spacing.xl },
   govConfettiRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'center' },
   govConfettiDot: { borderRadius: 3, height: 9, width: 5 },

@@ -2,7 +2,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const allowedOrigins = new Set(['http://127.0.0.1:8081', 'http://localhost:8081']);
-const unsafeRequest = /\b(cpf|senha|password|token|cart[aã]o|cvv|pix|transfer|dep[oó]sito|aposta|cr[eé]dito)\b/i;
+const unsafeRequest = /\b(cpf|senha|password|token|cart[aã]o|cvv|pix|transfer|dep[oó]sito|aposta|cr[eé]dito)\b|\b(copie|copiar|clone|clonar|id[eê]ntic[oa])\b.{0,40}\b(interface|tela|logo|aplicativo)\b/i;
 const unsafeOutput = /\b(digite|informe|envie|compartilhe)\b.{0,40}\b(cpf|senha|password|token|cart[aã]o|cvv|c[oó]digo real)\b/i;
 
 Deno.serve(async (request) => {
@@ -36,6 +36,7 @@ Deno.serve(async (request) => {
   if (!apiKey) return json({ error: 'provider_unavailable' }, 503, headers);
   const prompt = `Crie uma simulação de letramento digital em português para pessoa idosa sobre: ${JSON.stringify(query)}.
 Nunca solicite dados reais, CPF, senha, token, pagamento, foto, localização ou permissão do aparelho. Toda interação deve ser fictícia e reversível.
+Não copie logotipos, textos, cores distintivas nem o visual de aplicativos reais. Descreva componentes genéricos com identidade educativa própria e deixe explícito que é um treino independente sem afiliação.
 Responda apenas JSON: {"title":string,"summary":string,"difficulty":"easy"|"medium"|"hard","estimatedMinutes":number,"steps":[{"type":"instruction"|"multiple_choice"|"confirmation","title":string,"instruction":string,"audioText":string,"safetyNote":string,"expectedAction":{"action":"continue"|"choose","option_id"?:string},"options":[{"id":string,"label":string}],"hints":[string]}]}. Use de 2 a 6 passos.`;
 
   try {

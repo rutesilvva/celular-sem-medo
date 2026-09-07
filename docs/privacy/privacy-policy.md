@@ -212,6 +212,10 @@ quando isso for necessário. A versão e a data desta política permanecerão
 visíveis. Dúvidas e pedidos devem ser enviados ao canal de privacidade indicado
 na seção “Quem cuida dos dados”.
 
+## Marcas e ambientes simulados
+
+As marcas mencionadas pertencem aos respectivos titulares. As atividades são ambientes educativos independentes, com identidade visual própria, e não representam telas oficiais. O Celular Sem Medo não possui afiliação, patrocínio ou endosso desses serviços, salvo quando uma parceria for informada expressamente e estiver documentada.
+
 ## Referências oficiais
 
 - [LGPD — Lei nº 13.709/2018](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm)
