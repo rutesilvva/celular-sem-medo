@@ -17,3 +17,6 @@ tags:
 - tapOn: "Visão geral"
 - tapOn: "Painel de impacto"
 - assertVisible: "Impacto social"
+- tapOn: "Perfil"
+- tapOn: "Administrar certificados"
+- assertVisible: "Emissões e validações"

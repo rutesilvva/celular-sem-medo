@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import QRCode from 'qrcode';
 
 export { createUsageEventSummary, sanitizeEventPayload } from './observability';
 
@@ -21,6 +22,27 @@ export function buildReportCsv(rows: ReportExportRow[]): string {
 }
 
 export function buildSimplePdfDocument(title: string, rows: ReportExportRow[]): string {
+  return buildPdfDocument(title, rows);
+}
+
+export function buildCertificatePdfDocument(title: string, rows: ReportExportRow[], verificationUrl: string): string {
+  const qr = QRCode.create(verificationUrl, { errorCorrectionLevel: 'M' });
+  const moduleSize = Math.min(4, 132 / qr.modules.size);
+  const qrSize = qr.modules.size * moduleSize;
+  const startX = (612 - qrSize) / 2;
+  const startY = 92;
+  const squares: string[] = ['0 0 0 rg'];
+  for (let row = 0; row < qr.modules.size; row += 1) {
+    for (let column = 0; column < qr.modules.size; column += 1) {
+      if (qr.modules.get(row, column)) {
+        squares.push(`${(startX + column * moduleSize).toFixed(2)} ${(startY + (qr.modules.size - row - 1) * moduleSize).toFixed(2)} ${moduleSize.toFixed(2)} ${moduleSize.toFixed(2)} re f`);
+      }
+    }
+  }
+  return buildPdfDocument(title, rows, squares.join('\n'));
+}
+
+function buildPdfDocument(title: string, rows: ReportExportRow[], firstPageGraphics = ''): string {
   const lines = rows.map((row, index) => `${index + 1}. ${sanitizeExportValue(row.label)}: ${sanitizeExportValue(row.value)}`);
   const pageLines = chunk([sanitizeExportValue(title), ...lines], 36);
   const fontId = 3 + pageLines.length * 2;
@@ -31,7 +53,8 @@ export function buildSimplePdfDocument(title: string, rows: ReportExportRow[]): 
   pageLines.forEach((page, pageIndex) => {
     const pageId = pageIds[pageIndex]!;
     const contentId = pageId + 1;
-    const content = page.map((line, lineIndex) => `BT\n/F1 ${lineIndex === 0 && pageIndex === 0 ? 16 : 11} Tf\n54 ${752 - lineIndex * 19} Td\n(${escapePdfText(toPdfText(line))}) Tj\nET`).join('\n');
+    const textContent = page.map((line, lineIndex) => `BT\n/F1 ${lineIndex === 0 && pageIndex === 0 ? 16 : 11} Tf\n54 ${752 - lineIndex * 19} Td\n(${escapePdfText(toPdfText(line))}) Tj\nET`).join('\n');
+    const content = `${textContent}${pageIndex === 0 && firstPageGraphics ? `\n${firstPageGraphics}` : ''}`;
     objects.set(pageId, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${contentId} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`);
     objects.set(contentId, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
   });
@@ -69,12 +92,22 @@ export async function exportReportFiles(rows: ReportExportRow[], title: string, 
   return { csvPath, pdfPath };
 }
 
+export async function exportCertificatePdf(rows: ReportExportRow[], title: string, verificationUrl: string) {
+  await purgeExpiredReportFiles();
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const storageDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+  if (!storageDir) throw new Error('REPORT_STORAGE_UNAVAILABLE');
+  const pdfPath = `${storageDir}certificado-${stamp}.pdf`;
+  await FileSystem.writeAsStringAsync(pdfPath, buildCertificatePdfDocument(title, rows, verificationUrl), { encoding: FileSystem.EncodingType.UTF8 });
+  return pdfPath;
+}
+
 export async function purgeExpiredReportFiles(maximumAgeMs = 24 * 60 * 60 * 1000) {
   const directory = FileSystem.cacheDirectory;
   if (!directory) return;
   const entries = await FileSystem.readDirectoryAsync(directory);
   const now = Date.now();
-  await Promise.all(entries.filter((name) => /^(relatorio|report)-.*\.(csv|pdf)$/i.test(name)).map(async (name) => {
+  await Promise.all(entries.filter((name) => /^(relatorio|report|certificado)-.*\.(csv|pdf)$/i.test(name)).map(async (name) => {
     const path = `${directory}${name}`;
     const info = await FileSystem.getInfoAsync(path);
     if (info.exists && typeof info.modificationTime === 'number' && now - info.modificationTime * 1000 > maximumAgeMs) {

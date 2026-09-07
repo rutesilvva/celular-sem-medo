@@ -25,3 +25,5 @@ tags:
 - tapOn: "Registrar minha evolução"
 - tapOn: "Continuar"
 - assertVisible: "Meu progresso"
+- tapOn: "Ver meu certificado"
+- assertVisible: "Meu certificado"

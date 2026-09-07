@@ -29,6 +29,7 @@ export type AdminPrePostImpact = Database['public']['Functions']['get_admin_pre_
 export type CertificateStatus = Database['public']['Functions']['get_my_certificate_status']['Returns'][number];
 export type VerifiedCertificate = Database['public']['Functions']['verify_participation_certificate']['Returns'][number];
 export type MissionFeedbackSummary = Database['public']['Functions']['get_admin_mission_feedback_summary']['Returns'][number];
+export type AdminCertificate = Database['public']['Functions']['get_admin_certificates']['Returns'][number];
 export type AiMissionDraft = Database['public']['Functions']['get_admin_ai_mission_drafts']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
 export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
@@ -242,6 +243,18 @@ export async function updateCertificateSettings(organization: string, signer: st
 
 export async function getCertificateSettings() {
   const { data, error } = await getSupabase().from('certificate_settings').select('organization_name,signer_name,signer_title').eq('id', true).single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getAdminCertificates(search = '', classId?: string, status: 'all' | 'valid' | 'revoked' = 'all'): Promise<AdminCertificate[]> {
+  const { data, error } = await getSupabase().rpc('get_admin_certificates', { search_term: search || undefined, target_class_id: classId, selected_status: status });
+  if (error) throw error;
+  return data;
+}
+
+export async function revokeCertificate(certificateId: string, reason: string) {
+  const { data, error } = await getSupabase().rpc('admin_revoke_certificate', { target_certificate_id: certificateId, revocation_reason: reason });
   if (error) throw error;
   return data;
 }

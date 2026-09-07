@@ -12,7 +12,11 @@ O certificado guarda um retrato dos dados válidos no momento da emissão: nome 
 
 Cada certificado possui um código UUID imprevisível e um QR Code que abre a rota pública de validação do aplicativo. A validação consulta o servidor e informa se o registro existe e se não foi revogado. Isso comprova a emissão pelo sistema, mas não constitui assinatura digital ICP-Brasil.
 
-O PDF é gerado temporariamente no dispositivo e pode ser compartilhado pelo aluno. O código de validação também aparece em texto, garantindo verificação caso a leitura do QR não esteja disponível.
+O PDF é gerado temporariamente no dispositivo e pode ser compartilhado pelo aluno. Ele contém o QR Code desenhado no próprio documento e o código de validação em texto, garantindo verificação caso a câmera não esteja disponível.
+
+## Administração e revogação
+
+Na área de perfil, o administrador abre a gestão de certificados para pesquisar por aluno e filtrar registros válidos ou revogados. A revogação exige uma justificativa de 5 a 200 caracteres e uma confirmação destrutiva explícita. O histórico guarda o administrador responsável, o motivo e o horário. Depois da revogação, a consulta pública do QR informa que o certificado não é válido.
 
 ## Avaliação da qualidade da missão
 
@@ -33,5 +37,5 @@ O painel de impacto apresenta médias e contagens agregadas. A consulta administ
 - Administradores globais acessam a configuração institucional e métricas agregadas.
 - O código completo é necessário para validar um certificado publicamente.
 - Certificados revogados deixam de ser considerados válidos.
+- A revogação é idempotente e sua justificativa fica auditável.
 - As regras são aplicadas no banco por funções server-side e RLS.
-

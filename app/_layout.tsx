@@ -136,6 +136,7 @@ function AppNavigator() {
         <Stack.Screen name="admin/users" />
         <Stack.Screen name="admin/classes" />
         <Stack.Screen name="admin/profile" />
+        <Stack.Screen name="admin/certificates" />
         <Stack.Screen name="admin/participants" />
         <Stack.Screen name="admin/participant-details" />
         <Stack.Screen name="admin/missions" />

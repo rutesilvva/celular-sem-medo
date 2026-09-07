@@ -38,6 +38,7 @@ export default function AdminProfileScreen() {
         {settingsError?<AppText color={colors.danger} accessibilityRole="alert">{settingsError}</AppText>:null}
         <Button label={saving?'Salvando...':saved?'Assinatura salva':'Salvar assinatura institucional'} disabled={saving||saved||organization.trim().length<2||signer.trim().length<2||signerTitle.trim().length<2} onPress={()=>{setSaving(true);setSettingsError(null);void updateCertificateSettings(organization,signer,signerTitle).then(()=>setSaved(true)).catch(()=>setSettingsError('Não foi possível salvar. Tente novamente.')).finally(()=>setSaving(false));}}/>
       </Card>
+      <Button label="Administrar certificados" icon="ribbon-outline" variant="secondary" onPress={()=>router.push('/admin/certificates')}/>
       <Button label="Sair da conta" icon="log-out-outline" variant="secondary" onPress={() => {
         void signOut().finally(() => {
           router.dismissAll();

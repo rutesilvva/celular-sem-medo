@@ -365,6 +365,45 @@ export type Database = {
           },
         ]
       }
+      certificate_revocation_history: {
+        Row: {
+          certificate_id: string
+          id: string
+          occurred_at: string
+          reason: string
+          revoked_by: string | null
+        }
+        Insert: {
+          certificate_id: string
+          id?: string
+          occurred_at?: string
+          reason: string
+          revoked_by?: string | null
+        }
+        Update: {
+          certificate_id?: string
+          id?: string
+          occurred_at?: string
+          reason?: string
+          revoked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_revocation_history_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "participation_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_revocation_history_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificate_settings: {
         Row: {
           id: boolean
@@ -1629,6 +1668,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      admin_revoke_certificate: {
+        Args: { revocation_reason: string; target_certificate_id: string }
+        Returns: boolean
+      }
       admin_revoke_membership: {
         Args: {
           target_class_id: string
@@ -1757,6 +1800,26 @@ export type Database = {
           score: number
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
+        }[]
+      }
+      get_admin_certificates: {
+        Args: {
+          search_term?: string
+          selected_status?: string
+          target_class_id?: string
+        }
+        Returns: {
+          certificate_id: string
+          class_id: string
+          class_name: string
+          competencies: string[]
+          completed_missions: number
+          estimated_hours: number
+          issued_at: string
+          participant_name: string
+          revocation_reason: string
+          revoked_at: string
+          verification_code: string
         }[]
       }
       get_admin_class_contexts: {

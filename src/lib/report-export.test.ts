@@ -1,4 +1,4 @@
-import { buildReportCsv, buildSimplePdfDocument, createUsageEventSummary, type ReportExportRow } from './report-export';
+import { buildCertificatePdfDocument, buildReportCsv, buildSimplePdfDocument, createUsageEventSummary, type ReportExportRow } from './report-export';
 import { captureUsageEvent, sanitizeEventPayload } from './observability';
 
 describe('report export helpers', () => {
@@ -37,5 +37,12 @@ describe('report export helpers', () => {
   it('paginates large reports', () => {
     const pdf = buildSimplePdfDocument('Resumo', Array.from({ length: 80 }, (_, index) => ({ label: `Linha ${index}`, value: index })));
     expect(pdf).toContain('/Count 3');
+  });
+
+  it('draws a scannable QR matrix inside a certificate PDF', () => {
+    const pdf = buildCertificatePdfDocument('Certificado', [{ label: 'Código', value: 'safe-code' }], 'celularsemmedo://certificate?code=safe-code');
+    expect(pdf).toMatch(/re f/);
+    expect((pdf.match(/ re f/g) ?? []).length).toBeGreaterThan(100);
+    expect(pdf).toContain('Codigo: safe-code');
   });
 });
