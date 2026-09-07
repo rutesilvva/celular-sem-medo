@@ -11,6 +11,7 @@ import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, Se
 import { useApp } from '@/context/AppContext';
 import { useAdminClass } from '@/hooks/useClassData';
 import { useAdminProgress } from '@/hooks/useProgressData';
+import { useAdminPrePostImpact } from '@/hooks/useAdminManagement';
 import { deleteReportFiles, exportReportFiles, type ReportExportRow } from '@/lib/report-export';
 import { captureUsageEvent } from '@/lib/observability';
 import { colors, radius, spacing } from '@/theme/tokens';
@@ -23,9 +24,10 @@ export default function ReportsScreen() {
   const { showNotice } = useApp();
   const classQuery = useAdminClass();
   const progress = useAdminProgress(classQuery.data?.class_id ?? null, period);
+  const prePost = useAdminPrePostImpact(classQuery.data?.class_id);
   const data = progress.summary.data;
-  const loading = classQuery.loading || progress.summary.loading || progress.missions.loading || progress.evolution.loading;
-  const failed = classQuery.error || progress.summary.error || progress.missions.error || progress.evolution.error;
+  const loading = classQuery.loading || progress.summary.loading || progress.missions.loading || progress.evolution.loading || prePost.loading;
+  const failed = classQuery.error || progress.summary.error || progress.missions.error || progress.evolution.error || prePost.error;
   const hasActivity = (data?.active_participants ?? 0) > 0;
   const updatedAt = progress.summary.updatedAt;
   const handleExport = useCallback(async () => {
@@ -38,6 +40,12 @@ export default function ReportsScreen() {
       { label: 'Autonomia', value: `${data.autonomy_percent ?? 0}%` },
       { label: 'Uso de áudio', value: `${data.audio_usage_percent ?? 0}%` },
       { label: 'Período', value: `${period} dias` },
+      { label: 'Confiança antes', value: Number(prePost.data?.confidence_before ?? 0).toFixed(2) },
+      { label: 'Confiança depois', value: Number(prePost.data?.confidence_after ?? 0).toFixed(2) },
+      { label: 'Autonomia inicial', value: `${Number(prePost.data?.autonomy_first ?? 0).toFixed(1)}%` },
+      { label: 'Autonomia atual', value: `${Number(prePost.data?.autonomy_latest ?? 0).toFixed(1)}%` },
+      { label: 'Reconhecimento de golpes', value: `${Number(prePost.data?.scam_recognition_percent ?? 0).toFixed(1)}%` },
+      { label: 'Retenção verificada', value: `${Number(prePost.data?.retention_percent ?? 0).toFixed(1)}%` },
     ];
 
     try {
@@ -58,7 +66,7 @@ export default function ReportsScreen() {
       console.error(error);
       Alert.alert('Não foi possível exportar', 'Verifique a permissão para salvar arquivos no aparelho e tente novamente.');
     }
-  }, [classQuery.data, data, period, showNotice]);
+  }, [classQuery.data, data, period, prePost.data, showNotice]);
 
   return (
     <Screen footer={<AdminNav active="reports" />}>
@@ -178,7 +186,7 @@ export default function ReportsScreen() {
           </View>
           <View style={styles.flexCopy}>
             <AppText weight="800">Relatório da turma</AppText>
-            <AppText variant="small" color={colors.textMuted}>Resumo dos últimos {period} dias, pronto para compartilhar.</AppText>
+            <AppText variant="small" color={colors.textMuted}>Somente indicadores agregados, sem nomes ou e-mails, prontos para compartilhar.</AppText>
           </View>
         </View>
         <Button

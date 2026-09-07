@@ -6,11 +6,15 @@ import {
   getAdminMissionProgress,
   getParticipantCategoryProgress,
   getParticipantProgress,
+  getMyEvolutionTimeline,
+  getMyRetentionChecks,
   type AdminClassProgress,
   type AdminClassEvolution,
   type AdminMissionProgress,
   type ParticipantCategoryProgress,
   type ParticipantProgress,
+  type EvolutionTimelineItem,
+  type RetentionCheck,
 } from '@/lib/backend';
 
 export function useParticipantProgress() {
@@ -19,6 +23,14 @@ export function useParticipantProgress() {
 
 export function useParticipantCategoryProgress() {
   return useProgressQuery<ParticipantCategoryProgress[]>(getParticipantCategoryProgress, []);
+}
+
+export function useEvolutionTimeline() {
+  return useProgressQuery<EvolutionTimelineItem[]>(getMyEvolutionTimeline, []);
+}
+
+export function useRetentionChecks() {
+  return useProgressQuery<RetentionCheck[]>(getMyRetentionChecks, []);
 }
 
 export function useAdminProgress(classId: string | null, periodDays: 7 | 30 | 90) {

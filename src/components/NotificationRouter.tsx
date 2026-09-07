@@ -12,7 +12,7 @@ export function NotificationRouter() {
     configurePrivateNotifications();
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const route = response.notification.request.content.data?.route;
-      if (typeof route === 'string' && (route.startsWith('/participant/help-requests') || route.startsWith('/admin/help-requests'))) router.push(route as never);
+      if (typeof route === 'string' && (route.startsWith('/participant/help-requests') || route.startsWith('/admin/help-requests') || route.startsWith('/participant/mission-details'))) router.push(route as never);
     });
     return () => subscription.remove();
   }, [router]);

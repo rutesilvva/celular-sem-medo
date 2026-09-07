@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getAdminAiMissionDrafts, getAdminClasses, getAdminImpactSummary, getAdminUsers, getWorkshopStatus, type AiMissionDraft, type AdminClass, type AdminImpactSummary, type AdminUser, type WorkshopParticipant } from '@/lib/backend';
+import { getAdminAiMissionDrafts, getAdminClasses, getAdminImpactSummary, getAdminPrePostImpact, getAdminUsers, getWorkshopStatus, type AiMissionDraft, type AdminClass, type AdminImpactSummary, type AdminPrePostImpact, type AdminUser, type WorkshopParticipant } from '@/lib/backend';
 
 function useAdminQuery<T>(loader: () => Promise<T>, empty: T) {
   const [data, setData] = useState(empty);
@@ -35,6 +35,10 @@ export function useAdminAiMissionDrafts() {
 
 export function useAdminImpact(classId?: string) {
   return useAdminQuery<AdminImpactSummary | null>(useCallback(() => getAdminImpactSummary(classId), [classId]), null);
+}
+
+export function useAdminPrePostImpact(classId?: string) {
+  return useAdminQuery<AdminPrePostImpact | null>(useCallback(() => getAdminPrePostImpact(classId), [classId]), null);
 }
 
 export function useWorkshopStatus(classId: string | null) {

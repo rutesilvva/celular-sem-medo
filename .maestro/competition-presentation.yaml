@@ -1,0 +1,17 @@
+appId: br.com.celularsemmedo.app
+name: Roteiro controlado para apresentação à banca
+tags:
+  - competition
+  - demo
+---
+- openLink: "celularsemmedo://demo"
+- assertVisible: "APRESENTAÇÃO PARA A BANCA"
+- assertVisible: "1. Diagnóstico acessível"
+- repeat:
+    times: 4
+    commands:
+      - tapOn: "Próximo"
+- assertVisible: "5. Impacto da oficina"
+- assertVisible: "78% autonomia"
+- tapOn: "Recomeçar roteiro"
+- assertVisible: "1. Diagnóstico acessível"

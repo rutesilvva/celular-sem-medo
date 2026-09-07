@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
@@ -23,6 +23,12 @@ export default function ParticipantMissionsScreen() {
   const [searching, setSearching] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void getMissionRecommendations('').then((items) => { if (active) setRecommendations(items); }).catch(() => { /* O catálogo continua disponível sem personalização. */ });
+    return () => { active = false; };
+  }, []);
 
   const search = async () => {
     setSearching(true);
@@ -137,7 +143,7 @@ export default function ParticipantMissionsScreen() {
               <MissionCard
                 key={mission.assignmentId}
                 mission={mission}
-                recommended={index === 0 && selectedCategory === 'Todas' && !recommendations}
+                recommended={index === 0 && selectedCategory === 'Todas'}
                 recommendationReason={recommendationReasons.get(mission.assignmentId) ?? (mission.required ? 'Esta atividade faz parte da trilha da sua turma.' : index === 0 && !recommendations ? 'Uma boa próxima habilidade para continuar sua trilha.' : undefined)}
                 onPress={() => router.push({
                   pathname: '/participant/mission-details',

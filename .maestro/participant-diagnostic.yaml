@@ -1,0 +1,17 @@
+appId: br.com.celularsemmedo.app
+name: Aluno atualiza diagnóstico acessível
+tags:
+  - regression
+  - participant
+---
+- launchApp:
+    clearState: false
+- tapOn: "Perfil"
+- tapOn: "Atualizar meu diagnóstico"
+- assertVisible: "Pergunta 1 de 7"
+- tapOn: "Estou começando"
+- tapOn: "Continuar"
+- assertVisible: "Pergunta 2 de 7"
+- tapOn: "Praticar"
+- tapOn: "Continuar"
+- assertVisible: "Pergunta 3 de 7"

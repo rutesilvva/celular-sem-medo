@@ -7,16 +7,19 @@ import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { AppText, AudioButton, Button, Card, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
+import { useApp } from '@/context/AppContext';
 import { useMissionCatalog } from '@/hooks/useMissionData';
 import { useLearningPath } from '@/hooks/useLearningPath';
 import { useParticipantCategoryProgress, useParticipantProgress } from '@/hooks/useProgressData';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
+import { scheduleReviewReminders } from '@/lib/review-notifications';
 
 const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 
 export default function ParticipantHomeScreen() {
   const router = useRouter();
   const { currentUser } = useAuth();
+  const { showNotice } = useApp();
   const missionQuery = useMissionCatalog();
   const progressQuery = useParticipantProgress();
   const categoryQuery = useParticipantCategoryProgress();
@@ -94,6 +97,7 @@ export default function ParticipantHomeScreen() {
       {nextReview ? <Card style={styles.reviewCard}>
         <View style={styles.pathHeader}><Ionicons name="calendar-outline" size={25} color={colors.blue} /><View style={styles.progressCopy}><AppText weight="800">Próxima revisão</AppText><AppText variant="small" color={colors.textMuted}>{nextReview.title}</AppText></View><Tag label={nextReview.is_due ? 'Hoje' : new Date(nextReview.next_review_at).toLocaleDateString('pt-BR')} tone={nextReview.is_due ? 'yellow' : 'blue'} /></View>
         <AppText variant="small" color={colors.textMuted}>{nextReview.review_reason}</AppText>
+        <View style={styles.reviewActions}><Button label="Ver revisões práticas" variant="secondary" onPress={() => router.push('/participant/retention')} /><Button label="Ativar lembretes" variant="soft" onPress={() => currentUser && void scheduleReviewReminders(currentUser.id, learningPath.reviews).then((status) => showNotice(status === 'scheduled' ? 'Lembretes de revisão ativados' : status === 'denied' ? 'Permissão de notificações não concedida' : 'Não há revisão futura para agendar')).catch(() => showNotice('Não foi possível ativar os lembretes'))} /></View>
       </Card> : null}
 
       <SectionTitle>Seu ritmo atual</SectionTitle>
@@ -425,6 +429,7 @@ const styles = StyleSheet.create({
   pathCard: { backgroundColor: '#FFFDFD', borderColor: colors.primaryMuted, gap: spacing.md },
   dailyCard: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, gap: spacing.md },
   reviewCard: { backgroundColor: colors.blueSoft, borderColor: colors.blue, gap: spacing.md },
+  reviewActions: { gap: spacing.sm },
   pathHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   dailyIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 50, justifyContent: 'center', width: 50 },
   missionCard: {

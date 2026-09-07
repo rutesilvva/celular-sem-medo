@@ -47,10 +47,18 @@ const missions: DemoMission[] = [
     accent: '#4A90E2',
   },
 ];
+const presentationSteps = [
+  { title: '1. Diagnóstico acessível', text: 'Ana prefere áudio, letras maiores e quer aprender Pix com segurança.', metric: '7 perguntas · 2 min' },
+  { title: '2. Recomendação explicável', text: 'O app recomenda Pix seguro porque é um objetivo de Ana e ela informou receio de golpes.', metric: 'Regra transparente' },
+  { title: '3. Simulação sem risco', text: 'Ana pratica conferência de destinatário e valor. Nenhuma transferência real acontece.', metric: 'Ambiente protegido' },
+  { title: '4. Evolução comprovada', text: 'A confiança passa de 2 para 4 e a missão é concluída sem pedido de ajuda.', metric: '+2 confiança' },
+  { title: '5. Impacto da oficina', text: 'A turma aumenta autonomia e reduz pedidos de ajuda, sempre com dados agregados.', metric: '78% autonomia' },
+] as const;
 
 export default function DemoScreen() {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>('pix');
+  const [presentationStep, setPresentationStep] = useState(0);
 
   const selected = useMemo<DemoMission>(() => {
     return missions.find((mission) => mission.id === selectedId) ?? {
@@ -63,6 +71,7 @@ export default function DemoScreen() {
       accent: '#4a2d7b',
     };
   }, [selectedId]);
+  const presentation = presentationSteps[presentationStep] ?? presentationSteps[0];
 
   if (!isDemoModeEnabled()) return <Redirect href="/login" />;
 
@@ -70,6 +79,17 @@ export default function DemoScreen() {
     <Screen contentStyle={styles.content}>
       <Header title="Missões de demonstração" subtitle="Modo controlado e sem dados reais" onBack={() => router.replace('/login')} />
       <Tag label="Modo seguro de teste" tone="green" />
+
+      <Card style={styles.presentationCard}>
+        <View style={styles.missionHeader}><Tag label={`Roteiro ${presentationStep + 1} de ${presentationSteps.length}`} tone="purple" /><AppText variant="caption" weight="800" color={colors.primary}>APRESENTAÇÃO PARA A BANCA</AppText></View>
+        <AppText variant="heading" weight="800">{presentation.title}</AppText>
+        <AppText>{presentation.text}</AppText>
+        <Tag label={presentation.metric} tone="green" />
+        <View style={styles.detailActions}>
+          <Button label="Anterior" variant="secondary" disabled={presentationStep === 0} onPress={() => setPresentationStep((value) => Math.max(0, value - 1))} />
+          <Button label={presentationStep === presentationSteps.length - 1 ? 'Recomeçar roteiro' : 'Próximo'} onPress={() => setPresentationStep((value) => value === presentationSteps.length - 1 ? 0 : value + 1)} />
+        </View>
+      </Card>
 
       <Card style={styles.headerCard}>
         <AppText variant="caption" weight="800" color={colors.primary}>MISSÃO ATIVA</AppText>
@@ -119,7 +139,7 @@ export default function DemoScreen() {
         <AppText variant="small" color={colors.textMuted}>{selected.summary}</AppText>
 
         <View style={styles.detailActions}>
-          <Button label="Iniciar missão" onPress={() => router.push('/participant/mission-details')} />
+          <Button label="Ver no roteiro da banca" onPress={() => setPresentationStep(2)} />
           <Button label="Voltar" variant="secondary" onPress={() => router.replace('/login')} />
         </View>
       </Card>
@@ -134,6 +154,7 @@ export default function DemoScreen() {
 const styles = StyleSheet.create({
   content: { gap: spacing.lg },
   headerCard: { gap: spacing.sm },
+  presentationCard: { backgroundColor: colors.primarySoft, borderColor: colors.primary, gap: spacing.md },
   list: { gap: spacing.md },
   missionCard: {
     alignItems: 'center',

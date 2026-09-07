@@ -33,7 +33,7 @@ select throws_ok($$select public.save_my_learning_diagnostic_v2(gen_random_uuid(
 select throws_ok($$select public.save_my_learning_diagnostic(gen_random_uuid(),'invalid','practice',array['Segurança digital'],'{"Segurança digital":2}')$$,'22023','INVALID_DIAGNOSTIC','invalid experience is rejected');
 select throws_ok($$select public.save_my_learning_diagnostic(gen_random_uuid(),'beginner','practice',array['Segurança digital'],'{"Outra categoria":2}')$$,'22023','INVALID_DIAGNOSTIC','confidence must match the selected goals');
 select throws_ok($$insert into public.learning_diagnostics(id,participant_id,experience_level,preferred_format,goals,category_confidence) values(gen_random_uuid(),'f1000000-0000-4000-8000-000000000002','beginner','read',array['x'],'{"x":2}')$$,'42501',null,'direct diagnostic writes are denied');
-select is((select recommendation_reason from public.get_personalized_mission_recommendations('') limit 1),'Você indicou pouca confiança nesta categoria','diagnostic explains the recommendation');
+select is((select recommendation_reason from public.get_personalized_mission_recommendations('') limit 1),'Recomendamos porque você indicou pouca confiança nesta categoria.','diagnostic explains the recommendation');
 
 reset role;
 insert into public.attempts(id,participant_id,class_id,mission_version_id,assignment_id,current_step_id,status,started_at,last_activity_at)

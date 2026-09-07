@@ -1,14 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Sharing from 'expo-sharing';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
-import { AppText, AudioButton, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
+import { AppText, AudioButton, Button, Card, Header, MetricCard, ProgressBar, SectionTitle, Tag } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useMissionCatalog } from '@/hooks/useMissionData';
-import { useParticipantProgress } from '@/hooks/useProgressData';
+import { useEvolutionTimeline, useParticipantProgress } from '@/hooks/useProgressData';
+import { deleteReportFiles, exportReportFiles } from '@/lib/report-export';
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantProgressScreen() {
@@ -16,6 +18,7 @@ export default function ParticipantProgressScreen() {
   const { currentUser } = useAuth();
   const progressQuery = useParticipantProgress();
   const missionQuery = useMissionCatalog();
+  const timelineQuery = useEvolutionTimeline();
 
   if (progressQuery.loading) return <ProgressState kind="loading" retry={progressQuery.retry} />;
   if (progressQuery.error || !progressQuery.data) return <ProgressState kind={progressQuery.error ? 'error' : 'empty'} retry={progressQuery.retry} />;
@@ -24,6 +27,19 @@ export default function ParticipantProgressScreen() {
   const completionLabel = progress.latest_completion_kind === 'with_help' ? 'com ajuda' : progress.latest_completion_kind === 'with_hint' ? 'com uma dica' : 'com autonomia';
   const badges = getProgressBadges(progress);
   const evidence = buildEvidenceCard(progress);
+  const exportEvolution = async () => {
+    const rows = timelineQuery.data.flatMap((item, index) => [
+      { label: `Missão ${index + 1}`, value: item.title }, { label: 'Data', value: new Date(item.occurred_at).toLocaleDateString('pt-BR') },
+      { label: 'Confiança antes/depois', value: item.confidence_after ? `${item.confidence_before} → ${item.confidence_after}` : 'Não respondida' },
+      { label: 'Autonomia', value: item.autonomous ? 'Concluída sem ajuda' : `Usou ${item.help_count} apoio(s)` },
+    ]);
+    try {
+      const files = await exportReportFiles(rows, 'Minha evolução no Celular Sem Medo', 'relatorio-evolucao');
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(files.pdfPath, { mimeType: 'application/pdf', dialogTitle: 'Compartilhar minha evolução' });
+      else Alert.alert('Relatório criado', 'O compartilhamento não está disponível neste aparelho.');
+      await deleteReportFiles([files.csvPath, files.pdfPath]);
+    } catch { Alert.alert('Não foi possível criar o relatório', 'Tente novamente em alguns instantes.'); }
+  };
 
   return (
     <Screen footer={<ParticipantNav active="progress" />} contentStyle={styles.content}>
@@ -68,6 +84,15 @@ export default function ParticipantProgressScreen() {
           <View style={styles.evidencePill}><AppText variant="caption" color={colors.textMuted}>Engajamento</AppText><AppText weight="800">{Math.min(100, Math.round((progress.progress_percent + progress.completed_missions * 12) / 2))}%</AppText></View>
         </View>
       </Card>
+
+      <SectionTitle>Linha do tempo da evolução</SectionTitle>
+      {timelineQuery.loading ? <DataState kind="loading" title="Montando sua história" message="Organizando suas conquistas." /> : !timelineQuery.data.length ? <DataState kind="empty" title="Sua linha do tempo começa aqui" message="Conclua uma missão para registrar confiança e autonomia." /> : <>
+        <View style={styles.timeline}>{timelineQuery.data.slice(0, 10).map((item) => <Card key={`${item.occurred_at}-${item.title}`} style={styles.timelineCard}>
+          <View style={styles.timelineHeading}><View style={styles.timelineDot} /><View style={styles.heroCopy}><AppText variant="caption" weight="800" color={colors.primary}>COMPETÊNCIA CONQUISTADA</AppText><AppText weight="800">{item.title}</AppText><AppText variant="caption" color={colors.textMuted}>{new Date(item.occurred_at).toLocaleDateString('pt-BR')} · {item.category}</AppText></View><Tag label={item.autonomous ? 'Autônoma' : 'Com apoio'} tone={item.autonomous ? 'green' : 'yellow'} /></View>
+          <AppText variant="small" color={colors.textMuted}>{item.confidence_after ? `Confiança: ${item.confidence_before} → ${item.confidence_after} (${Number(item.confidence_gain) >= 0 ? '+' : ''}${item.confidence_gain})` : 'Confiança final ainda não registrada'} · {item.help_count} apoio(s)</AppText>
+        </Card>)}</View>
+        <Button label="Gerar meu relatório em PDF" icon="document-text-outline" variant="secondary" onPress={() => void exportEvolution()} />
+      </>}
 
       <SectionTitle>Conquistas</SectionTitle>
       <View style={styles.badgeRow}>
@@ -126,5 +151,5 @@ function ProgressState({ kind, retry }: { kind: 'loading' | 'error' | 'empty'; r
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg }, heroCard: { backgroundColor: '#F9F1FF', borderColor: '#E3CFFC', borderRadius: radius.xl, borderWidth: 1.5, gap: spacing.md, padding: spacing.lg, ...shadow }, heroTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md }, levelIcon: { alignItems: 'center', backgroundColor: '#F9E7B7', borderColor: '#F3D68A', borderRadius: radius.round, borderWidth: 1, height: 70, justifyContent: 'center', width: 70 }, heroCopy: { flex: 1, gap: spacing.xs }, progressHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, summaryRow: { flexDirection: 'row', gap: spacing.sm }, summaryPill: { alignItems: 'center', backgroundColor: '#FFFDFD', borderColor: '#E8DEF6', borderRadius: radius.round, borderWidth: 1, flex: 1, flexDirection: 'row', gap: spacing.xs, justifyContent: 'center', minHeight: 48, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, metricsRow: { flexDirection: 'row', gap: spacing.md }, evidenceCard: { backgroundColor: '#F7F3FF', borderColor: colors.primaryMuted, borderRadius: radius.xl, borderWidth: 1.5, gap: spacing.md, padding: spacing.lg }, evidenceHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, evidenceGrid: { flexDirection: 'row', gap: spacing.sm }, evidencePill: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, gap: 2, padding: spacing.sm }, badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }, badge: { alignItems: 'center', backgroundColor: '#F8F5FB', borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, badgeActive: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted }, achievementCard: { alignItems: 'flex-start', backgroundColor: '#FFFDFD', borderColor: '#E8DEF6', borderRadius: radius.xl, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md }, achievementIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 }, achievementCopy: { flex: 1, gap: spacing.xs }, achievementHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' }, nextMission: { alignItems: 'center', backgroundColor: '#FEFCFF', borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 104, padding: spacing.lg }, nextMissionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 54, justifyContent: 'center', width: 54 }, nextMissionCopy: { flex: 1, gap: 2 }, pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
+  content: { gap: spacing.lg }, heroCard: { backgroundColor: '#F9F1FF', borderColor: '#E3CFFC', borderRadius: radius.xl, borderWidth: 1.5, gap: spacing.md, padding: spacing.lg, ...shadow }, heroTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md }, levelIcon: { alignItems: 'center', backgroundColor: '#F9E7B7', borderColor: '#F3D68A', borderRadius: radius.round, borderWidth: 1, height: 70, justifyContent: 'center', width: 70 }, heroCopy: { flex: 1, gap: spacing.xs }, progressHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, summaryRow: { flexDirection: 'row', gap: spacing.sm }, summaryPill: { alignItems: 'center', backgroundColor: '#FFFDFD', borderColor: '#E8DEF6', borderRadius: radius.round, borderWidth: 1, flex: 1, flexDirection: 'row', gap: spacing.xs, justifyContent: 'center', minHeight: 48, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, metricsRow: { flexDirection: 'row', gap: spacing.md }, evidenceCard: { backgroundColor: '#F7F3FF', borderColor: colors.primaryMuted, borderRadius: radius.xl, borderWidth: 1.5, gap: spacing.md, padding: spacing.lg }, evidenceHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, evidenceGrid: { flexDirection: 'row', gap: spacing.sm }, evidencePill: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, gap: 2, padding: spacing.sm }, timeline: { gap: spacing.sm }, timelineCard: { gap: spacing.sm }, timelineHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm }, timelineDot: { backgroundColor: colors.primary, borderRadius: radius.round, height: 14, width: 14 }, badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }, badge: { alignItems: 'center', backgroundColor: '#F8F5FB', borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }, badgeActive: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted }, achievementCard: { alignItems: 'flex-start', backgroundColor: '#FFFDFD', borderColor: '#E8DEF6', borderRadius: radius.xl, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md }, achievementIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 }, achievementCopy: { flex: 1, gap: spacing.xs }, achievementHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' }, nextMission: { alignItems: 'center', backgroundColor: '#FEFCFF', borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 104, padding: spacing.lg }, nextMissionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 54, justifyContent: 'center', width: 54 }, nextMissionCopy: { flex: 1, gap: 2 }, pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
 });

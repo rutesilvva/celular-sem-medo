@@ -23,6 +23,9 @@ export type MissionReview = Database['public']['Functions']['get_my_review_plan'
 export type DailyMission = Database['public']['Functions']['get_my_daily_mission']['Returns'][number];
 export type AdminImpactSummary = Database['public']['Functions']['get_admin_impact_summary']['Returns'][number];
 export type WorkshopParticipant = Database['public']['Functions']['get_admin_workshop_status']['Returns'][number];
+export type EvolutionTimelineItem = Database['public']['Functions']['get_my_evolution_timeline']['Returns'][number];
+export type RetentionCheck = Database['public']['Functions']['get_my_retention_checks']['Returns'][number];
+export type AdminPrePostImpact = Database['public']['Functions']['get_admin_pre_post_impact']['Returns'][number];
 export type AiMissionDraft = Database['public']['Functions']['get_admin_ai_mission_drafts']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
 export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
@@ -180,6 +183,24 @@ export async function getDailyMission(): Promise<DailyMission | null> {
   return data[0] ?? null;
 }
 
+export async function getMyEvolutionTimeline(): Promise<EvolutionTimelineItem[]> {
+  const { data, error } = await getSupabase().rpc('get_my_evolution_timeline');
+  if (error) throw error;
+  return data;
+}
+
+export async function getMyRetentionChecks(): Promise<RetentionCheck[]> {
+  const { data, error } = await getSupabase().rpc('get_my_retention_checks');
+  if (error) throw error;
+  return data;
+}
+
+export async function answerMyRetentionCheck(checkId: string, correct: boolean) {
+  const { data, error } = await getSupabase().rpc('answer_my_retention_check', { target_check_id: checkId, was_correct: correct });
+  if (error) throw error;
+  return data;
+}
+
 export async function createLearningRequest(query: string) {
   const { data, error } = await getSupabase().rpc('create_learning_request', { requested_id: createUuid(), query });
   if (error) throw error;
@@ -188,6 +209,12 @@ export async function createLearningRequest(query: string) {
 
 export async function getAdminImpactSummary(classId?: string): Promise<AdminImpactSummary | null> {
   const { data, error } = await getSupabase().rpc('get_admin_impact_summary', { target_class_id: classId });
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function getAdminPrePostImpact(classId?: string): Promise<AdminPrePostImpact | null> {
+  const { data, error } = await getSupabase().rpc('get_admin_pre_post_impact', { target_class_id: classId });
   if (error) throw error;
   return data[0] ?? null;
 }

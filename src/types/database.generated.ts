@@ -1383,6 +1383,61 @@ export type Database = {
           },
         ]
       }
+      retention_checks: {
+        Row: {
+          answered_at: string | null
+          answered_correctly: boolean | null
+          assignment_id: string
+          created_at: string
+          due_at: string
+          id: string
+          participant_id: string
+          source_attempt_id: string
+        }
+        Insert: {
+          answered_at?: string | null
+          answered_correctly?: boolean | null
+          assignment_id: string
+          created_at?: string
+          due_at: string
+          id?: string
+          participant_id: string
+          source_attempt_id: string
+        }
+        Update: {
+          answered_at?: string | null
+          answered_correctly?: boolean | null
+          assignment_id?: string
+          created_at?: string
+          due_at?: string
+          id?: string
+          participant_id?: string
+          source_attempt_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retention_checks_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "class_mission_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retention_checks_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retention_checks_source_attempt_id_fkey"
+            columns: ["source_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1422,6 +1477,10 @@ export type Database = {
           class_shift?: string
           target_class_id: string
         }
+        Returns: boolean
+      }
+      answer_my_retention_check: {
+        Args: { target_check_id: string; was_correct: boolean }
         Returns: boolean
       }
       append_attempt_event: {
@@ -1744,6 +1803,21 @@ export type Database = {
           total_count: number
         }[]
       }
+      get_admin_pre_post_impact: {
+        Args: { target_class_id?: string }
+        Returns: {
+          autonomy_first: number
+          autonomy_latest: number
+          confidence_after: number
+          confidence_before: number
+          confidence_gain: number
+          help_first: number
+          help_latest: number
+          participants: number
+          retention_percent: number
+          scam_recognition_percent: number
+        }[]
+      }
       get_admin_users: {
         Args: never
         Returns: {
@@ -1817,6 +1891,19 @@ export type Database = {
           title: string
         }[]
       }
+      get_my_evolution_timeline: {
+        Args: never
+        Returns: {
+          autonomous: boolean
+          category: string
+          confidence_after: number
+          confidence_before: number
+          confidence_gain: number
+          help_count: number
+          occurred_at: string
+          title: string
+        }[]
+      }
       get_my_help_requests: {
         Args: never
         Returns: {
@@ -1868,6 +1955,18 @@ export type Database = {
           scam_response: string
           support_response: string
           updated_at: string
+        }[]
+      }
+      get_my_retention_checks: {
+        Args: never
+        Returns: {
+          answered_correctly: boolean
+          assignment_id: string
+          check_id: string
+          due_at: string
+          is_due: boolean
+          question: string
+          title: string
         }[]
       }
       get_my_review_plan: {
