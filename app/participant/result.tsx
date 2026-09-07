@@ -14,7 +14,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useMissionContent } from '@/hooks/useMissionData';
 import { useParticipantProgress } from '@/hooks/useProgressData';
 import { completeAssessmentResilient } from '@/lib/offline-assessments';
+import { submitMissionFeedback } from '@/lib/backend';
 import { colors, radius, spacing } from '@/theme/tokens';
+
+const feedbackOptions = [
+  ['text_difficult','Texto difícil'],['audio_difficult','Áudio difícil'],['step_unclear','Passo pouco claro'],
+  ['too_long','Missão longa'],['technical_problem','Problema técnico'],['none','Nenhuma dificuldade'],
+] as const;
 
 export default function ParticipantResultScreen() {
   const router = useRouter();
@@ -22,6 +28,11 @@ export default function ParticipantResultScreen() {
   const [confidenceAfter, setConfidenceAfter] = useState<number | null>(null);
   const [gain, setGain] = useState<number | null>(null);
   const [assessmentPending, setAssessmentPending] = useState(false);
+  const [helpful, setHelpful] = useState<number | null>(null);
+  const [clarity, setClarity] = useState<number | null>(null);
+  const [feedbackIssues, setFeedbackIssues] = useState<string[]>(['none']);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackError, setFeedbackError] = useState(false);
   const { currentUser } = useAuth();
   const { preferences } = useApp();
   const query = useMissionContent(assignmentId ?? null);
@@ -100,6 +111,17 @@ export default function ParticipantResultScreen() {
         <ProgressBar value={progress?.progress_percent ?? 0} color={colors.primary} height={12} />
       </Card>
 
+      <Card style={styles.feedbackCard}>
+        <AppText variant="subheading" weight="800">Ajude a melhorar esta missão</AppText>
+        <AppText variant="small" color={colors.textMuted}>Sua avaliação orienta melhorias. O painel administrativo recebe somente resultados agregados.</AppText>
+        <ConfidencePicker label="Quanto esta missão ajudou você?" value={helpful} onChange={setHelpful} />
+        <ConfidencePicker label="A explicação estava clara?" value={clarity} onChange={setClarity} />
+        <AppText weight="700">Você encontrou alguma dificuldade?</AppText>
+        <View style={styles.issueList}>{feedbackOptions.map(([value,label])=><Button key={value} label={label} variant={feedbackIssues.includes(value)?'primary':'soft'} onPress={()=>setFeedbackIssues((current)=>value==='none'?['none']:current.includes(value)?current.filter((item)=>item!==value):[...current.filter((item)=>item!=='none'),value])}/>)}</View>
+        <Button label={feedbackSent?'Avaliação enviada':'Enviar avaliação'} icon="heart-outline" disabled={!attemptId||!helpful||!clarity||feedbackSent||feedbackIssues.length===0} onPress={()=>{setFeedbackError(false);void submitMissionFeedback(attemptId!,helpful!,clarity!,feedbackIssues).then(()=>setFeedbackSent(true)).catch(()=>setFeedbackError(true));}}/>
+        {feedbackError?<AppText accessibilityLiveRegion="polite" variant="small" color={colors.danger}>Não foi possível enviar agora. Tente novamente.</AppText>:null}
+      </Card>
+
       <Card style={styles.progressCard}>
         <ConfidencePicker label="E agora, quanta confiança você sente?" value={confidenceAfter} onChange={setConfidenceAfter} />
         <Button label={gain === null ? 'Registrar minha evolução' : `Evolução registrada: ${gain >= 0 ? '+' : ''}${gain}`} disabled={!confidenceAfter || gain !== null || !assessmentId || !attemptId || !currentUser} onPress={() => void completeAssessmentResilient(currentUser!.id,assessmentId!,attemptId!,confidenceAfter!).then((value) => { if (value === null) setAssessmentPending(true); else setGain(value); }).catch(() => setAssessmentPending(true))} />
@@ -169,6 +191,7 @@ const styles = StyleSheet.create({
   metrics: { flexDirection: 'row' },
   metric: { alignItems: 'center', flex: 1, gap: spacing.xs },
   progressCard: { backgroundColor: '#F4EEFF', borderColor: colors.primaryMuted, gap: spacing.md },
+  feedbackCard: { gap: spacing.md }, issueList: { gap: spacing.sm },
   progressTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   actions: { gap: spacing.md },
 });

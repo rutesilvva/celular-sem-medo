@@ -26,6 +26,9 @@ export type WorkshopParticipant = Database['public']['Functions']['get_admin_wor
 export type EvolutionTimelineItem = Database['public']['Functions']['get_my_evolution_timeline']['Returns'][number];
 export type RetentionCheck = Database['public']['Functions']['get_my_retention_checks']['Returns'][number];
 export type AdminPrePostImpact = Database['public']['Functions']['get_admin_pre_post_impact']['Returns'][number];
+export type CertificateStatus = Database['public']['Functions']['get_my_certificate_status']['Returns'][number];
+export type VerifiedCertificate = Database['public']['Functions']['verify_participation_certificate']['Returns'][number];
+export type MissionFeedbackSummary = Database['public']['Functions']['get_admin_mission_feedback_summary']['Returns'][number];
 export type AiMissionDraft = Database['public']['Functions']['get_admin_ai_mission_drafts']['Returns'][number];
 export type HelpReason = 'stuck_step' | 'needs_explanation' | 'accessibility_support';
 export type HelpResolution = 'review_hint' | 'try_again' | 'scheduled_support' | 'guided_by_admin';
@@ -197,6 +200,48 @@ export async function getMyRetentionChecks(): Promise<RetentionCheck[]> {
 
 export async function answerMyRetentionCheck(checkId: string, correct: boolean) {
   const { data, error } = await getSupabase().rpc('answer_my_retention_check', { target_check_id: checkId, was_correct: correct });
+  if (error) throw error;
+  return data;
+}
+
+export async function getMyCertificateStatus(): Promise<CertificateStatus | null> {
+  const { data, error } = await getSupabase().rpc('get_my_certificate_status');
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function issueMyCertificate(requestedId = createUuid(), verificationCode = createUuid()) {
+  const { data, error } = await getSupabase().rpc('issue_my_participation_certificate', { requested_id: requestedId, requested_code: verificationCode });
+  if (error) throw error;
+  return data;
+}
+
+export async function verifyCertificate(code: string): Promise<VerifiedCertificate | null> {
+  const { data, error } = await getSupabase().rpc('verify_participation_certificate', { selected_code: code });
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function submitMissionFeedback(attemptId: string, helpful: number, clarity: number, issues: string[]) {
+  const { data, error } = await getSupabase().rpc('submit_mission_quality_feedback', { requested_id: createUuid(), target_attempt_id: attemptId, helpful_rating: helpful, clarity_rating: clarity, selected_issues: issues });
+  if (error) throw error;
+  return data;
+}
+
+export async function getAdminMissionFeedbackSummary(classId?: string): Promise<MissionFeedbackSummary | null> {
+  const { data, error } = await getSupabase().rpc('get_admin_mission_feedback_summary', { target_class_id: classId });
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export async function updateCertificateSettings(organization: string, signer: string, title: string) {
+  const { data, error } = await getSupabase().rpc('update_certificate_settings', { selected_organization: organization, selected_signer: signer, selected_title: title });
+  if (error) throw error;
+  return data;
+}
+
+export async function getCertificateSettings() {
+  const { data, error } = await getSupabase().from('certificate_settings').select('organization_name,signer_name,signer_title').eq('id', true).single();
   if (error) throw error;
   return data;
 }

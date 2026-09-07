@@ -365,6 +365,41 @@ export type Database = {
           },
         ]
       }
+      certificate_settings: {
+        Row: {
+          id: boolean
+          organization_name: string
+          signer_name: string
+          signer_title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          organization_name?: string
+          signer_name?: string
+          signer_title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          organization_name?: string
+          signer_name?: string
+          signer_title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_mission_assignments: {
         Row: {
           assigned_by: string
@@ -921,6 +956,71 @@ export type Database = {
           },
         ]
       }
+      mission_quality_feedback: {
+        Row: {
+          assignment_id: string
+          attempt_id: string
+          clarity: number
+          class_id: string
+          created_at: string
+          helpful: number
+          id: string
+          issue_codes: string[]
+          participant_id: string
+        }
+        Insert: {
+          assignment_id: string
+          attempt_id: string
+          clarity: number
+          class_id: string
+          created_at?: string
+          helpful: number
+          id: string
+          issue_codes?: string[]
+          participant_id: string
+        }
+        Update: {
+          assignment_id?: string
+          attempt_id?: string
+          clarity?: number
+          class_id?: string
+          created_at?: string
+          helpful?: number
+          id?: string
+          issue_codes?: string[]
+          participant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_quality_feedback_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "class_mission_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_quality_feedback_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: true
+            referencedRelation: "attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_quality_feedback_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_quality_feedback_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mission_review_schedules: {
         Row: {
           assignment_id: string
@@ -1190,6 +1290,72 @@ export type Database = {
           {
             foreignKeyName: "missions_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participation_certificates: {
+        Row: {
+          class_id: string
+          class_name: string
+          competencies: string[]
+          completed_missions: number
+          estimated_hours: number
+          id: string
+          issued_at: string
+          organization_name: string
+          participant_id: string
+          participant_name: string
+          revoked_at: string | null
+          signer_name: string
+          signer_title: string
+          verification_code: string
+        }
+        Insert: {
+          class_id: string
+          class_name: string
+          competencies: string[]
+          completed_missions: number
+          estimated_hours: number
+          id: string
+          issued_at?: string
+          organization_name: string
+          participant_id: string
+          participant_name: string
+          revoked_at?: string | null
+          signer_name: string
+          signer_title: string
+          verification_code: string
+        }
+        Update: {
+          class_id?: string
+          class_name?: string
+          competencies?: string[]
+          completed_missions?: number
+          estimated_hours?: number
+          id?: string
+          issued_at?: string
+          organization_name?: string
+          participant_id?: string
+          participant_name?: string
+          revoked_at?: string | null
+          signer_name?: string
+          signer_title?: string
+          verification_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participation_certificates_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participation_certificates_participant_id_fkey"
+            columns: ["participant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1681,6 +1847,19 @@ export type Database = {
           resolved_help_requests: number
         }[]
       }
+      get_admin_mission_feedback_summary: {
+        Args: { target_class_id?: string }
+        Returns: {
+          audio_difficult: number
+          average_clarity: number
+          average_helpful: number
+          response_count: number
+          step_unclear: number
+          technical_problem: number
+          text_difficult: number
+          too_long: number
+        }[]
+      }
       get_admin_mission_progress: {
         Args: { period_days?: number; target_class_id: string }
         Returns: {
@@ -1867,6 +2046,25 @@ export type Database = {
           account_status: Database["public"]["Enums"]["account_status"]
           error_code: string
           user_id: string
+        }[]
+      }
+      get_my_certificate_status: {
+        Args: never
+        Returns: {
+          certificate_id: string
+          class_name: string
+          competencies: string[]
+          competency_count: number
+          completed_missions: number
+          eligible: boolean
+          estimated_hours: number
+          issued_at: string
+          organization_name: string
+          participant_name: string
+          retention_completed: boolean
+          signer_name: string
+          signer_title: string
+          verification_code: string
         }[]
       }
       get_my_class_contexts: {
@@ -2101,6 +2299,10 @@ export type Database = {
         Returns: boolean
       }
       is_safe_attempt_metadata: { Args: { value: Json }; Returns: boolean }
+      issue_my_participation_certificate: {
+        Args: { requested_code: string; requested_id: string }
+        Returns: string
+      }
       list_class_invitations: {
         Args: { target_class_id: string }
         Returns: {
@@ -2185,6 +2387,16 @@ export type Database = {
           used_hint: boolean
         }[]
       }
+      submit_mission_quality_feedback: {
+        Args: {
+          clarity_rating: number
+          helpful_rating: number
+          requested_id: string
+          selected_issues: string[]
+          target_attempt_id: string
+        }
+        Returns: string
+      }
       unregister_push_device: {
         Args: { target_token: string }
         Returns: boolean
@@ -2198,6 +2410,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_certificate_settings: {
+        Args: {
+          selected_organization: string
+          selected_signer: string
+          selected_title: string
+        }
+        Returns: boolean
+      }
       update_help_request: {
         Args: {
           target_help_request_id: string
@@ -2205,6 +2425,21 @@ export type Database = {
           target_status: Database["public"]["Enums"]["help_request_status"]
         }
         Returns: Database["public"]["Enums"]["help_request_status"]
+      }
+      verify_participation_certificate: {
+        Args: { selected_code: string }
+        Returns: {
+          class_name: string
+          competencies: string[]
+          completed_missions: number
+          estimated_hours: number
+          issued_at: string
+          organization_name: string
+          participant_name: string
+          signer_name: string
+          signer_title: string
+          valid: boolean
+        }[]
       }
     }
     Enums: {

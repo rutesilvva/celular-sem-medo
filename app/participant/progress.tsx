@@ -95,6 +95,7 @@ export default function ParticipantProgressScreen() {
       </>}
 
       <SectionTitle>Conquistas</SectionTitle>
+      <Button label="Ver meu certificado" icon="ribbon-outline" variant="soft" onPress={() => router.push('/participant/certificate')} />
       <View style={styles.badgeRow}>
         {badges.map((badge) => (
           <View key={badge.label} style={[styles.badge, badge.active && styles.badgeActive]}>
