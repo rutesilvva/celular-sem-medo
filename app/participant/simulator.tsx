@@ -700,8 +700,11 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   const [editingAddresses, setEditingAddresses] = useState(false);
   const [originAddress, setOriginAddress] = useState('Rua das Flores, 120');
   const [mobilityApp, setMobilityApp] = useState<'uber' | '99'>('uber');
-  const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'confirming'>('options');
+  const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'payment' | 'confirming'>('options');
   const [selectedRide, setSelectedRide] = useState<'economy' | 'comfort' | 'moto' | 'delivery'>('economy');
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit' | 'cash'>('credit');
+  const [registeringCard, setRegisteringCard] = useState(false);
+  const [trainingCardRegistered, setTrainingCardRegistered] = useState(true);
   const hasDestination = query.trim().length >= 3;
   const serviceAccent = mobilityApp === 'uber' ? accent : '#E8B600';
   const rideCatalog = mobilityApp === 'uber' ? {
@@ -716,6 +719,11 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
     delivery: { label: '99Entrega', price: 'R$ 7,10', description: 'Envio de um item pequeno; não transporta passageiro.' },
   };
   const rideDetails = rideCatalog[selectedRide];
+  const paymentDetails = {
+    pix: { label: 'Pix', description: 'Pagamento digital confirmado somente dentro do aplicativo.' },
+    credit: { label: 'Cartão de crédito', description: trainingCardRegistered ? 'Cartão de treino terminado em 4242.' : 'Cadastre um cartão fictício para praticar.' },
+    cash: { label: 'Dinheiro', description: 'Pagamento diretamente ao condutor; combine se precisa de troco.' },
+  }[paymentMethod];
   const destinationAddress = query.trim() || 'Biblioteca Municipal';
 
   if (step.position === 1) return <View style={styles.mobilityExperience}>
@@ -754,12 +762,33 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
 
   if (ridePhase === 'pickup') return <View style={styles.mobilityExperience}>
     <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o ponto de partida</AppText><View style={styles.mobilityAddressRow}><Ionicons name="navigate-circle" size={28} color={accent} /><View style={styles.flex1}><AppText weight="900">{originAddress}</AppText><AppText variant="small" color={colors.textMuted}>Endereço digitado · nenhum GPS utilizado</AppText></View></View><Button label="Confirmar partida" disabled={busy} onPress={() => setRidePhase('confirming')} /><Button label="Voltar às opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o ponto de partida</AppText><View style={styles.mobilityAddressRow}><Ionicons name="navigate-circle" size={28} color={accent} /><View style={styles.flex1}><AppText weight="900">{originAddress}</AppText><AppText variant="small" color={colors.textMuted}>Endereço digitado · nenhum GPS utilizado</AppText></View></View><Button label="Confirmar partida" disabled={busy} onPress={() => setRidePhase('payment')} /><Button label="Voltar às opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+  </View>;
+
+  if (ridePhase === 'payment' && registeringCard) return <View style={styles.mobilityExperience}>
+    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityPlanningHeader}><Pressable accessibilityRole="button" accessibilityLabel="Voltar às formas de pagamento" hitSlop={10} onPress={() => setRegisteringCard(false)}><Ionicons name="arrow-back" size={25} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="subheading" weight="900">Cadastrar cartão de treino</AppText><AppText variant="caption" color={colors.textMuted}>Não digite dados de um cartão real</AppText></View></View>
+      <View style={styles.mobilityTrainingCard}><View style={styles.mobilityCardTop}><Ionicons name="card" size={28} color={colors.surface} /><AppText weight="900" color={colors.surface}>CARTÃO FICTÍCIO</AppText></View><AppText variant="subheading" weight="900" color={colors.surface}>•••• •••• •••• 4242</AppText><View style={styles.mobilityCardBottom}><AppText variant="caption" color={colors.surface}>PESSOA DE TREINO</AppText><AppText variant="caption" color={colors.surface}>12/30</AppText></View></View>
+      <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>O aplicativo usa somente este cartão inventado. Nenhum número digitado é necessário.</AppText></View>
+      <Button label="Cadastrar cartão fictício" icon="card-outline" onPress={() => { setTrainingCardRegistered(true); setPaymentMethod('credit'); setRegisteringCard(false); }} />
+    </View>
+  </View>;
+
+  if (ridePhase === 'payment') return <View style={styles.mobilityExperience}>
+    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="caption" weight="800" color={colors.primary}>PAGAMENTO DE TREINAMENTO</AppText><AppText variant="subheading" weight="900">Como você quer pagar?</AppText>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === 'pix' }} onPress={() => setPaymentMethod('pix')} style={[styles.mobilityPaymentRow, paymentMethod === 'pix' && styles.mobilityRideSelected]}><View style={styles.mobilityPaymentIcon}><Ionicons name="qr-code-outline" size={25} color={colors.primary} /></View><View style={styles.flex1}><AppText weight="900">Pix</AppText><AppText variant="small" color={colors.textMuted}>Confirme o Pix apenas dentro do aplicativo.</AppText></View><Ionicons name={paymentMethod === 'pix' ? 'radio-button-on' : 'radio-button-off'} size={24} color={colors.primary} /></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === 'credit' }} onPress={() => setPaymentMethod('credit')} style={[styles.mobilityPaymentRow, paymentMethod === 'credit' && styles.mobilityRideSelected]}><View style={styles.mobilityPaymentIcon}><Ionicons name="card-outline" size={26} color={colors.primary} /></View><View style={styles.flex1}><AppText weight="900">Cartão de crédito</AppText><AppText variant="small" color={colors.textMuted}>{trainingCardRegistered ? 'Cartão fictício •••• 4242' : 'Nenhum cartão de treino cadastrado'}</AppText></View><Ionicons name={paymentMethod === 'credit' ? 'radio-button-on' : 'radio-button-off'} size={24} color={colors.primary} /></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === 'cash' }} onPress={() => setPaymentMethod('cash')} style={[styles.mobilityPaymentRow, paymentMethod === 'cash' && styles.mobilityRideSelected]}><View style={styles.mobilityPaymentIcon}><Ionicons name="cash-outline" size={27} color={colors.primary} /></View><View style={styles.flex1}><AppText weight="900">Dinheiro</AppText><AppText variant="small" color={colors.textMuted}>Pague ao condutor e informe se precisa de troco.</AppText></View><Ionicons name={paymentMethod === 'cash' ? 'radio-button-on' : 'radio-button-off'} size={24} color={colors.primary} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Cadastrar um cartão fictício" onPress={() => setRegisteringCard(true)} style={styles.mobilityAddPayment}><Ionicons name="add-circle-outline" size={25} color={colors.primary} /><View style={styles.flex1}><AppText weight="900" color={colors.primary}>Cadastrar cartão</AppText><AppText variant="small" color={colors.textMuted}>Pratique com dados fictícios já preenchidos</AppText></View><Ionicons name="chevron-forward" size={21} color={colors.textMuted} /></Pressable>
+      <Button label={`Continuar com ${paymentDetails.label}`} icon="arrow-forward" disabled={paymentMethod === 'credit' && !trainingCardRegistered} onPress={() => setRidePhase('confirming')} />
+      <Button label="Voltar ao ponto de partida" variant="secondary" onPress={() => setRidePhase('pickup')} />
+    </View>
   </View>;
 
   if (ridePhase === 'confirming') return <View style={styles.mobilityExperience}>
     <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityConfirmIcon}><Ionicons name={selectedRide === 'moto' || selectedRide === 'delivery' ? 'bicycle' : 'car-sport'} size={38} color={accent} /></View><AppText variant="subheading" weight="900" style={styles.center}>Confirmar solicitação simulada?</AppText><AppText color={colors.textMuted} style={styles.center}>{destinationAddress} · {rideDetails.label} · {rideDetails.price}</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>{rideDetails.description}</AppText><View style={styles.mobilitySafetyRow}><Ionicons name="shield-checkmark" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum veículo será chamado, nenhum item será enviado e nenhuma cobrança será feita.</AppText></View><Button label="Confirmar somente o treino" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-training' })} /><Button label="Revisar opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityConfirmIcon}><Ionicons name={selectedRide === 'moto' || selectedRide === 'delivery' ? 'bicycle' : 'car-sport'} size={38} color={accent} /></View><AppText variant="subheading" weight="900" style={styles.center}>Confirmar solicitação simulada?</AppText><AppText color={colors.textMuted} style={styles.center}>{destinationAddress} · {rideDetails.label} · {rideDetails.price}</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>{rideDetails.description}</AppText><View style={styles.mobilityPaymentSummary}><Ionicons name={paymentMethod === 'pix' ? 'qr-code-outline' : paymentMethod === 'cash' ? 'cash-outline' : 'card-outline'} size={24} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">{paymentDetails.label}</AppText><AppText variant="small" color={colors.textMuted}>{paymentDetails.description}</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Alterar forma de pagamento" onPress={() => setRidePhase('payment')}><AppText weight="900" color={colors.primary}>Alterar</AppText></Pressable></View><View style={styles.mobilitySafetyRow}><Ionicons name="shield-checkmark" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum veículo será chamado, nenhum item será enviado e nenhuma cobrança será feita.</AppText></View><Button label="Confirmar somente o treino" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-training' })} /><Button label="Revisar opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
   </View>;
 
   return <View style={styles.mobilityExperience}>
@@ -1333,6 +1362,13 @@ const styles = StyleSheet.create({
   mobilityRideSelected: { backgroundColor: colors.primarySoft, borderColor: '#28323C', borderWidth: 2.5 },
   mobilityVehicleIcon: { alignItems: 'center', backgroundColor: '#EEF0F2', borderRadius: radius.md, height: 52, justifyContent: 'center', width: 58 },
   mobilitySelectedExplanation: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  mobilityPaymentRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 74, padding: spacing.md },
+  mobilityPaymentIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 46, justifyContent: 'center', width: 46 },
+  mobilityAddPayment: { alignItems: 'center', borderColor: colors.primaryMuted, borderRadius: radius.lg, borderStyle: 'dashed', borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 68, padding: spacing.md },
+  mobilityPaymentSummary: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  mobilityTrainingCard: { backgroundColor: '#303943', borderRadius: radius.xl, gap: spacing.xl, minHeight: 180, padding: spacing.lg, ...shadow },
+  mobilityCardTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  mobilityCardBottom: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   mobilityConfirmIcon: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#EEF0F2', borderRadius: radius.round, height: 76, justifyContent: 'center', width: 76 },
   mobilitySafetyRow: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   storeSearchBox: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.round, borderWidth: 2, flexDirection: 'row', gap: spacing.sm, minHeight: 54, paddingHorizontal: spacing.md },
