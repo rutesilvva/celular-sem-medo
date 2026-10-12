@@ -700,6 +700,10 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   const [editingAddresses, setEditingAddresses] = useState(false);
   const [originAddress, setOriginAddress] = useState('Rua das Flores, 120');
   const [mobilityApp, setMobilityApp] = useState<'uber' | '99'>('uber');
+  const [mobilityLoggedIn, setMobilityLoggedIn] = useState(false);
+  const [loginStage, setLoginStage] = useState<'phone' | 'code'>('phone');
+  const [trainingPhone, setTrainingPhone] = useState('(83) 90000-0000');
+  const [trainingCode, setTrainingCode] = useState('');
   const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'payment' | 'confirming'>('options');
   const [selectedRide, setSelectedRide] = useState<'economy' | 'comfort' | 'moto' | 'delivery'>('economy');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit' | 'cash'>('credit');
@@ -725,6 +729,28 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
     cash: { label: 'Dinheiro', description: 'Pagamento diretamente ao condutor; combine se precisa de troco.' },
   }[paymentMethod];
   const destinationAddress = query.trim() || 'Biblioteca Municipal';
+
+  if (step.position === 1 && !mobilityLoggedIn) return <View style={styles.mobilityLogin}>
+    <View style={[styles.mobilityLoginBrand, { backgroundColor: mobilityApp === 'uber' ? '#1E252B' : '#F3C623' }]}><Ionicons name="car-sport" size={42} color={mobilityApp === 'uber' ? colors.surface : colors.text} /><AppText variant="heading" weight="900" color={mobilityApp === 'uber' ? colors.surface : colors.text}>{mobilityApp === 'uber' ? 'Uber · treino' : '99 · treino'}</AppText></View>
+    <View style={styles.mobilityAppChooser}>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === 'uber' }} onPress={() => { setMobilityApp('uber'); setLoginStage('phone'); }} style={[styles.mobilityAppChoice, mobilityApp === 'uber' && styles.mobilityAppChoiceUber]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogramUber]}><AppText weight="900" color={colors.surface}>U</AppText></View><AppText weight="900">Treinar Uber</AppText></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === '99' }} onPress={() => { setMobilityApp('99'); setLoginStage('phone'); }} style={[styles.mobilityAppChoice, mobilityApp === '99' && styles.mobilityAppChoice99]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogram99]}><AppText weight="900" color={colors.text}>99</AppText></View><AppText weight="900">Treinar 99</AppText></Pressable>
+    </View>
+    {loginStage === 'phone' ? <>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Entre para pedir uma viagem</AppText><AppText color={colors.textMuted}>Em aplicativos de mobilidade, o acesso costuma começar pelo número do celular.</AppText></View>
+      <View style={styles.mobilityPhoneRow}><View style={styles.mobilityCountryCode}><AppText weight="900">+55</AppText></View><TextInput accessibilityLabel="Número de celular fictício" inputMode="tel" onChangeText={setTrainingPhone} placeholder="Número do celular" placeholderTextColor={colors.placeholder} style={styles.mobilityPhoneInput} value={trainingPhone} /></View>
+      <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Use somente o número fictício já preenchido. Nenhum SMS será enviado.</AppText></View>
+      <Button label="Continuar" icon="arrow-forward" disabled={trainingPhone.replace(/\D/g, '').length < 10} onPress={() => { setTrainingCode(''); setLoginStage('code'); }} />
+      <Button label="Criar cadastro de treino" icon="person-add-outline" variant="secondary" onPress={() => setLoginStage('code')} />
+    </> : <>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Digite o código</AppText><AppText color={colors.textMuted}>Em um acesso real, o código chegaria por SMS. Neste treino, use <AppText weight="900">1234</AppText>.</AppText></View>
+      <TextInput accessibilityLabel="Código de verificação fictício" inputMode="numeric" maxLength={4} onChangeText={(value) => setTrainingCode(value.replace(/\D/g, ''))} placeholder="Código de 4 números" placeholderTextColor={colors.placeholder} style={styles.mobilityCodeInput} value={trainingCode} />
+      {trainingCode.length === 4 && trainingCode !== '1234' ? <View accessibilityRole="alert" style={styles.mobilityLoginError}><Ionicons name="information-circle" size={22} color={colors.danger} /><AppText variant="small" color={colors.danger} style={styles.flex1}>Código incorreto. Digite 1234 para continuar o treinamento.</AppText></View> : null}
+      <Button label="Entrar no aplicativo de treino" icon="log-in-outline" disabled={trainingCode !== '1234'} onPress={() => setMobilityLoggedIn(true)} />
+      <Button label="Voltar e corrigir o telefone" variant="secondary" onPress={() => { setTrainingCode(''); setLoginStage('phone'); }} />
+    </>}
+    <AppText variant="caption" color={colors.textMuted} style={styles.center}>Simulação educativa independente. Não cria conta no Uber ou na 99.</AppText>
+  </View>;
 
   if (step.position === 1) return <View style={styles.mobilityExperience}>
     <View style={styles.mobilityTopRow}><View><AppText variant="caption" color={colors.textMuted}>PONTO DE PARTIDA FICTÍCIO</AppText><AppText weight="900">Localização de treino</AppText></View><Ionicons name="notifications-outline" size={24} color={colors.text} /></View>
@@ -1296,6 +1322,14 @@ const styles = StyleSheet.create({
   fakeRoute: { borderColor: '#FFFFFF', borderStyle: 'dashed', borderTopWidth: 4, width: '45%' },
   fakeSearch: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   mobilityExperience: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  mobilityLogin: { backgroundColor: colors.surface, gap: spacing.lg, minHeight: 480, padding: spacing.lg },
+  mobilityLoginBrand: { alignItems: 'center', borderRadius: radius.xl, flexDirection: 'row', gap: spacing.md, justifyContent: 'center', minHeight: 105, padding: spacing.lg },
+  mobilityLoginCopy: { gap: spacing.sm, paddingVertical: spacing.sm },
+  mobilityPhoneRow: { flexDirection: 'row', gap: spacing.sm },
+  mobilityCountryCode: { alignItems: 'center', backgroundColor: '#EEF0F2', borderRadius: radius.md, justifyContent: 'center', minHeight: 58, width: 72 },
+  mobilityPhoneInput: { backgroundColor: '#EEF0F2', borderRadius: radius.md, color: colors.text, flex: 1, fontSize: 19, minHeight: 58, paddingHorizontal: spacing.md },
+  mobilityCodeInput: { backgroundColor: '#EEF0F2', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, color: colors.text, fontSize: 26, fontWeight: '800', letterSpacing: 10, minHeight: 66, paddingHorizontal: spacing.lg, textAlign: 'center' },
+  mobilityLoginError: { alignItems: 'center', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   mobilityTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   mobilityAppChooser: { flexDirection: 'row', gap: spacing.sm },
   mobilityAppChoice: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flex: 1, flexDirection: 'row', gap: spacing.sm, minHeight: 68, padding: spacing.sm },
