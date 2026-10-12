@@ -710,6 +710,7 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   if (step.position === 1) return <View style={styles.mobilityExperience}>
     <View style={styles.mobilityTopRow}><View><AppText variant="caption" color={colors.textMuted}>PONTO DE PARTIDA FICTÍCIO</AppText><AppText weight="900">Localização de treino</AppText></View><Ionicons name="notifications-outline" size={24} color={colors.text} /></View>
     <View style={styles.mobilityTabs}><View style={styles.mobilityTabActive}><Ionicons name="car-sport" size={22} color={accent} /><AppText weight="900">Viagens</AppText></View><View style={styles.mobilityTab}><Ionicons name="cube-outline" size={21} color={colors.textMuted} /><AppText color={colors.textMuted}>Entregas</AppText></View></View>
+    <MobilityMapScene compact />
     <View style={styles.mobilitySearchBox}><Ionicons name="search" size={25} color={colors.text} /><TextInput accessibilityLabel="Digite o destino da viagem simulada" autoCorrect={false} onChangeText={onQueryChange} placeholder="Para onde?" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.mobilitySearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar destino" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={23} color={colors.textMuted} /></Pressable> : null}</View>
     <View style={styles.mobilityCoach}><Ionicons name="information-circle-outline" size={26} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Digite um lugar conhecido</AppText><AppText variant="small" color={colors.textMuted}>Experimente “Biblioteca Municipal”. O aplicativo não acessa sua localização real.</AppText></View></View>
     <Button label="Procurar destinos" icon="search" disabled={!hasDestination || busy} onPress={() => void onSubmit({ action: 'continue' })} />
@@ -751,11 +752,11 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   </View>;
 }
 
-function MobilityMapScene({ route = false }: { route?: boolean }) {
+function MobilityMapScene({ route = false, compact = false }: { route?: boolean; compact?: boolean }) {
   const [zoomed, setZoomed] = useState(false);
   const [focusedPoint, setFocusedPoint] = useState<'pickup' | 'destination' | null>(null);
 
-  return <View accessibilityLabel="Mapa fictício da viagem, sem uso de GPS" style={styles.mobilityMap}>
+  return <View accessibilityLabel="Mapa fictício da viagem, sem uso de GPS" style={[styles.mobilityMap, compact && styles.mobilityMapCompact]}>
     <View style={[styles.mobilityMapCanvas, zoomed && styles.mobilityMapCanvasZoomed]}>
     <View style={[styles.mobilityBlock, styles.mobilityBlockNorth]} />
     <View style={[styles.mobilityBlock, styles.mobilityBlockWest]} />
@@ -1260,6 +1261,7 @@ const styles = StyleSheet.create({
   mobilityPlaceRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 76, padding: spacing.md },
   mobilityPlaceIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 46, justifyContent: 'center', width: 46 },
   mobilityMap: { backgroundColor: '#E8ECEF', borderRadius: radius.lg, height: 260, overflow: 'hidden', position: 'relative' },
+  mobilityMapCompact: { height: 190 },
   mobilityMapCanvas: { bottom: 0, left: 0, position: 'absolute', right: 0, top: 0, transform: [{ scale: 1 }] },
   mobilityMapCanvasZoomed: { transform: [{ scale: 1.22 }] },
   mobilityBlock: { backgroundColor: '#D6DCDF', borderColor: '#C8D0D4', borderRadius: 9, borderWidth: 1, position: 'absolute' },
