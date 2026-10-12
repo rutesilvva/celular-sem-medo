@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 const failures = [];
 const [appConfig, easConfigText, packageText] = await Promise.all([
-  readFile(new URL('../app.config.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../app.config.js', import.meta.url), 'utf8'),
   readFile(new URL('../eas.json', import.meta.url), 'utf8'),
   readFile(new URL('../package.json', import.meta.url), 'utf8'),
 ]);

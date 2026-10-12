@@ -1,9 +1,9 @@
-import { ConfigContext, ExpoConfig } from 'expo/config';
-
-export default ({ config }: ConfigContext): ExpoConfig => ({
+/** @type {(context: import('expo/config').ConfigContext) => import('expo/config').ExpoConfig} */
+module.exports = ({ config }) => ({
   ...config,
   name: 'Celular Sem Medo',
-  slug: 'celular-sem-medo',
+  slug: 'rute',
+  owner: 'celular-sem-medo',
   version: '0.1.0',
   icon: './assets/icon.png',
   orientation: 'portrait',
@@ -29,4 +29,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
   experiments: { typedRoutes: true },
   updates: { checkAutomatically: 'ON_LOAD', fallbackToCacheTimeout: 0 },
+  extra: {
+    ...config.extra,
+    eas: { projectId: '353655a1-880b-4e12-8de3-bb7746c98e93' },
+  },
 });
