@@ -743,13 +743,38 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
 }
 
 function MobilityMapScene({ route = false }: { route?: boolean }) {
-  return <View style={styles.mobilityMap}>
+  const [zoomed, setZoomed] = useState(false);
+  const [focusedPoint, setFocusedPoint] = useState<'pickup' | 'destination' | null>(null);
+
+  return <View accessibilityLabel="Mapa fictício da viagem, sem uso de GPS" style={styles.mobilityMap}>
+    <View style={[styles.mobilityMapCanvas, zoomed && styles.mobilityMapCanvasZoomed]}>
+    <View style={[styles.mobilityBlock, styles.mobilityBlockNorth]} />
+    <View style={[styles.mobilityBlock, styles.mobilityBlockWest]} />
+    <View style={[styles.mobilityBlock, styles.mobilityBlockEast]} />
+    <View style={[styles.mobilityBlock, styles.mobilityBlockSouth]} />
     <View style={[styles.mobilityRoad, styles.mobilityRoadHorizontal]} />
+    <View style={[styles.mobilityRoad, styles.mobilityRoadHorizontalSecond]} />
     <View style={[styles.mobilityRoad, styles.mobilityRoadVertical]} />
+    <View style={[styles.mobilityRoad, styles.mobilityRoadVerticalSecond]} />
     <View style={[styles.mobilityRoad, styles.mobilityRoadDiagonal]} />
+    <View style={[styles.mobilityStreetName, styles.mobilityStreetCentral]}><AppText variant="caption" color={colors.textMuted}>RUA CENTRAL</AppText></View>
+    <View style={[styles.mobilityStreetName, styles.mobilityStreetGarden]}><AppText variant="caption" color={colors.textMuted}>AV. JARDIM</AppText></View>
+    <View style={[styles.mobilityLandmark, styles.mobilityLandmarkPark]}><Ionicons name="leaf" size={15} color="#39724A" /><AppText variant="caption" color="#39724A">Praça</AppText></View>
+    <View style={[styles.mobilityLandmark, styles.mobilityLandmarkLibrary]}><Ionicons name="library" size={15} color="#765326" /><AppText variant="caption" color="#765326">Biblioteca</AppText></View>
     <View style={styles.mobilityMapLabel}><AppText variant="caption" color={colors.textMuted}>Mapa ilustrativo · sem GPS</AppText></View>
-    <View style={styles.mobilityPickupDot}><View style={styles.mobilityPickupDotInner} /></View>
-    {route ? <><View style={styles.mobilityRouteLine} /><View style={styles.mobilityDestinationPin}><Ionicons name="flag" size={20} color={colors.surface} /></View></> : null}
+    <Pressable accessibilityRole="button" accessibilityLabel="Ponto de partida fictício" onPress={() => setFocusedPoint('pickup')} style={styles.mobilityPickupDot}><View style={styles.mobilityPickupDotInner} /></Pressable>
+    {route ? <>
+      <View style={[styles.mobilityRouteLine, styles.mobilityRouteLineOne]} />
+      <View style={[styles.mobilityRouteLine, styles.mobilityRouteLineTwo]} />
+      <View style={styles.mobilityCarMarker}><Ionicons name="car-sport" size={18} color={colors.surface} /></View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Destino fictício: Biblioteca Municipal" onPress={() => setFocusedPoint('destination')} style={styles.mobilityDestinationPin}><Ionicons name="flag" size={20} color={colors.surface} /></Pressable>
+    </> : null}
+    </View>
+    <View style={styles.mobilityZoomControls}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Aumentar mapa" disabled={zoomed} onPress={() => setZoomed(true)} style={[styles.mobilityZoomButton, zoomed && styles.mobilityZoomButtonDisabled]}><Ionicons name="add" size={24} color={colors.text} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Diminuir mapa" disabled={!zoomed} onPress={() => setZoomed(false)} style={[styles.mobilityZoomButton, !zoomed && styles.mobilityZoomButtonDisabled]}><Ionicons name="remove" size={24} color={colors.text} /></Pressable>
+    </View>
+    {focusedPoint ? <View accessibilityLiveRegion="polite" style={styles.mobilityMapCallout}><AppText variant="small" weight="800">{focusedPoint === 'pickup' ? 'Partida: Entrada principal' : 'Destino: Biblioteca Municipal'}</AppText><AppText variant="caption" color={colors.textMuted}>Local totalmente fictício</AppText></View> : null}
   </View>;
 }
 
@@ -1226,15 +1251,37 @@ const styles = StyleSheet.create({
   mobilityPlaceRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 76, padding: spacing.md },
   mobilityPlaceIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 46, justifyContent: 'center', width: 46 },
   mobilityMap: { backgroundColor: '#E8ECEF', borderRadius: radius.lg, height: 260, overflow: 'hidden', position: 'relative' },
+  mobilityMapCanvas: { bottom: 0, left: 0, position: 'absolute', right: 0, top: 0, transform: [{ scale: 1 }] },
+  mobilityMapCanvasZoomed: { transform: [{ scale: 1.22 }] },
+  mobilityBlock: { backgroundColor: '#D6DCDF', borderColor: '#C8D0D4', borderRadius: 9, borderWidth: 1, position: 'absolute' },
+  mobilityBlockNorth: { height: 64, left: 18, top: 34, width: '35%' },
+  mobilityBlockWest: { height: 74, left: 15, top: 145, width: '31%' },
+  mobilityBlockEast: { height: 68, right: 18, top: 31, width: '31%' },
+  mobilityBlockSouth: { bottom: 13, height: 67, right: 14, width: '37%' },
   mobilityRoad: { backgroundColor: '#FFFFFF', position: 'absolute' },
-  mobilityRoadHorizontal: { height: 30, left: -20, right: -20, top: 110, transform: [{ rotate: '-8deg' }] },
-  mobilityRoadVertical: { bottom: -30, right: 90, top: -30, transform: [{ rotate: '12deg' }], width: 34 },
+  mobilityRoadHorizontal: { height: 27, left: -20, right: -20, top: 107, transform: [{ rotate: '-8deg' }] },
+  mobilityRoadHorizontalSecond: { bottom: 43, height: 23, left: -20, right: -20, transform: [{ rotate: '-4deg' }] },
+  mobilityRoadVertical: { bottom: -30, right: 88, top: -30, transform: [{ rotate: '12deg' }], width: 31 },
+  mobilityRoadVerticalSecond: { bottom: -35, left: 105, top: -35, transform: [{ rotate: '-5deg' }], width: 24 },
   mobilityRoadDiagonal: { bottom: 35, height: 25, left: -30, right: -30, transform: [{ rotate: '20deg' }] },
+  mobilityStreetName: { position: 'absolute' },
+  mobilityStreetCentral: { left: '37%', top: 119, transform: [{ rotate: '-8deg' }] },
+  mobilityStreetGarden: { right: 62, top: 146, transform: [{ rotate: '78deg' }] },
+  mobilityLandmark: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.88)', borderRadius: radius.sm, flexDirection: 'row', gap: 3, paddingHorizontal: 6, paddingVertical: 4, position: 'absolute' },
+  mobilityLandmarkPark: { left: 28, top: 61 },
+  mobilityLandmarkLibrary: { bottom: 25, right: 23 },
   mobilityMapLabel: { backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: radius.round, left: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, position: 'absolute', top: spacing.sm },
   mobilityPickupDot: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 34, justifyContent: 'center', left: '28%', position: 'absolute', top: '48%', width: 34, ...shadow },
   mobilityPickupDotInner: { backgroundColor: '#3478F6', borderRadius: radius.round, height: 15, width: 15 },
-  mobilityRouteLine: { backgroundColor: '#28323C', height: 6, left: '32%', position: 'absolute', top: '53%', transform: [{ rotate: '-18deg' }], width: '42%' },
+  mobilityRouteLine: { backgroundColor: '#28323C', borderRadius: radius.round, height: 6, position: 'absolute' },
+  mobilityRouteLineOne: { left: '32%', top: '53%', transform: [{ rotate: '-18deg' }], width: '27%' },
+  mobilityRouteLineTwo: { left: '55%', top: '43%', transform: [{ rotate: '-43deg' }], width: '22%' },
+  mobilityCarMarker: { alignItems: 'center', backgroundColor: '#28323C', borderColor: colors.surface, borderRadius: radius.round, borderWidth: 2, height: 34, justifyContent: 'center', left: '49%', position: 'absolute', top: '44%', width: 34, ...shadow },
   mobilityDestinationPin: { alignItems: 'center', backgroundColor: '#28323C', borderRadius: radius.round, height: 42, justifyContent: 'center', position: 'absolute', right: '21%', top: '31%', width: 42, ...shadow },
+  mobilityZoomControls: { gap: 2, position: 'absolute', right: spacing.sm, top: spacing.sm },
+  mobilityZoomButton: { alignItems: 'center', backgroundColor: colors.surface, height: 42, justifyContent: 'center', width: 42, ...shadow },
+  mobilityZoomButtonDisabled: { opacity: 0.45 },
+  mobilityMapCallout: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, bottom: spacing.sm, left: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, position: 'absolute', ...shadow },
   mobilityBottomSheet: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, gap: spacing.md, marginTop: -42, padding: spacing.lg, ...shadow },
   mobilitySheetHandle: { alignSelf: 'center', backgroundColor: colors.border, borderRadius: radius.round, height: 5, width: 54 },
   mobilityAddressRow: { alignItems: 'center', backgroundColor: '#F5F6F7', borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
