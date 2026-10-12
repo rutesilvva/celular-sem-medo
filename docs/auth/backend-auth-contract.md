@@ -50,7 +50,9 @@ e production; `config.toml` governa somente a stack local.
 
 Uma identidade Google com e-mail verificado cria perfil `active` e vínculo de
 `participant` na turma pública Comunidade Celular Sem Medo. Outros provedores e
-identidades sem e-mail verificado continuam `pending`. A entrada pública nunca
+identidades sem e-mail verificado continuam `pending`. O provisionamento ocorre
+tanto na criação do usuário quanto na vinculação de `auth.identities`, evitando
+dependência da ordem interna do OAuth. A entrada pública nunca
 concede `admin`; esse papel permanece uma concessão server-side explícita. O
 cliente não tem grant para `account_status`, `memberships` ou `administrators`.
 
