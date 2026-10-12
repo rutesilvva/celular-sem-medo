@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, findNodeHandle, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ConfidencePicker } from '@/components/ConfidencePicker';
 import { Screen } from '@/components/Screen';
@@ -122,6 +122,10 @@ export default function ParticipantDiagnosticScreen() {
 
   useEffect(() => {
     if (!hydrated) return;
+    if (Platform.OS === 'web') {
+      AccessibilityInfo.announceForAccessibility(step < 7 ? `Pergunta ${step + 1} de 7` : 'Confira suas respostas');
+      return;
+    }
     const target = findNodeHandle(headingRef.current);
     if (target) AccessibilityInfo.setAccessibilityFocus(target);
     else AccessibilityInfo.announceForAccessibility(step < 7 ? `Pergunta ${step + 1} de 7` : 'Confira suas respostas');
