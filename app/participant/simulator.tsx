@@ -676,8 +676,11 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
           <Ionicons name="ellipsis-vertical" size={22} color={colors.surface} />
         </View>
         <View style={styles.environmentToolbar}><Ionicons name="chevron-back" size={22} color={colors.text} /><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
-        <EnvironmentScene presentation={presentation} step={step} accent={config.accent} query={environmentQuery} onQueryChange={setEnvironmentQuery} />
-        <EnvironmentActions step={step} busy={engine.busy || (presentation === 'app-store' && step.position === 1 && environmentQuery.trim().length < 3)} accent={config.accent} onSubmit={engine.submit} />
+        {presentation === 'app-store' ? (
+          <AppStoreExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
+        ) : (
+          <><EnvironmentScene presentation={presentation} step={step} accent={config.accent} query={environmentQuery} onQueryChange={setEnvironmentQuery} /><EnvironmentActions step={step} busy={engine.busy} accent={config.accent} onSubmit={engine.submit} /></>
+        )}
         <View style={styles.environmentHomeIndicator} />
       </Card>
       <Card style={styles.instructionCard}>
@@ -720,6 +723,30 @@ function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: 
   }
   if (presentation === 'marketplace') return <View style={styles.environmentScene}><View style={styles.fakeSearch}><Ionicons name="search" size={20} color={colors.textMuted} /><AppText variant="small">Buscar produtos</AppText><Ionicons name="cart-outline" size={20} color={accent} /></View><View style={styles.fakeProduct}><View style={styles.fakeProductImage}><Ionicons name="cube-outline" size={42} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Produto de treinamento</AppText><AppText variant="small">R$ 30,00 + R$ 8,00 de frete</AppText><AppText variant="caption" color={colors.success}>Loja bem avaliada · descrição completa</AppText></View></View></View>;
   return <View style={[styles.environmentScene, styles.fakeCallScene]}><View style={[styles.fakeCallerAvatar, { backgroundColor: accent }]}><Ionicons name="person" size={48} color={colors.surface} /></View><AppText variant="subheading" weight="900">Número não identificado</AppText><AppText color={colors.textMuted}>Chamada de treinamento em andamento</AppText><View style={styles.fakeCallControls}><View style={styles.fakeCallButton}><Ionicons name="mic-off" size={24} color={colors.text} /></View><View style={[styles.fakeCallButton, styles.fakeCallEnd]}><Ionicons name="call" size={24} color={colors.surface} /></View><View style={styles.fakeCallButton}><Ionicons name="volume-high" size={24} color={colors.text} /></View></View></View>;
+}
+
+function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
+  const searched = query.trim().length >= 3;
+  if (step.position === 1) return <View style={styles.storeExperience}>
+    <View style={styles.storeSearchBox}><Ionicons name="search" size={22} color={colors.textMuted} /><TextInput accessibilityLabel="Digite o nome do aplicativo" autoCapitalize="none" autoCorrect={false} onChangeText={onQueryChange} placeholder="Digite: Conecta Fácil" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.storeSearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar busca" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={22} color={colors.textMuted} /></Pressable> : null}</View>
+    {!searched ? <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>1</AppText></View><View style={styles.flex1}><AppText weight="900">Toque na lupa e escreva o nome</AppText><AppText variant="small" color={colors.textMuted}>Você pode digitar “Conecta Fácil”. Nada será pesquisado na loja real.</AppText></View></View> : <View style={styles.storeSearchSuccess}><Ionicons name="checkmark-circle" size={28} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Busca pronta</AppText><AppText variant="small" color={colors.textMuted}>Agora toque em “Mostrar resultados”.</AppText></View></View>}
+    <Button label="Mostrar resultados" icon="search" disabled={!searched || busy} onPress={() => void onSubmit({ action: 'continue' })} />
+  </View>;
+
+  if (step.position === 2) return <View style={styles.storeExperience}>
+    <View style={styles.storeSearchBox}><Ionicons name="search" size={22} color={colors.textMuted} /><AppText style={styles.flex1}>{query || 'Conecta Fácil'}</AppText><Ionicons name="options-outline" size={22} color={colors.textMuted} /></View>
+    <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>2</AppText></View><View style={styles.flex1}><AppText weight="900">Compare antes de escolher</AppText><AppText variant="small" color={colors.textMuted}>Confira nome, desenvolvedor, avaliação e quantidade de avaliações.</AppText></View></View>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher Conecta Fácil da Empresa Exemplo" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'official' })} style={({ pressed }) => [styles.storeResultCard, styles.storeResultTrusted, pressed && styles.bankActionRowPressed]}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo</AppText><AppText variant="caption" color={colors.success}>4,8 ★ · muitas avaliações · verificado</AppText></View><Ionicons name="chevron-forward" size={24} color={colors.textMuted} /></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher Conecta Grátis de desenvolvedor desconhecido" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'copy' })} style={({ pressed }) => [styles.storeResultCard, pressed && styles.bankActionRowPressed]}><View style={[styles.fakeAppIcon, styles.fakeAppIconUnknown]}><Ionicons name="help" size={28} color={colors.textMuted} /></View><View style={styles.flex1}><AppText weight="900">Conecta Grátis</AppText><AppText variant="small" color={colors.danger}>Desenvolvedor desconhecido</AppText><AppText variant="caption" color={colors.danger}>Sem avaliações suficientes</AppText></View><Ionicons name="chevron-forward" size={24} color={colors.textMuted} /></Pressable>
+  </View>;
+
+  return <View style={styles.storeExperience}>
+    <View style={styles.storeAppDetail}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo</AppText></View><Tag label="TREINO" tone="purple" /></View>
+    <View style={styles.storePermissionAlert}><Ionicons name="alert-circle" size={30} color={colors.warning} /><View style={styles.flex1}><AppText weight="900">Permissão inesperada</AppText><AppText variant="small">Este aplicativo quer acessar todos os seus contatos, mas não explicou por quê.</AppText></View></View>
+    <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Pare quando algo não fizer sentido</AppText><AppText variant="small" color={colors.textMuted}>Uma permissão sem relação com a função do aplicativo é motivo para cancelar.</AppText></View></View>
+    <Button label="Cancelar com segurança" icon="shield-checkmark-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'cancel' })} />
+    <Button label="Instalar mesmo assim" variant="secondary" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'install' })} />
+  </View>;
 }
 
 function EnvironmentActions({ step, busy, accent, onSubmit }: { step: ParticipantMissionStep; busy: boolean; accent: string; onSubmit: (action: MissionAction) => Promise<void> }) {
@@ -1091,6 +1118,14 @@ const styles = StyleSheet.create({
   storeSearchBox: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.round, borderWidth: 2, flexDirection: 'row', gap: spacing.sm, minHeight: 54, paddingHorizontal: spacing.md },
   storeSearchInput: { color: colors.text, flex: 1, fontSize: 17, minHeight: 50 },
   storeEmptyState: { alignItems: 'center', gap: spacing.sm, justifyContent: 'center', minHeight: 150, padding: spacing.lg },
+  storeExperience: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  storeCoach: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  storeCoachNumber: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 36, justifyContent: 'center', width: 36 },
+  storeSearchSuccess: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  storeResultCard: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 88, padding: spacing.md },
+  storeResultTrusted: { borderColor: colors.success },
+  storeAppDetail: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  storePermissionAlert: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   fakeProduct: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   fakeAppIcon: { alignItems: 'center', borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 },
   fakeAppIconUnknown: { backgroundColor: '#E4E4E8' },
