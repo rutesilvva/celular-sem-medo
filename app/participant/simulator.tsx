@@ -726,8 +726,22 @@ function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: 
 }
 
 function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
-  const [showUnsafeFeedback, setShowUnsafeFeedback] = useState(false);
+  const [installPhase, setInstallPhase] = useState<'details' | 'downloading' | 'installed'>('details');
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const searched = query.trim().length >= 3;
+
+  useEffect(() => {
+    if (installPhase !== 'downloading') return;
+    const timer = setInterval(() => setDownloadProgress((current) => {
+      const next = Math.min(100, current + 20);
+      if (next === 100) {
+        clearInterval(timer);
+        setTimeout(() => setInstallPhase('installed'), 250);
+      }
+      return next;
+    }), 350);
+    return () => clearInterval(timer);
+  }, [installPhase]);
   if (step.position === 1) return <View style={styles.storeExperience}>
     <View style={styles.storeSearchBox}><Ionicons name="search" size={22} color={colors.textMuted} /><TextInput accessibilityLabel="Digite o nome do aplicativo" autoCapitalize="none" autoCorrect={false} onChangeText={onQueryChange} placeholder="Digite: Conecta Fácil" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.storeSearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar busca" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={22} color={colors.textMuted} /></Pressable> : null}</View>
     {!searched ? <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>1</AppText></View><View style={styles.flex1}><AppText weight="900">Toque na lupa e escreva o nome</AppText><AppText variant="small" color={colors.textMuted}>Você pode digitar “Conecta Fácil”. Nada será pesquisado na loja real.</AppText></View></View> : <View style={styles.storeSearchSuccess}><Ionicons name="checkmark-circle" size={28} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Busca pronta</AppText><AppText variant="small" color={colors.textMuted}>Agora toque em “Mostrar resultados”.</AppText></View></View>}
@@ -742,12 +756,20 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
   </View>;
 
   return <View style={styles.storeExperience}>
-    <View style={styles.storeAppDetail}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo</AppText></View><Tag label="TREINO" tone="purple" /></View>
-    <View style={styles.storePermissionAlert}><Ionicons name="alert-circle" size={30} color={colors.warning} /><View style={styles.flex1}><AppText weight="900">Permissão inesperada</AppText><AppText variant="small">Este aplicativo quer acessar todos os seus contatos, mas não explicou por quê.</AppText></View></View>
-    <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Pare quando algo não fizer sentido</AppText><AppText variant="small" color={colors.textMuted}>Uma permissão sem relação com a função do aplicativo é motivo para cancelar.</AppText></View></View>
-    {showUnsafeFeedback ? <View accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.storeUnsafeFeedback}><Ionicons name="close-circle" size={30} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>Não instale ainda</AppText><AppText variant="small">O acesso aos contatos não é necessário para a função informada. Cancele e procure uma opção confiável ou peça ajuda.</AppText></View></View> : null}
-    <Button label="Cancelar com segurança" icon="shield-checkmark-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'cancel' })} />
-    <Button label="Instalar mesmo assim" variant="secondary" disabled={busy} onPress={() => { setShowUnsafeFeedback(true); void onSubmit({ action: 'choose', optionId: 'install' }); }} />
+    <View style={styles.storeAppDetail}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo · sem anúncios</AppText></View><Ionicons name="ellipsis-vertical" size={22} color={colors.textMuted} /></View>
+    <View style={styles.storeStats}><View style={styles.storeStat}><AppText weight="900">4,8 ★</AppText><AppText variant="caption" color={colors.textMuted}>1 mil avaliações</AppText></View><View style={styles.storeStat}><AppText weight="900">Livre</AppText><AppText variant="caption" color={colors.textMuted}>Classificação</AppText></View><View style={styles.storeStat}><AppText weight="900">18 MB</AppText><AppText variant="caption" color={colors.textMuted}>Tamanho fictício</AppText></View></View>
+    {installPhase === 'details' ? <>
+      <Button label="Instalar" icon="download-outline" disabled={busy} onPress={() => { setDownloadProgress(0); setInstallPhase('downloading'); }} />
+      <View style={styles.storePreview}><Ionicons name="phone-portrait-outline" size={54} color={accent} /><View style={styles.flex1}><AppText weight="900">Sobre este aplicativo</AppText><AppText variant="small" color={colors.textMuted}>Aplicativo fictício criado apenas para aprender o processo de instalação com segurança.</AppText></View></View>
+    </> : installPhase === 'downloading' ? <>
+      <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: downloadProgress }} style={styles.storeDownloadRow}><View style={[styles.storeDownloadRing, { borderColor: accent }]}><AppText weight="900" color={accent}>{downloadProgress}%</AppText></View><View style={styles.flex1}><AppText weight="900">Instalando no ambiente de treino…</AppText><AppText variant="small" color={colors.textMuted}>{downloadProgress} de 100 · nenhum arquivo real será baixado</AppText></View></View>
+      <View style={styles.storeProgressTrack}><View style={[styles.storeProgressFill, { backgroundColor: accent, width: `${downloadProgress}%` }]} /></View>
+      <Button label="Cancelar instalação simulada" variant="secondary" onPress={() => { setInstallPhase('details'); setDownloadProgress(0); }} />
+    </> : <>
+      <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.storeInstalled}><Ionicons name="checkmark-circle" size={34} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Aplicativo instalado no treino</AppText><AppText variant="small" color={colors.textMuted}>Nenhum aplicativo foi instalado no seu aparelho.</AppText></View></View>
+      <View style={styles.storeInstalledActions}><Button label="Desinstalar" variant="secondary" onPress={() => { setInstallPhase('details'); setDownloadProgress(0); }} /><Button label="Abrir" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'install-training' })} /></View>
+    </>}
+    <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Tudo acontece apenas na simulação</AppText><AppText variant="small" color={colors.textMuted}>Você pode acompanhar o progresso sem consumir internet, memória ou instalar arquivos.</AppText></View></View>
   </View>;
 }
 
@@ -1129,6 +1151,15 @@ const styles = StyleSheet.create({
   storeAppDetail: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   storePermissionAlert: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   storeUnsafeFeedback: { alignItems: 'center', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  storeStats: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', paddingVertical: spacing.md },
+  storeStat: { alignItems: 'center', borderRightColor: colors.border, borderRightWidth: 1, flex: 1, gap: 2 },
+  storePreview: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.lg, minHeight: 120, padding: spacing.lg },
+  storeDownloadRow: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  storeDownloadRing: { alignItems: 'center', borderRadius: radius.round, borderWidth: 5, height: 68, justifyContent: 'center', width: 68 },
+  storeProgressTrack: { backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 10, overflow: 'hidden' },
+  storeProgressFill: { borderRadius: radius.round, height: '100%' },
+  storeInstalled: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  storeInstalledActions: { gap: spacing.sm },
   fakeProduct: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   fakeAppIcon: { alignItems: 'center', borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 },
   fakeAppIconUnknown: { backgroundColor: '#E4E4E8' },
