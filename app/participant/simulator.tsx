@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
@@ -654,6 +654,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
 
 function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine, playInstruction, router, presentation }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter>; presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call' }) {
   const step = engine.currentStep;
+  const [environmentQuery, setEnvironmentQuery] = useState('');
   if (!step) return null;
   const config = {
     messaging: { app: 'Mensagens de treino', icon: 'chatbubble-ellipses-outline' as const, accent: '#176B5B', label: 'Conversa fictícia' },
@@ -675,8 +676,8 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
           <Ionicons name="ellipsis-vertical" size={22} color={colors.surface} />
         </View>
         <View style={styles.environmentToolbar}><Ionicons name="chevron-back" size={22} color={colors.text} /><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
-        <EnvironmentScene presentation={presentation} step={step} accent={config.accent} />
-        <EnvironmentActions step={step} busy={engine.busy} accent={config.accent} onSubmit={engine.submit} />
+        <EnvironmentScene presentation={presentation} step={step} accent={config.accent} query={environmentQuery} onQueryChange={setEnvironmentQuery} />
+        <EnvironmentActions step={step} busy={engine.busy || (presentation === 'app-store' && step.position === 1 && environmentQuery.trim().length < 3)} accent={config.accent} onSubmit={engine.submit} />
         <View style={styles.environmentHomeIndicator} />
       </Card>
       <Card style={styles.instructionCard}>
@@ -689,10 +690,34 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
   );
 }
 
-function EnvironmentScene({ presentation, step, accent }: { presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call'; step: ParticipantMissionStep; accent: string }) {
+function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: { presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call'; step: ParticipantMissionStep; accent: string; query: string; onQueryChange: (value: string) => void }) {
   if (presentation === 'messaging') return <View style={styles.environmentScene}><View style={styles.fakeChatReceived}><AppText variant="small">Olá! Preciso que você faça isso agora. É urgente.</AppText></View><View style={styles.fakeChatReceived}><AppText variant="small">Use este link ou envie o valor solicitado.</AppText></View><View style={styles.fakeChatInput}><AppText variant="small" color={colors.textMuted}>Mensagem</AppText><Ionicons name="send" size={20} color={accent} /></View></View>;
   if (presentation === 'mobility') return <View style={styles.environmentScene}><View style={styles.fakeMap}><Ionicons name="location" size={34} color={accent} /><View style={styles.fakeRoute} /><Ionicons name="flag" size={30} color={colors.primary} /></View><View style={styles.fakeSearch}><Ionicons name="search" size={20} color={colors.textMuted} /><AppText variant="small">Para onde você vai?</AppText></View></View>;
-  if (presentation === 'app-store') return <View style={styles.environmentScene}><View style={styles.fakeSearch}><Ionicons name="search" size={20} color={colors.textMuted} /><AppText variant="small">Buscar aplicativos</AppText></View><View style={styles.fakeProduct}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText weight="900">Conecta Fácil</AppText><AppText variant="caption" color={colors.textMuted}>Empresa Exemplo · aplicativo de treino</AppText></View><Tag label="VERIFICAR" tone="purple" /></View></View>;
+  if (presentation === 'app-store') {
+    const hasSearch = query.trim().length > 0;
+    return <View style={styles.environmentScene}>
+      <View style={styles.storeSearchBox}>
+        <Ionicons name="search" size={22} color={colors.textMuted} />
+        <TextInput
+          accessibilityLabel="Buscar na loja de aplicativos de treinamento"
+          autoCapitalize="none"
+          autoCorrect={false}
+          onChangeText={onQueryChange}
+          placeholder="Buscar aplicativos"
+          placeholderTextColor={colors.placeholder}
+          returnKeyType="search"
+          style={styles.storeSearchInput}
+          value={query}
+        />
+        {hasSearch ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar busca" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={22} color={colors.textMuted} /></Pressable> : null}
+      </View>
+      {!hasSearch ? <View style={styles.storeEmptyState}><Ionicons name="search-outline" size={38} color={colors.primary} /><AppText weight="900">Digite o nome do aplicativo</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>Experimente escrever “Conecta Fácil” para visualizar resultados fictícios.</AppText></View> : <>
+        <AppText variant="small" weight="800" color={colors.textMuted}>RESULTADOS DE TREINAMENTO</AppText>
+        <View style={styles.fakeProduct}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText weight="900">Conecta Fácil</AppText><AppText variant="caption" color={colors.textMuted}>Empresa Exemplo · 4,8 ★ · aplicativo de treino</AppText></View><Tag label="VERIFICADO" tone="green" /></View>
+        <View style={styles.fakeProduct}><View style={[styles.fakeAppIcon, styles.fakeAppIconUnknown]}><Ionicons name="help" size={28} color={colors.textMuted} /></View><View style={styles.flex1}><AppText weight="900">Conecta Grátis</AppText><AppText variant="caption" color={colors.danger}>Desenvolvedor desconhecido · poucas avaliações</AppText></View><Tag label="ATENÇÃO" tone="red" /></View>
+      </>}
+    </View>;
+  }
   if (presentation === 'marketplace') return <View style={styles.environmentScene}><View style={styles.fakeSearch}><Ionicons name="search" size={20} color={colors.textMuted} /><AppText variant="small">Buscar produtos</AppText><Ionicons name="cart-outline" size={20} color={accent} /></View><View style={styles.fakeProduct}><View style={styles.fakeProductImage}><Ionicons name="cube-outline" size={42} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Produto de treinamento</AppText><AppText variant="small">R$ 30,00 + R$ 8,00 de frete</AppText><AppText variant="caption" color={colors.success}>Loja bem avaliada · descrição completa</AppText></View></View></View>;
   return <View style={[styles.environmentScene, styles.fakeCallScene]}><View style={[styles.fakeCallerAvatar, { backgroundColor: accent }]}><Ionicons name="person" size={48} color={colors.surface} /></View><AppText variant="subheading" weight="900">Número não identificado</AppText><AppText color={colors.textMuted}>Chamada de treinamento em andamento</AppText><View style={styles.fakeCallControls}><View style={styles.fakeCallButton}><Ionicons name="mic-off" size={24} color={colors.text} /></View><View style={[styles.fakeCallButton, styles.fakeCallEnd]}><Ionicons name="call" size={24} color={colors.surface} /></View><View style={styles.fakeCallButton}><Ionicons name="volume-high" size={24} color={colors.text} /></View></View></View>;
 }
@@ -1063,8 +1088,12 @@ const styles = StyleSheet.create({
   fakeMap: { alignItems: 'center', backgroundColor: '#DDE9DF', borderRadius: radius.lg, flexDirection: 'row', height: 180, justifyContent: 'space-around', overflow: 'hidden' },
   fakeRoute: { borderColor: '#FFFFFF', borderStyle: 'dashed', borderTopWidth: 4, width: '45%' },
   fakeSearch: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  storeSearchBox: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.round, borderWidth: 2, flexDirection: 'row', gap: spacing.sm, minHeight: 54, paddingHorizontal: spacing.md },
+  storeSearchInput: { color: colors.text, flex: 1, fontSize: 17, minHeight: 50 },
+  storeEmptyState: { alignItems: 'center', gap: spacing.sm, justifyContent: 'center', minHeight: 150, padding: spacing.lg },
   fakeProduct: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   fakeAppIcon: { alignItems: 'center', borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 },
+  fakeAppIconUnknown: { backgroundColor: '#E4E4E8' },
   fakeProductImage: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 88, justifyContent: 'center', width: 88 },
   fakeCallScene: { alignItems: 'center' },
   fakeCallerAvatar: { alignItems: 'center', borderRadius: radius.round, height: 96, justifyContent: 'center', width: 96 },
