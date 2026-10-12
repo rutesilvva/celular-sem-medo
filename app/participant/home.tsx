@@ -122,7 +122,7 @@ export default function ParticipantHomeScreen() {
 
         <View style={styles.weeklyChart}>
           {weeklyMomentum.map((day) => (
-            <View key={day.label} style={styles.weeklyBarGroup}>
+            <View key={day.id} style={styles.weeklyBarGroup}>
               <AppText variant="caption" color={colors.textMuted}>{day.label}</AppText>
               <View style={[styles.weeklyBarTrack, { height: 78 }]}>
                 <View style={[styles.weeklyBarFill, { height: `${day.value}%`, backgroundColor: day.value >= 80 ? colors.success : day.value >= 55 ? colors.primary : colors.warning }]} />
@@ -288,13 +288,13 @@ function getWeeklyMomentum(progress: { completed_missions?: number; progress_per
   const base = [42, 55, 48, 70, 82, 74, Math.min(100, 55 + (Number(percent) / 2))];
   const delta = Math.min(18, Number(completed) * 4);
   return [
-    { label: 'S', value: Math.max(18, Number(base[0]) + delta) },
-    { label: 'T', value: Math.max(18, Number(base[1]) + delta) },
-    { label: 'Q', value: Math.max(18, Number(base[2]) + delta) },
-    { label: 'Q', value: Math.max(24, Number(base[3]) + delta) },
-    { label: 'S', value: Math.max(24, Number(base[4]) + delta) },
-    { label: 'S', value: Math.max(24, Number(base[5]) + delta) },
-    { label: 'D', value: Math.max(28, Number(base[6])) },
+    { id: 'segunda', label: 'S', value: Math.max(18, Number(base[0]) + delta) },
+    { id: 'terca', label: 'T', value: Math.max(18, Number(base[1]) + delta) },
+    { id: 'quarta', label: 'Q', value: Math.max(18, Number(base[2]) + delta) },
+    { id: 'quinta', label: 'Q', value: Math.max(24, Number(base[3]) + delta) },
+    { id: 'sexta', label: 'S', value: Math.max(24, Number(base[4]) + delta) },
+    { id: 'sabado', label: 'S', value: Math.max(24, Number(base[5]) + delta) },
+    { id: 'domingo', label: 'D', value: Math.max(28, Number(base[6])) },
   ];
 }
 
