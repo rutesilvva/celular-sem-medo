@@ -28,7 +28,11 @@ module.exports = ({ config }) => ({
     ['expo-splash-screen', { image: './assets/logo-celular-sem-medo.png', resizeMode: 'contain', backgroundColor: '#FAF8FC' }],
   ],
   experiments: { typedRoutes: true },
-  updates: { checkAutomatically: 'ON_LOAD', fallbackToCacheTimeout: 0 },
+  updates: {
+    url: 'https://u.expo.dev/353655a1-880b-4e12-8de3-bb7746c98e93',
+    checkAutomatically: 'ON_LOAD',
+    fallbackToCacheTimeout: 0,
+  },
   extra: {
     ...config.extra,
     eas: { projectId: '353655a1-880b-4e12-8de3-bb7746c98e93' },
