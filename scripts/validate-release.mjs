@@ -12,15 +12,20 @@ const pkg = JSON.parse(packageText);
 for (const expected of ["scheme: 'celularsemmedo'", "bundleIdentifier: 'br.com.celularsemmedo.app'", "package: 'br.com.celularsemmedo.app'"]) {
   if (!appConfig.includes(expected)) failures.push(`Identidade nativa ausente: ${expected}`);
 }
-for (const profile of ['development', 'preview', 'production']) {
+for (const profile of ['development', 'preview', 'presentation', 'production']) {
   if (!eas.build?.[profile]) failures.push(`Perfil EAS ausente: ${profile}`);
 }
 for (const [profile, channel] of [['development', 'development'], ['preview', 'preview'], ['production', 'production']]) {
   if (eas.build?.[profile]?.channel !== channel) failures.push(`Canal OTA inválido no perfil ${profile}.`);
 }
+if (eas.build?.presentation?.channel !== 'presentation') failures.push('Canal OTA inválido no perfil presentation.');
+const presentationEnv = eas.build?.presentation?.env ?? {};
+if (presentationEnv.EXPO_PUBLIC_APP_ENV !== 'staging') failures.push('Build presentation deve usar staging.');
+if (presentationEnv.EXPO_PUBLIC_DEMO_MODE !== 'true') failures.push('Build presentation deve habilitar demonstração explicitamente.');
+if (presentationEnv.EXPO_PUBLIC_ENABLE_DEVELOPMENT_MOCKS !== 'false') failures.push('Build presentation não pode habilitar mocks globais.');
 if (eas.cli?.requireCommit !== true) failures.push('EAS deve exigir árvore Git commitada.');
 if (!eas.build?.production?.autoIncrement) failures.push('Build production deve incrementar a versão nativa.');
-for (const script of ['test:ci', 'build:preview:android', 'build:preview:ios', 'build:production', 'submit:production']) {
+for (const script of ['test:ci', 'build:preview:android', 'build:preview:ios', 'build:presentation:android', 'build:production', 'submit:production']) {
   if (!pkg.scripts?.[script]) failures.push(`Script obrigatório ausente: ${script}`);
 }
 

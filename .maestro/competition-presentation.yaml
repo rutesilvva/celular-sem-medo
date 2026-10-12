@@ -1,17 +1,39 @@
 appId: br.com.celularsemmedo.app
-name: Roteiro controlado para apresentação à banca
+name: Jornada offline completa para apresentação à banca
 tags:
   - competition
   - demo
 ---
 - openLink: "celularsemmedo://demo"
+- assertVisible: "Verificação da apresentação"
 - assertVisible: "APRESENTAÇÃO PARA A BANCA"
+- tapOn: "Iniciar roteiro de 3 minutos"
 - assertVisible: "1. Diagnóstico acessível"
-- repeat:
-    times: 4
-    commands:
-      - tapOn: "Próximo"
+- tapOn: "Próximo"
+- assertVisible: "2. Pedido livre"
+- tapOn: "Próximo"
+- assertVisible: "3. Missão personalizada"
+- tapOn: "Abrir missão dinâmica"
+- tapOn: "Iniciar missão"
+- tapOn: "Começar"
+- tapOn: "Digite culinária"
+- inputText: "culinária"
+- tapOn: "Mostrar resultados"
+- tapOn:
+    text: "Receita simples e segura"
+    index: 1
+- tapOn: "Abrir vídeo escolhido"
+- tapOn: "Reproduzir"
+- assertVisible: "Reproduzindo conteúdo local"
+- tapOn: "Já assisti"
+- tapOn: "Verificar a fonte e comparar informações"
+- tapOn: "Concluir missão"
+- assertVisible: "Muito bem!"
+- tapOn: "Concluir"
+- tapOn: "Próximo"
+- assertVisible: "4. Evolução comprovada"
+- tapOn: "Próximo"
 - assertVisible: "5. Impacto da oficina"
-- assertVisible: "78% autonomia"
-- tapOn: "Recomeçar roteiro"
-- assertVisible: "1. Diagnóstico acessível"
+- assertVisible: "78%"
+- tapOn: "Concluir e reiniciar"
+- assertVisible: "Iniciar roteiro de 3 minutos"

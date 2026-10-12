@@ -1,13 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import NetInfo from '@react-native-community/netinfo';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
-import { AppText, Button, Card, Header, Tag } from '@/components/ui';
+import { AppText, Button, Card, Header, MetricCard, ProgressBar, Tag } from '@/components/ui';
 import { competitionDemoSteps as presentationSteps, COMPETITION_DEMO_TARGET_SECONDS } from '@/features/impact/story';
 import { colors, radius, spacing } from '@/theme/tokens';
 import { isDemoModeEnabled } from '@/lib/demo-mode';
+import { getPresentationReadiness } from '@/lib/presentation-readiness';
 
 type DemoMission = {
   id: string;
@@ -54,7 +56,9 @@ export default function DemoScreen() {
   const [presentationStep, setPresentationStep] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [networkAvailable, setNetworkAvailable] = useState<boolean | null>(null);
   useEffect(() => { if (startedAt === null) return; const timer=setInterval(()=>setElapsedSeconds(Math.floor((Date.now()-startedAt)/1000)),1000);return()=>clearInterval(timer); }, [startedAt]);
+  useEffect(() => { let active=true;void NetInfo.fetch().then((state)=>{if(active)setNetworkAvailable(state.isConnected!==false&&state.isInternetReachable!==false);}).catch(()=>{if(active)setNetworkAvailable(false);});return()=>{active=false}; }, []);
 
   const selected = useMemo<DemoMission>(() => {
     return missions.find((mission) => mission.id === selectedId) ?? {
@@ -68,6 +72,7 @@ export default function DemoScreen() {
     };
   }, [selectedId]);
   const presentation = presentationSteps[presentationStep] ?? presentationSteps[0];
+  const readiness = useMemo(() => getPresentationReadiness(), []);
   const resetPresentation = () => { setPresentationStep(0); setStartedAt(null); setElapsedSeconds(0); setSelectedId('pix'); };
   const startPresentation = () => { setPresentationStep(0); setStartedAt(Date.now()); setElapsedSeconds(0); setSelectedId('pix'); };
 
@@ -77,6 +82,11 @@ export default function DemoScreen() {
     <Screen contentStyle={styles.content}>
       <Header title="Missões de demonstração" subtitle="Modo controlado e sem dados reais" onBack={() => router.replace('/login')} />
       <Tag label="Modo seguro de teste" tone="green" />
+
+      <Card style={styles.readinessCard}>
+        <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name="pulse-outline" size={28} color={colors.primary}/></View><View style={styles.flex}><AppText variant="subheading" weight="800">Verificação da apresentação</AppText><AppText variant="small" color={colors.textMuted}>Nenhum token, e-mail ou segredo é exibido.</AppText></View><Tag label={networkAvailable===null?'Verificando rede':networkAvailable?'Online':'Offline seguro'} tone={networkAvailable===false?'yellow':'green'}/></View>
+        <View style={styles.checkList}>{readiness.map((check)=><View key={check.id} style={styles.checkRow}><Ionicons name={check.status==='ready'?'checkmark-circle':'alert-circle'} size={22} color={check.status==='ready'?colors.success:colors.warning}/><View style={styles.flex}><AppText weight="800" variant="small">{check.label}</AppText><AppText variant="caption" color={colors.textMuted}>{check.detail}</AppText></View></View>)}</View>
+      </Card>
 
       <Card style={styles.dynamicCard}>
         <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name="sparkles-outline" size={28} color={colors.primary}/></View><View style={styles.flex}><AppText variant="subheading" weight="800">Missões montadas por JSON seguro</AppText><AppText variant="small" color={colors.textMuted}>Funcionam offline e usam somente componentes permitidos pelo aplicativo.</AppText></View></View>
@@ -89,10 +99,12 @@ export default function DemoScreen() {
         <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name={presentation.icon} size={28} color={colors.primary}/></View><AppText variant="heading" weight="800" style={styles.flex}>{presentationStep + 1}. {presentation.title}</AppText></View>
         <AppText>{presentation.text}</AppText>
         <Tag label={presentation.metric} tone="green" />
+        <DemoJourneyEvidence step={presentationStep} onOpenMission={()=>router.push({pathname:'/dynamic-mission',params:{id:'video'}})}/>
         {startedAt === null ? <Button label="Iniciar roteiro de 3 minutos" icon="play-outline" onPress={startPresentation}/> : <View style={styles.detailActions}>
           <Button label="Anterior" variant="secondary" disabled={presentationStep === 0} onPress={() => setPresentationStep((value) => Math.max(0, value - 1))} />
           <Button label={presentationStep === presentationSteps.length - 1 ? 'Concluir e reiniciar' : 'Próximo'} onPress={() => { if (presentationStep === presentationSteps.length - 1) { resetPresentation(); return; } setPresentationStep((value) => value + 1); }} />
         </View>}
+        {startedAt !== null ? <Button label="Reiniciar apresentação" icon="refresh-outline" variant="soft" onPress={resetPresentation}/> : null}
       </Card>
 
       <Card style={styles.headerCard}>
@@ -155,11 +167,27 @@ export default function DemoScreen() {
   );
 }
 
+function DemoJourneyEvidence({step,onOpenMission}:{step:number;onOpenMission:()=>void}){
+  if(step===0)return <Card style={styles.evidenceCard}><AppText weight="800">Perfil fictício de Ana</AppText><View style={styles.pillRow}><Tag label="Prefere áudio" tone="purple"/><Tag label="Letras maiores" tone="purple"/><Tag label="Confiança 2/5" tone="yellow"/></View><AppText variant="small" color={colors.textMuted}>Objetivo: aprender Pix sem cair em golpes.</AppText></Card>;
+  if(step===1)return <Card style={styles.evidenceCard}><AppText variant="caption" weight="800" color={colors.primary}>QUERO APRENDER ISTO</AppText><View style={styles.fakeInput}><AppText>Quero aprender a fazer um Pix com segurança</AppText></View><AppText variant="small" color={colors.textMuted}>Recomendamos esta prática porque Ana escolheu Pix e informou receio de golpes.</AppText></Card>;
+  if(step===2)return <Card style={styles.evidenceCard}><View style={styles.presentationTitle}><Ionicons name="shield-checkmark-outline" size={28} color={colors.success}/><View style={styles.flex}><AppText weight="800">Simulação sem risco</AppText><AppText variant="small" color={colors.textMuted}>Componentes controlados, sem transferência ou ação externa.</AppText></View></View><Button label="Abrir missão dinâmica" onPress={onOpenMission}/></Card>;
+  if(step===3)return <Card style={styles.evidenceCard}><AppText weight="800">História de evolução</AppText><View style={styles.metricGrid}><MetricCard icon="trending-up-outline" value="2 → 4" label="confiança" tone="blue"/><MetricCard icon="hand-left-outline" value="100%" label="autonomia" tone="green"/></View><AppText variant="small">Praticou em ambiente seguro e concluiu sem pedir ajuda.</AppText></Card>;
+  return <Card style={styles.evidenceCard}><AppText weight="800">Impacto agregado da oficina</AppText><View style={styles.metricGrid}><MetricCard icon="people-outline" value="12" label="alunos"/><MetricCard icon="checkmark-done-outline" value="24" label="missões" tone="green"/></View><View style={styles.progressCopy}><AppText variant="small" weight="700">Autonomia da turma</AppText><AppText variant="small" weight="800" color={colors.primary}>78%</AppText></View><ProgressBar value={78}/><AppText variant="small" color={colors.textMuted}>Pedidos de ajuda: 8 antes → 4 depois.</AppText></Card>;
+}
+
 const styles = StyleSheet.create({
   content: { gap: spacing.lg },
   headerCard: { gap: spacing.sm },
   presentationCard: { backgroundColor: colors.primarySoft, borderColor: colors.primary, gap: spacing.md },
   dynamicCard: { borderColor: colors.primaryMuted, gap: spacing.md },
+  readinessCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, gap: spacing.md },
+  checkList: { gap: spacing.sm },
+  checkRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
+  evidenceCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, gap: spacing.md },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  fakeInput: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, minHeight: 52, justifyContent: 'center', paddingHorizontal: spacing.md },
+  metricGrid: { flexDirection: 'row', gap: spacing.md },
+  progressCopy: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   list: { gap: spacing.md },
   missionCard: {
     alignItems: 'center',

@@ -92,7 +92,7 @@ export default function LoginScreen() {
             accessibilityHint="Abre a seleção segura de conta do Google"
           />
         )}
-        {isDemoModeEnabled() ? <Button label="Testar missões de demonstração" icon="cloud-offline-outline" variant="soft" onPress={() => router.push('/demo')} /> : null}
+        {isDemoModeEnabled() ? <View style={styles.demoAccess}><View style={styles.demoHeading}><Ionicons name="cloud-offline-outline" size={22} color={colors.primary} /><View style={styles.flex}><AppText weight="800">Apresentação sem internet</AppText><AppText variant="small" color={colors.textMuted}>Usa somente dados fictícios e não cria uma conta ou sessão real.</AppText></View></View><Button label="Ver demonstração offline" icon="play-outline" variant="soft" onPress={() => router.push('/demo')} /></View> : null}
         {errorCode ? (
           <View accessibilityLiveRegion="polite" style={styles.error}>
             <Ionicons name="alert-circle-outline" size={22} color={colors.danger} />
@@ -168,6 +168,8 @@ const styles = StyleSheet.create({
   error: { alignItems: 'flex-start', backgroundColor: colors.dangerSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   retry: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
   security: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  demoAccess: { backgroundColor: colors.primarySoft, borderRadius: radius.md, gap: spacing.md, padding: spacing.md },
+  demoHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   identity: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   avatar: { borderRadius: radius.round, height: 52, width: 52 },
   avatarFallback: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
