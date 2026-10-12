@@ -704,10 +704,10 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   const [loginStage, setLoginStage] = useState<'phone' | 'code' | 'profile' | 'password' | 'terms'>('phone');
   const [trainingPhone, setTrainingPhone] = useState('(83) 90000-0000');
   const [trainingCode, setTrainingCode] = useState('');
-  const [trainingFirstName, setTrainingFirstName] = useState('Maria');
-  const [trainingLastName, setTrainingLastName] = useState('Treino');
-  const [trainingEmail, setTrainingEmail] = useState('maria.treino@exemplo.com');
-  const [trainingPassword, setTrainingPassword] = useState('Treino123');
+  const [trainingFirstName, setTrainingFirstName] = useState('');
+  const [trainingLastName, setTrainingLastName] = useState('');
+  const [trainingEmail, setTrainingEmail] = useState('');
+  const [trainingPassword, setTrainingPassword] = useState('');
   const [trainingLanguage, setTrainingLanguage] = useState<'Português' | 'English'>('Português');
   const [trainingTermsAccepted, setTrainingTermsAccepted] = useState(false);
   const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'payment' | 'confirming'>('options');
@@ -755,7 +755,7 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
       <Button label="Confirmar código" icon="checkmark-circle-outline" disabled={trainingCode !== '1234'} onPress={() => setLoginStage('profile')} />
       <Button label="Voltar e corrigir o telefone" variant="secondary" onPress={() => { setTrainingCode(''); setLoginStage('phone'); }} />
     </> : loginStage === 'profile' ? <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Como devemos chamar você?</AppText><AppText color={colors.textMuted}>Pratique o preenchimento usando somente os dados fictícios abaixo.</AppText></View>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Como devemos chamar você?</AppText><AppText color={colors.textMuted}>Preencha todos os campos usando dados fictícios.</AppText></View>
       <View style={styles.mobilityNameRow}><TextInput accessibilityLabel="Nome fictício" autoCapitalize="words" onChangeText={setTrainingFirstName} placeholder="Nome" placeholderTextColor={colors.placeholder} style={[styles.mobilityProfileInput, styles.flex1]} value={trainingFirstName} /><TextInput accessibilityLabel="Sobrenome fictício" autoCapitalize="words" onChangeText={setTrainingLastName} placeholder="Sobrenome" placeholderTextColor={colors.placeholder} style={[styles.mobilityProfileInput, styles.flex1]} value={trainingLastName} /></View>
       <TextInput accessibilityLabel="E-mail fictício" autoCapitalize="none" inputMode="email" onChangeText={setTrainingEmail} placeholder="E-mail" placeholderTextColor={colors.placeholder} style={styles.mobilityProfileInput} value={trainingEmail} />
       <AppText variant="small" weight="800">Idioma preferido</AppText><View style={styles.mobilityLanguageRow}>{(['Português', 'English'] as const).map((language) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: trainingLanguage === language }} key={language} onPress={() => setTrainingLanguage(language)} style={[styles.mobilityLanguageOption, trainingLanguage === language && styles.mobilityRideSelected]}><AppText weight="800">{language}</AppText></Pressable>)}</View>
