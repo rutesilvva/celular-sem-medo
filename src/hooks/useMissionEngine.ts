@@ -28,7 +28,29 @@ export function useMissionEngine(assignmentId:string,steps:ParticipantMissionSte
     syncing.current=task;return task;
   },[currentUser]);
 
-  const start=useCallback(async()=>{if(!currentUser||!steps.length)return;setLoading(true);setError(null);const cached=await readOfflineAttempt(currentUser.id,assignmentId);if(cached){await applyAttempt(cached);setSyncStatus(cached.pending.length?'pending':'synced');setLoading(false);void synchronize(cached);return}const created:OfflineAttempt={ownerId:currentUser.id,assignmentId,localAttemptId:createUuid(),remoteAttemptId:null,remoteNextSequence:null,run:initialMissionRunState,pending:[],syncedOperationIds:[],updatedAt:new Date().toISOString()};const started=enqueueOfflineEvent(created,event('attempt_started',steps[0]?.id));await applyAttempt(started);setSyncStatus('pending');setLoading(false);void synchronize(started)},[applyAttempt,assignmentId,currentUser,steps,synchronize]);
+  const start=useCallback(async()=>{
+    if(!currentUser||!steps.length)return;
+    setLoading(true);setError(null);
+    let cached=await readOfflineAttempt(currentUser.id,assignmentId);
+    if(cached?.run.completed){
+      if(cached.pending.length){
+        await synchronize(cached);
+        cached=await readOfflineAttempt(currentUser.id,assignmentId);
+      }
+      if(cached?.pending.length){
+        await applyAttempt(cached);
+        setSyncStatus('failed');
+        setError('Antes de praticar novamente, precisamos sincronizar a conclusão anterior. Verifique a conexão e tente novamente.');
+        setLoading(false);
+        return;
+      }
+      cached=null;
+    }
+    if(cached){await applyAttempt(cached);setSyncStatus(cached.pending.length?'pending':'synced');setLoading(false);void synchronize(cached);return}
+    const created:OfflineAttempt={ownerId:currentUser.id,assignmentId,localAttemptId:createUuid(),remoteAttemptId:null,remoteNextSequence:null,run:initialMissionRunState,pending:[],syncedOperationIds:[],updatedAt:new Date().toISOString()};
+    const started=enqueueOfflineEvent(created,event('attempt_started',steps[0]?.id));
+    await applyAttempt(started);setSyncStatus('pending');setLoading(false);void synchronize(started);
+  },[applyAttempt,assignmentId,currentUser,steps,synchronize]);
 
   useEffect(()=>{mounted.current=true;queueMicrotask(()=>void start());const unsubscribe=NetInfo.addEventListener(state=>{if(state.isConnected&&state.isInternetReachable!==false)void synchronize()});return()=>{mounted.current=false;unsubscribe()}},[start,synchronize]);
   const run=attempt?.run??initialMissionRunState;const currentStep=steps[run.stepIndex]??steps[0]??null;
