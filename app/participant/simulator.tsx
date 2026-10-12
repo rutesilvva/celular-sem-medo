@@ -675,7 +675,7 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
           <View style={styles.flex1}><AppText variant="caption" color={colors.surface}>AMBIENTE EDUCATIVO</AppText><AppText weight="900" color={colors.surface}>{config.app}</AppText></View>
           <Ionicons name="ellipsis-vertical" size={22} color={colors.surface} />
         </View>
-        <View style={styles.environmentToolbar}><Ionicons name="chevron-back" size={22} color={colors.text} /><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
+        <View style={styles.environmentToolbar}><Pressable accessibilityRole="button" accessibilityLabel="Voltar aos detalhes da missão" hitSlop={10} onPress={() => router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })}><Ionicons name="chevron-back" size={22} color={colors.text} /></Pressable><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
         {presentation === 'app-store' ? (
           <AppStoreExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
         ) : presentation === 'mobility' ? (
@@ -697,6 +697,8 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
 
 function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
   const [pickupReview, setPickupReview] = useState(false);
+  const [editingAddresses, setEditingAddresses] = useState(false);
+  const [originAddress, setOriginAddress] = useState('Rua das Flores, 120');
   const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'confirming'>('options');
   const [selectedRide, setSelectedRide] = useState<'economy' | 'comfort' | 'moto' | 'delivery'>('economy');
   const hasDestination = query.trim().length >= 3;
@@ -706,41 +708,49 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
     moto: { label: 'Uber Moto', price: 'R$ 5,90', description: 'Viagem de motocicleta para apenas 1 passageiro.' },
     delivery: { label: 'Uber Envios', price: 'R$ 7,40', description: 'Envio de um item pequeno; não transporta passageiro.' },
   }[selectedRide];
+  const destinationAddress = query.trim() || 'Biblioteca Municipal';
 
   if (step.position === 1) return <View style={styles.mobilityExperience}>
     <View style={styles.mobilityTopRow}><View><AppText variant="caption" color={colors.textMuted}>PONTO DE PARTIDA FICTÍCIO</AppText><AppText weight="900">Localização de treino</AppText></View><Ionicons name="notifications-outline" size={24} color={colors.text} /></View>
     <View style={styles.mobilityTabs}><View style={styles.mobilityTabActive}><Ionicons name="car-sport" size={22} color={accent} /><AppText weight="900">Viagens</AppText></View><View style={styles.mobilityTab}><Ionicons name="cube-outline" size={21} color={colors.textMuted} /><AppText color={colors.textMuted}>Entregas</AppText></View></View>
-    <MobilityMapScene compact />
+    <MobilityMapScene compact origin={originAddress} destination={destinationAddress} />
     <View style={styles.mobilitySearchBox}><Ionicons name="search" size={25} color={colors.text} /><TextInput accessibilityLabel="Digite o destino da viagem simulada" autoCorrect={false} onChangeText={onQueryChange} placeholder="Para onde?" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.mobilitySearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar destino" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={23} color={colors.textMuted} /></Pressable> : null}</View>
     <View style={styles.mobilityCoach}><Ionicons name="information-circle-outline" size={26} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Digite um lugar conhecido</AppText><AppText variant="small" color={colors.textMuted}>Experimente “Biblioteca Municipal”. O aplicativo não acessa sua localização real.</AppText></View></View>
     <Button label="Procurar destinos" icon="search" disabled={!hasDestination || busy} onPress={() => void onSubmit({ action: 'continue' })} />
   </View>;
 
+  if (step.position === 2 && editingAddresses) return <View style={styles.mobilityExperience}>
+    <View style={styles.mobilityPlanningHeader}><Pressable accessibilityRole="button" accessibilityLabel="Voltar aos resultados" hitSlop={10} onPress={() => setEditingAddresses(false)}><Ionicons name="arrow-back" size={25} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="subheading" weight="900">Digite os endereços</AppText><AppText variant="caption" color={colors.textMuted}>Os dados ficam somente nesta simulação</AppText></View></View>
+    <View style={styles.mobilityRouteFields}><View style={styles.mobilityRouteDots}><View style={styles.mobilityOriginDot} /><View style={styles.mobilityDotsLine} /><View style={styles.mobilityEndSquare} /></View><View style={styles.flex1}><TextInput accessibilityLabel="Endereço de partida" autoCorrect={false} onChangeText={setOriginAddress} placeholder="De onde você vai sair?" placeholderTextColor={colors.placeholder} style={styles.mobilityAddressInput} value={originAddress} /><TextInput accessibilityLabel="Endereço de destino" autoCorrect={false} onChangeText={onQueryChange} placeholder="Para onde você vai?" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.mobilityAddressInput} value={query} /></View></View>
+    <View style={styles.mobilityPrivacyNote}><Ionicons name="lock-closed-outline" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Endereços usados apenas para praticar. Não fazemos busca real nem acessamos sua localização.</AppText></View>
+    <Button label="Ver destinos simulados" icon="search" disabled={!originAddress.trim() || !hasDestination} onPress={() => setEditingAddresses(false)} />
+  </View>;
+
   if (step.position === 2 && !pickupReview) return <View style={styles.mobilityExperience}>
-    <View style={styles.mobilityPlanningHeader}><Ionicons name="arrow-back" size={25} color={colors.text} /><View style={styles.flex1}><AppText variant="subheading" weight="900">Planeje sua viagem</AppText><AppText variant="caption" color={colors.textMuted}>Agora · Para mim</AppText></View></View>
-    <View style={styles.mobilityRouteFields}><View style={styles.mobilityRouteDots}><View style={styles.mobilityOriginDot} /><View style={styles.mobilityDotsLine} /><View style={styles.mobilityEndSquare} /></View><View style={styles.flex1}><View style={styles.mobilityField}><AppText variant="small">Localização de treino</AppText></View><View style={styles.mobilityField}><AppText variant="small" color={colors.textMuted}>{query || 'Para onde?'}</AppText></View></View></View>
+    <View style={styles.mobilityPlanningHeader}><Pressable accessibilityRole="button" accessibilityLabel="Editar endereços" hitSlop={10} onPress={() => setEditingAddresses(true)}><Ionicons name="arrow-back" size={25} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="subheading" weight="900">Planeje sua viagem</AppText><AppText variant="caption" color={colors.textMuted}>Agora · Para mim</AppText></View></View>
+    <View style={styles.mobilityRouteFields}><View style={styles.mobilityRouteDots}><View style={styles.mobilityOriginDot} /><View style={styles.mobilityDotsLine} /><View style={styles.mobilityEndSquare} /></View><View style={styles.flex1}><View style={styles.mobilityField}><AppText variant="small">{originAddress}</AppText></View><View style={styles.mobilityField}><AppText variant="small" color={colors.textMuted}>{destinationAddress}</AppText></View></View><Pressable accessibilityRole="button" accessibilityLabel="Editar endereços" onPress={() => setEditingAddresses(true)} style={styles.mobilityEditButton}><Ionicons name="create-outline" size={22} color={colors.primary} /></Pressable></View>
     <AppText variant="caption" weight="800" color={colors.textMuted}>DESTINOS DE TREINAMENTO</AppText>
-    <Pressable accessibilityRole="button" accessibilityLabel="Escolher Biblioteca Municipal" disabled={busy} onPress={() => setPickupReview(true)} style={({ pressed }) => [styles.mobilityPlaceRow, pressed && styles.bankActionRowPressed]}><View style={styles.mobilityPlaceIcon}><Ionicons name="library-outline" size={24} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Biblioteca Municipal</AppText><AppText variant="small" color={colors.textMuted}>Praça Central · endereço fictício</AppText></View><Ionicons name="chevron-forward" size={22} color={colors.textMuted} /></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Escolher ${destinationAddress}`} disabled={busy} onPress={() => setPickupReview(true)} style={({ pressed }) => [styles.mobilityPlaceRow, pressed && styles.bankActionRowPressed]}><View style={styles.mobilityPlaceIcon}><Ionicons name="location-outline" size={24} color={accent} /></View><View style={styles.flex1}><AppText weight="900">{destinationAddress}</AppText><AppText variant="small" color={colors.textMuted}>Resultado fictício para o endereço digitado</AppText></View><Ionicons name="chevron-forward" size={22} color={colors.textMuted} /></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Escolher endereço desconhecido" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'unknown' })} style={({ pressed }) => [styles.mobilityPlaceRow, pressed && styles.bankActionRowPressed]}><View style={styles.mobilityPlaceIcon}><Ionicons name="help-outline" size={24} color={colors.textMuted} /></View><View style={styles.flex1}><AppText weight="800">Endereço desconhecido</AppText><AppText variant="small" color={colors.textMuted}>Confira antes de escolher</AppText></View></Pressable>
   </View>;
 
   if (step.position === 2) return <View style={styles.mobilityExperience}>
-    <MobilityMapScene />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o destino</AppText><View style={styles.mobilityAddressRow}><Ionicons name="location" size={24} color={accent} /><View style={styles.flex1}><AppText weight="900">Biblioteca Municipal</AppText><AppText variant="small" color={colors.textMuted}>Praça Central · local fictício</AppText></View></View><Button label="Usar este destino" icon="checkmark" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'library' })} /><Button label="Voltar aos resultados" variant="secondary" onPress={() => setPickupReview(false)} /></View>
+    <MobilityMapScene origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o destino</AppText><View style={styles.mobilityAddressRow}><Ionicons name="location" size={24} color={accent} /><View style={styles.flex1}><AppText weight="900">{destinationAddress}</AppText><AppText variant="small" color={colors.textMuted}>Local inserido por você · exibido apenas no treino</AppText></View></View><Button label="Usar este destino" icon="checkmark" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'library' })} /><Button label="Voltar aos resultados" variant="secondary" onPress={() => setPickupReview(false)} /></View>
   </View>;
 
   if (ridePhase === 'pickup') return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o ponto de partida</AppText><View style={styles.mobilityAddressRow}><Ionicons name="navigate-circle" size={28} color={accent} /><View style={styles.flex1}><AppText weight="900">Entrada principal</AppText><AppText variant="small" color={colors.textMuted}>Local de treino · nenhum GPS utilizado</AppText></View></View><Button label="Confirmar partida" disabled={busy} onPress={() => setRidePhase('confirming')} /><Button label="Voltar às opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o ponto de partida</AppText><View style={styles.mobilityAddressRow}><Ionicons name="navigate-circle" size={28} color={accent} /><View style={styles.flex1}><AppText weight="900">{originAddress}</AppText><AppText variant="small" color={colors.textMuted}>Endereço digitado · nenhum GPS utilizado</AppText></View></View><Button label="Confirmar partida" disabled={busy} onPress={() => setRidePhase('confirming')} /><Button label="Voltar às opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
   </View>;
 
   if (ridePhase === 'confirming') return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityConfirmIcon}><Ionicons name={selectedRide === 'moto' || selectedRide === 'delivery' ? 'bicycle' : 'car-sport'} size={38} color={accent} /></View><AppText variant="subheading" weight="900" style={styles.center}>Confirmar solicitação simulada?</AppText><AppText color={colors.textMuted} style={styles.center}>Biblioteca Municipal · {rideDetails.label} · {rideDetails.price}</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>{rideDetails.description}</AppText><View style={styles.mobilitySafetyRow}><Ionicons name="shield-checkmark" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum veículo será chamado, nenhum item será enviado e nenhuma cobrança será feita.</AppText></View><Button label="Confirmar somente o treino" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-training' })} /><Button label="Revisar opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityConfirmIcon}><Ionicons name={selectedRide === 'moto' || selectedRide === 'delivery' ? 'bicycle' : 'car-sport'} size={38} color={accent} /></View><AppText variant="subheading" weight="900" style={styles.center}>Confirmar solicitação simulada?</AppText><AppText color={colors.textMuted} style={styles.center}>{destinationAddress} · {rideDetails.label} · {rideDetails.price}</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>{rideDetails.description}</AppText><View style={styles.mobilitySafetyRow}><Ionicons name="shield-checkmark" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum veículo será chamado, nenhum item será enviado e nenhuma cobrança será feita.</AppText></View><Button label="Confirmar somente o treino" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-training' })} /><Button label="Revisar opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
   </View>;
 
   return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route />
+    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
     <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="caption" weight="800" color={colors.success}>PREÇOS FICTÍCIOS</AppText><AppText variant="subheading" weight="900">Escolha uma opção</AppText>
       <Pressable accessibilityRole="radio" accessibilityLabel="Econômico, carro para até quatro pessoas, menor preço" accessibilityState={{ checked: selectedRide === 'economy' }} onPress={() => setSelectedRide('economy')} style={[styles.mobilityRideRow, selectedRide === 'economy' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="car-sport" size={29} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Econômico</AppText><AppText variant="small" color={colors.textMuted}>Carro para até 4 pessoas · menor preço</AppText><AppText variant="caption" color={colors.textMuted}>Chegada simulada em 5 min</AppText></View><AppText weight="900">R$ 8,50</AppText></Pressable>
       <Pressable accessibilityRole="radio" accessibilityLabel="Conforto, carro mais espaçoso" accessibilityState={{ checked: selectedRide === 'comfort' }} onPress={() => setSelectedRide('comfort')} style={[styles.mobilityRideRow, selectedRide === 'comfort' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="car" size={29} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Conforto</AppText><AppText variant="small" color={colors.textMuted}>Carro mais espaçoso · até 4 pessoas</AppText><AppText variant="caption" color={colors.textMuted}>Chegada simulada em 7 min</AppText></View><AppText weight="900">R$ 12,90</AppText></Pressable>
@@ -752,7 +762,7 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   </View>;
 }
 
-function MobilityMapScene({ route = false, compact = false }: { route?: boolean; compact?: boolean }) {
+function MobilityMapScene({ route = false, compact = false, origin = 'Entrada principal', destination = 'Biblioteca Municipal' }: { route?: boolean; compact?: boolean; origin?: string; destination?: string }) {
   const [zoomed, setZoomed] = useState(false);
   const [focusedPoint, setFocusedPoint] = useState<'pickup' | 'destination' | null>(null);
 
@@ -777,14 +787,14 @@ function MobilityMapScene({ route = false, compact = false }: { route?: boolean;
       <View style={[styles.mobilityRouteLine, styles.mobilityRouteLineOne]} />
       <View style={[styles.mobilityRouteLine, styles.mobilityRouteLineTwo]} />
       <View style={styles.mobilityCarMarker}><Ionicons name="car-sport" size={18} color={colors.surface} /></View>
-      <Pressable accessibilityRole="button" accessibilityLabel="Destino fictício: Biblioteca Municipal" onPress={() => setFocusedPoint('destination')} style={styles.mobilityDestinationPin}><Ionicons name="flag" size={20} color={colors.surface} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Destino fictício: ${destination}`} onPress={() => setFocusedPoint('destination')} style={styles.mobilityDestinationPin}><Ionicons name="flag" size={20} color={colors.surface} /></Pressable>
     </> : null}
     </View>
     <View style={styles.mobilityZoomControls}>
       <Pressable accessibilityRole="button" accessibilityLabel="Aumentar mapa" disabled={zoomed} onPress={() => setZoomed(true)} style={[styles.mobilityZoomButton, zoomed && styles.mobilityZoomButtonDisabled]}><Ionicons name="add" size={24} color={colors.text} /></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Diminuir mapa" disabled={!zoomed} onPress={() => setZoomed(false)} style={[styles.mobilityZoomButton, !zoomed && styles.mobilityZoomButtonDisabled]}><Ionicons name="remove" size={24} color={colors.text} /></Pressable>
     </View>
-    {focusedPoint ? <View accessibilityLiveRegion="polite" style={styles.mobilityMapCallout}><AppText variant="small" weight="800">{focusedPoint === 'pickup' ? 'Partida: Entrada principal' : 'Destino: Biblioteca Municipal'}</AppText><AppText variant="caption" color={colors.textMuted}>Local totalmente fictício</AppText></View> : null}
+    {focusedPoint ? <View accessibilityLiveRegion="polite" style={styles.mobilityMapCallout}><AppText variant="small" weight="800">{focusedPoint === 'pickup' ? `Partida: ${origin}` : `Destino: ${destination}`}</AppText><AppText variant="caption" color={colors.textMuted}>Exibido somente nesta simulação</AppText></View> : null}
   </View>;
 }
 
@@ -1258,6 +1268,9 @@ const styles = StyleSheet.create({
   mobilityDotsLine: { backgroundColor: colors.textMuted, flex: 1, marginVertical: 3, width: 2 },
   mobilityEndSquare: { backgroundColor: colors.text, borderRadius: 2, height: 12, width: 12 },
   mobilityField: { borderBottomColor: colors.border, borderBottomWidth: 1, minHeight: 42, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  mobilityAddressInput: { borderBottomColor: colors.border, borderBottomWidth: 1, color: colors.text, fontSize: 17, minHeight: 50, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  mobilityEditButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
+  mobilityPrivacyNote: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   mobilityPlaceRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 76, padding: spacing.md },
   mobilityPlaceIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 46, justifyContent: 'center', width: 46 },
   mobilityMap: { backgroundColor: '#E8ECEF', borderRadius: radius.lg, height: 260, overflow: 'hidden', position: 'relative' },
