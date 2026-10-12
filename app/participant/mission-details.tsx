@@ -33,8 +33,15 @@ export default function ParticipantMissionDetailsScreen() {
 
   const { details, steps } = query.data;
   const beginTraining = async () => {
-    if (!confidence || starting || !currentUser) return;
+    if (starting || !currentUser) return;
     setStarting(true);
+
+    if (!confidence) {
+      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId } });
+      setStarting(false);
+      return;
+    }
+
     try {
       const assessmentId = await startAssessmentResilient(currentUser.id, details.assignmentId, confidence);
       router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId, assessmentId } });
@@ -99,10 +106,13 @@ export default function ParticipantMissionDetailsScreen() {
             </View>
           </View>
 
-          <Card><ConfidencePicker label="Antes de começar, quanta confiança você sente?" value={confidence} onChange={setConfidence} /></Card>
+          <Card>
+            <ConfidencePicker label="Antes de começar, quanta confiança você sente? (opcional)" value={confidence} onChange={setConfidence} />
+            <AppText variant="small" color={colors.textMuted}>Você pode começar o treino sem responder.</AppText>
+          </Card>
           <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
           {downloadMessage ? <AppText variant="small" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
-          <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={!confidence || starting} accessibilityHint="Abre o simulador seguro" onPress={() => void beginTraining()} style={styles.pixButton} />
+          <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={starting} accessibilityHint="Abre o simulador seguro; responder sobre sua confiança é opcional" onPress={() => void beginTraining()} style={styles.pixButton} />
         </Card>
       </Screen>
     );
@@ -158,11 +168,14 @@ export default function ParticipantMissionDetailsScreen() {
       </Card>
 
       <View style={styles.actions}>
-        <Card><ConfidencePicker label="Antes de começar, quanta confiança você sente?" value={confidence} onChange={setConfidence} /></Card>
+        <Card>
+          <ConfidencePicker label="Antes de começar, quanta confiança você sente? (opcional)" value={confidence} onChange={setConfidence} />
+          <AppText variant="small" color={colors.textMuted}>Você pode começar o treino sem responder.</AppText>
+        </Card>
         <AudioButton label="Ouvir explicação" message={steps.map((step) => step.audioText).join(' ')} />
         <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
         {downloadMessage ? <AppText variant="small" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
-        <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={!confidence || starting} accessibilityHint="Abre o simulador seguro" onPress={() => void beginTraining()} />
+        <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={starting} accessibilityHint="Abre o simulador seguro; responder sobre sua confiança é opcional" onPress={() => void beginTraining()} />
       </View>
     </Screen>
   );
