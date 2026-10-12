@@ -680,6 +680,8 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
           <AppStoreExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
         ) : presentation === 'mobility' ? (
           <MobilityExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
+        ) : presentation === 'marketplace' ? (
+          <MarketplaceExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} />
         ) : (
           <><EnvironmentScene presentation={presentation} step={step} accent={config.accent} query={environmentQuery} onQueryChange={setEnvironmentQuery} /><EnvironmentActions step={step} busy={engine.busy} accent={config.accent} onSubmit={engine.submit} /></>
         )}
@@ -693,6 +695,54 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
       <View style={styles.supportActions}><Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} /><Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} /></View>
     </Screen>
   );
+}
+
+function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void> }) {
+  const [payment, setPayment] = useState<'pix' | 'card'>('pix');
+  const [address, setAddress] = useState('Rua Exemplo, 100 — Centro');
+  const searched = query.trim().length >= 3;
+
+  if (step.position === 1) return <View style={styles.marketplaceScreen}>
+    <View style={styles.marketplaceTopBar}><AppText variant="heading" weight="900" color={colors.surface}>Loja de treino</AppText><View style={styles.marketplaceTopIcons}><Ionicons name="cart-outline" size={27} color={colors.surface} /><Ionicons name="chatbubble-ellipses-outline" size={25} color={colors.surface} /></View></View>
+    <View style={styles.marketplaceSearch}><Ionicons name="search" size={23} color="#E45A37" /><TextInput accessibilityLabel="Pesquisar produto fictício" onChangeText={onQueryChange} placeholder="Buscar na loja de treino" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.marketplaceSearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar busca" onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={22} color={colors.textMuted} /></Pressable> : null}</View>
+    <View style={styles.marketplacePromo}><View style={styles.marketplacePromoCopy}><AppText variant="subheading" weight="900" color={colors.surface}>Ofertas educativas</AppText><AppText variant="small" color={colors.surface}>Aprenda a comparar preço, loja e avaliações</AppText></View><Ionicons name="shield-checkmark" size={58} color={colors.surface} /></View>
+    <View style={styles.marketplaceShortcuts}><MarketplaceShortcut icon="ticket-outline" label="Cupons" /><MarketplaceShortcut icon="storefront-outline" label="Lojas" /><MarketplaceShortcut icon="videocam-outline" label="Vídeos" /><MarketplaceShortcut icon="person-outline" label="Conta" /></View>
+    <AppText variant="subheading" weight="900">Sugestões de treinamento</AppText>
+    <View style={styles.marketplaceGrid}><MarketplaceProduct icon="book-outline" title="Luminária de leitura" price="R$ 30,00" /><MarketplaceProduct icon="leaf-outline" title="Kit de jardinagem" price="R$ 42,00" /></View>
+    <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Todos os produtos, lojas e preços são fictícios.</AppText></View>
+    <Button label="Pesquisar produto" icon="search" disabled={!searched || busy} onPress={() => void onSubmit({ action: 'continue' })} />
+  </View>;
+
+  if (step.position === 2) return <View style={styles.marketplaceScreen}>
+    <View style={styles.marketplaceSearch}><Ionicons name="arrow-back" size={22} color={colors.text} /><AppText style={styles.flex1}>{query || 'Luminária de leitura'}</AppText><Ionicons name="cart-outline" size={24} color="#E45A37" /></View>
+    <AppText variant="caption" weight="900" color={colors.textMuted}>COMPARE ANTES DE COMPRAR</AppText>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher anúncio seguro" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'safe-listing' })} style={({ pressed }) => [styles.marketplaceListing, styles.marketplaceListingSafe, pressed && styles.bankActionRowPressed]}><View style={styles.marketplaceProductImage}><Ionicons name="book-outline" size={48} color="#E45A37" /></View><View style={styles.flex1}><Tag label="LOJA BEM AVALIADA" tone="green" /><AppText weight="900">Luminária de leitura ajustável</AppText><AppText variant="small" color={colors.textMuted}>Casa Clara — Loja Exemplo</AppText><AppText variant="small" weight="900" color="#E45A37">R$ 30,00</AppText><AppText variant="caption" color={colors.success}>4,8 ★ · descrição completa · pagamento no app</AppText></View><Ionicons name="chevron-forward" size={24} color={colors.textMuted} /></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher anúncio inseguro" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'unsafe-listing' })} style={({ pressed }) => [styles.marketplaceListing, pressed && styles.bankActionRowPressed]}><View style={[styles.marketplaceProductImage, styles.marketplaceProductImageRisk]}><Ionicons name="warning-outline" size={45} color={colors.danger} /></View><View style={styles.flex1}><Tag label="ATENÇÃO" tone="red" /><AppText weight="900">Oferta sem identificação</AppText><AppText variant="small" color={colors.danger}>Pagamento solicitado por mensagem</AppText><AppText variant="small" weight="900" color={colors.danger}>R$ 5,00</AppText></View></Pressable>
+  </View>;
+
+  if (step.position === 3) return <View style={styles.marketplaceScreen}>
+    <View style={styles.marketplacePageTitle}><Ionicons name="arrow-back" size={25} color="#E45A37" /><AppText variant="heading" weight="900">Carrinho (1)</AppText><AppText color={colors.textMuted}>Editar</AppText></View>
+    <View style={styles.marketplaceCartCard}><View style={styles.marketplaceStoreRow}><Ionicons name="checkbox" size={25} color="#E45A37" /><Tag label="INDICADO" tone="green" /><AppText weight="900">Casa Clara</AppText></View><View style={styles.marketplaceCartProduct}><View style={styles.marketplaceProductImage}><Ionicons name="book-outline" size={44} color="#E45A37" /></View><View style={styles.flex1}><AppText weight="800">Luminária de leitura ajustável</AppText><AppText variant="small" color={colors.textMuted}>Cor: branca · Quantidade: 1</AppText><AppText weight="900" color="#E45A37">R$ 30,00</AppText></View></View><View style={styles.marketplaceCouponRow}><Ionicons name="ticket-outline" size={22} color="#E45A37" /><AppText style={styles.flex1}>Cupom da loja</AppText><AppText variant="small" color={colors.textMuted}>Nenhum</AppText></View></View>
+    <View style={styles.marketplaceTotals}><View style={styles.marketplaceTotalRow}><AppText>Produto</AppText><AppText>R$ 30,00</AppText></View><View style={styles.marketplaceTotalRow}><AppText>Frete</AppText><AppText>R$ 8,00</AppText></View><View style={styles.marketplaceDivider} /><AppText weight="900">Qual é o total correto?</AppText></View>
+    <View style={styles.marketplaceTotalChoices}><Button label="R$ 30,00" variant="secondary" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'total-30' })} /><Button label="R$ 38,00" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'total-38' })} /><Button label="R$ 80,00" variant="secondary" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'total-80' })} /></View>
+  </View>;
+
+  return <View style={styles.marketplaceScreen}>
+    <View style={styles.marketplacePageTitle}><Ionicons name="arrow-back" size={25} color="#E45A37" /><AppText variant="heading" weight="900">Revisar pedido</AppText></View>
+    <View style={styles.marketplaceCheckoutCard}><AppText variant="caption" weight="900" color={colors.textMuted}>ENDEREÇO FICTÍCIO</AppText><View style={styles.marketplaceAddressRow}><Ionicons name="location" size={24} color="#E45A37" /><TextInput accessibilityLabel="Endereço fictício de entrega" onChangeText={setAddress} placeholder="Digite um endereço fictício" placeholderTextColor={colors.placeholder} style={styles.marketplaceAddressInput} value={address} /></View><AppText variant="caption" color={colors.textMuted}>Não use seu endereço real neste treinamento.</AppText></View>
+    <View style={styles.marketplaceCheckoutCard}><View style={styles.marketplaceCartProduct}><View style={styles.marketplaceProductImage}><Ionicons name="book-outline" size={42} color="#E45A37" /></View><View style={styles.flex1}><AppText weight="900">Luminária de leitura ajustável</AppText><AppText variant="small" color={colors.textMuted}>1 unidade</AppText><AppText weight="900" color="#E45A37">R$ 30,00</AppText></View></View><View style={styles.marketplaceTotalRow}><AppText>Entrega padrão</AppText><AppText>R$ 8,00</AppText></View><View style={styles.marketplaceDivider} /><View style={styles.marketplaceTotalRow}><AppText weight="900">Total</AppText><AppText weight="900" color="#E45A37">R$ 38,00</AppText></View></View>
+    <View style={styles.marketplaceCheckoutCard}><AppText variant="subheading" weight="900">Método de pagamento</AppText><Pressable accessibilityRole="radio" accessibilityState={{ checked: payment === 'pix' }} onPress={() => setPayment('pix')} style={styles.marketplacePaymentRow}><Ionicons name="qr-code-outline" size={26} color="#24A99B" /><AppText style={styles.flex1}>Pix</AppText><Ionicons name={payment === 'pix' ? 'radio-button-on' : 'radio-button-off'} size={25} color="#E45A37" /></Pressable><Pressable accessibilityRole="radio" accessibilityState={{ checked: payment === 'card' }} onPress={() => setPayment('card')} style={styles.marketplacePaymentRow}><Ionicons name="card-outline" size={26} color="#3478F6" /><View style={styles.flex1}><AppText>Cartão de crédito</AppText><AppText variant="caption" color={colors.textMuted}>Cartão fictício •••• 4242</AppText></View><Ionicons name={payment === 'card' ? 'radio-button-on' : 'radio-button-off'} size={25} color="#E45A37" /></Pressable></View>
+    <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Finalizar encerra somente o treino. Nenhum pedido ou pagamento será criado.</AppText></View>
+    <Button label="Finalizar simulação" icon="checkmark-circle-outline" disabled={busy || !address.trim()} onPress={() => void onSubmit({ action: 'choose', optionId: 'finish-training' })} />
+  </View>;
+}
+
+function MarketplaceShortcut({ icon, label }: { icon: 'ticket-outline' | 'storefront-outline' | 'videocam-outline' | 'person-outline'; label: string }) {
+  return <View style={styles.marketplaceShortcut}><View style={styles.marketplaceShortcutIcon}><Ionicons name={icon} size={23} color="#E45A37" /></View><AppText variant="caption" style={styles.center}>{label}</AppText></View>;
+}
+
+function MarketplaceProduct({ icon, title, price }: { icon: 'book-outline' | 'leaf-outline'; title: string; price: string }) {
+  return <View style={styles.marketplaceProductTile}><View style={styles.marketplaceProductTileImage}><Ionicons name={icon} size={52} color="#E45A37" /></View><AppText variant="small" weight="800">{title}</AppText><AppText weight="900" color="#E45A37">{price}</AppText></View>;
 }
 
 function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
@@ -1351,6 +1401,36 @@ const styles = StyleSheet.create({
   environmentOptionIcon: { alignItems: 'center', borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
   environmentPrimaryAction: { alignItems: 'center', borderRadius: radius.lg, justifyContent: 'center', marginHorizontal: spacing.lg, minHeight: 54, padding: spacing.md },
   environmentHomeIndicator: { alignSelf: 'center', backgroundColor: '#222', borderRadius: radius.round, height: 5, marginBottom: spacing.sm, marginTop: spacing.xs, width: 110 },
+  marketplaceScreen: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  marketplaceTopBar: { alignItems: 'center', backgroundColor: '#E45A37', borderRadius: radius.lg, flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
+  marketplaceTopIcons: { flexDirection: 'row', gap: spacing.lg },
+  marketplaceSearch: { alignItems: 'center', backgroundColor: colors.surface, borderColor: '#F2A48F', borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', gap: spacing.sm, minHeight: 54, paddingHorizontal: spacing.md },
+  marketplaceSearchInput: { color: colors.text, flex: 1, fontSize: 17, minHeight: 50 },
+  marketplacePromo: { alignItems: 'center', backgroundColor: '#E45A37', borderRadius: radius.lg, flexDirection: 'row', justifyContent: 'space-between', minHeight: 112, padding: spacing.lg },
+  marketplacePromoCopy: { flex: 1, gap: spacing.xs },
+  marketplaceShortcuts: { flexDirection: 'row', justifyContent: 'space-between' },
+  marketplaceShortcut: { alignItems: 'center', gap: spacing.xs, width: '23%' },
+  marketplaceShortcutIcon: { alignItems: 'center', backgroundColor: colors.surface, borderColor: '#F2C4B7', borderRadius: radius.md, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
+  marketplaceGrid: { flexDirection: 'row', gap: spacing.md },
+  marketplaceProductTile: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, gap: spacing.xs, padding: spacing.sm },
+  marketplaceProductTileImage: { alignItems: 'center', backgroundColor: '#FFF1EC', borderRadius: radius.md, height: 110, justifyContent: 'center' },
+  marketplaceListing: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 130, padding: spacing.md },
+  marketplaceListingSafe: { borderColor: colors.success },
+  marketplaceProductImage: { alignItems: 'center', backgroundColor: '#FFF1EC', borderRadius: radius.md, height: 90, justifyContent: 'center', width: 90 },
+  marketplaceProductImageRisk: { backgroundColor: '#FFF0F1' },
+  marketplacePageTitle: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' },
+  marketplaceCartCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.md, padding: spacing.md },
+  marketplaceStoreRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  marketplaceCartProduct: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  marketplaceCouponRow: { alignItems: 'center', borderTopColor: colors.border, borderTopWidth: 1, flexDirection: 'row', gap: spacing.sm, paddingTop: spacing.md },
+  marketplaceTotals: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm, padding: spacing.md },
+  marketplaceTotalRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  marketplaceDivider: { backgroundColor: colors.border, height: 1 },
+  marketplaceTotalChoices: { gap: spacing.sm },
+  marketplaceCheckoutCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.md, padding: spacing.md },
+  marketplaceAddressRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  marketplaceAddressInput: { borderBottomColor: colors.border, borderBottomWidth: 1, color: colors.text, flex: 1, fontSize: 16, minHeight: 48 },
+  marketplacePaymentRow: { alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 58, paddingVertical: spacing.sm },
   fakeChatReceived: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: 18, maxWidth: '82%', padding: spacing.md, ...shadow },
   fakeChatInput: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', marginTop: 'auto', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   fakeMap: { alignItems: 'center', backgroundColor: '#DDE9DF', borderRadius: radius.lg, flexDirection: 'row', height: 180, justifyContent: 'space-around', overflow: 'hidden' },
