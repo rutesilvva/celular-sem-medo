@@ -652,8 +652,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   const step = engine.currentStep;
   if (!step) return null;
 
-  const screenIndex = Math.min(Math.max(step.position, 1), 7);
-  const bottomLabel = screenIndex >= 5 ? 'Pagar' : 'Continuar';
+  const screenIndex = Math.min(Math.max(step.position, 1), 4);
 
   const renderPixScreen = () => {
     switch (screenIndex) {
@@ -664,118 +663,52 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="small" weight="700">9:41</AppText>
               <View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View>
             </View>
-            <View style={styles.pixHeaderPurple}>
-              <View style={styles.headerRow}>
-                <View style={styles.avatarSmall} />
-                <View style={styles.headerProfile}>
-                  <AppText weight="800" color={colors.surface}>Olá, Gineton Rodrigues</AppText>
-                  <AppText variant="small" color={colors.surface}>Você é cliente Nubank +</AppText>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.surface} />
-              </View>
+            <View style={styles.pixTrainingHeader}>
+              <View style={styles.pixTrainingIcon}><Ionicons name="shield-checkmark-outline" size={28} color={colors.surface} /></View>
+              <View style={styles.flex1}><AppText variant="small" color={colors.surface}>PIX DE TREINAMENTO</AppText><AppText variant="subheading" weight="900" color={colors.surface}>Revise antes de decidir</AppText></View>
             </View>
-            <View style={styles.balanceBox}>
-              <AppText variant="small" color={colors.textMuted}>Saldo em conta</AppText>
-              <AppText weight="800">R$ 1.200,46</AppText>
-              <AppText variant="small" color={colors.textMuted}>R$ 459,90 em outros bancos</AppText>
+            <View style={styles.pixSummaryCard}>
+              <AppText variant="small" color={colors.textMuted}>Destinatária fictícia</AppText>
+              <AppText variant="heading" weight="900">Ana Treino</AppText>
+              <View style={styles.pixDivider} />
+              <AppText variant="small" color={colors.textMuted}>Valor exibido no treino</AppText>
+              <AppText variant="heading" weight="900">R$ 25,00</AppText>
             </View>
-            <View style={styles.actionRow}>
-              <View style={styles.actionItem}><View style={styles.actionCircle}><Ionicons name="swap-horizontal" size={20} color={colors.text} /></View><AppText variant="caption">Área Pix</AppText></View>
-              <View style={styles.actionItem}><View style={styles.actionCircle}><Ionicons name="cash-outline" size={20} color={colors.text} /></View><AppText variant="caption">Pagar</AppText></View>
-              <View style={styles.actionItem}><View style={styles.actionCircle}><Ionicons name="card-outline" size={20} color={colors.text} /></View><AppText variant="caption">Receber</AppText></View>
-              <View style={styles.actionItem}><View style={styles.actionCircle}><Ionicons name="wallet-outline" size={20} color={colors.text} /></View><AppText variant="caption">Cobrar</AppText></View>
-            </View>
-            <View style={styles.bottomSpacer} />
+            <View style={styles.pixSafetyRow}><Ionicons name="lock-closed-outline" size={20} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Dados inventados. Nenhuma transferência será realizada.</AppText></View>
+            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
           </View>
         );
       case 2:
         return (
           <View style={styles.phoneShell}>
             <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Ionicons name="help-circle-outline" size={20} color={colors.textMuted} /></View>
-            <View style={styles.areaTitle}><AppText variant="heading" weight="800">Área Pix</AppText></View>
-            <View style={styles.inputStub} />
-            <View style={styles.iconGrid}>
-              <View style={styles.iconTile}><Ionicons name="swap-horizontal" size={24} color={colors.text} /></View>
-              <View style={styles.iconTile}><Ionicons name="calendar-outline" size={24} color={colors.text} /></View>
-              <View style={styles.iconTile}><Ionicons name="qr-code-outline" size={24} color={colors.text} /></View>
-            </View>
-            <View style={styles.bottomAction}><Button label="Pagar" variant="primary" onPress={() => void engine.submit({ action: 'continue' })} /></View>
+            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Tag label="PASSO 2" tone="purple" /></View>
+            <View style={styles.textStack}><AppText variant="heading" weight="900">Quem aparece no resumo?</AppText><AppText color={colors.textMuted}>Compare o nome antes de continuar.</AppText></View>
+            <View style={styles.pixSummaryCompact}><Ionicons name="person-circle-outline" size={42} color={colors.primary} /><View style={styles.flex1}><AppText variant="small" color={colors.textMuted}>Destinatária</AppText><AppText weight="900">Ana Treino</AppText></View></View>
+            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
           </View>
         );
       case 3:
         return (
           <View style={styles.phoneShell}>
             <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Ionicons name="help-circle-outline" size={20} color={colors.textMuted} /></View>
-            <View style={styles.textStack}>
-              <AppText variant="heading" weight="800">Insira o código Pix do Copia e cola</AppText>
-              <View style={styles.copiarBox}><AppText color={colors.textMuted}>Cole o código aqui</AppText></View>
+            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Tag label="PASSO 3" tone="purple" /></View>
+            <View style={styles.textStack}><AppText variant="heading" weight="900">Confira o valor</AppText><AppText color={colors.textMuted}>Compare o valor combinado com o valor exibido.</AppText></View>
+            <View style={styles.pixComparisonRow}>
+              <View style={styles.pixComparisonCard}><AppText variant="small" color={colors.textMuted}>Pedido</AppText><AppText variant="subheading" weight="900">R$ 20,00</AppText></View>
+              <Ionicons name="arrow-forward" size={24} color={colors.primary} />
+              <View style={[styles.pixComparisonCard, styles.pixComparisonWarning]}><AppText variant="small" color={colors.textMuted}>Na tela</AppText><AppText variant="subheading" weight="900">R$ 25,00</AppText></View>
             </View>
-            <View style={styles.keypad}>
-              <View style={styles.keyRow}><View style={styles.keyCell}><AppText weight="800">1</AppText></View><View style={styles.keyCell}><AppText weight="800">2</AppText></View><View style={styles.keyCell}><AppText weight="800">3</AppText></View></View>
-              <View style={styles.keyRow}><View style={styles.keyCell}><AppText weight="800">4</AppText></View><View style={styles.keyCell}><AppText weight="800">5</AppText></View><View style={styles.keyCell}><AppText weight="800">6</AppText></View></View>
-              <View style={styles.keyRow}><View style={styles.keyCell}><AppText weight="800">7</AppText></View><View style={styles.keyCell}><AppText weight="800">8</AppText></View><View style={styles.keyCell}><AppText weight="800">9</AppText></View></View>
-              <View style={styles.keyRow}><View style={styles.keyCell}><AppText weight="800">* #</AppText></View><View style={styles.keyCell}><AppText weight="800">0</AppText></View><View style={styles.keyCell}><Ionicons name="backspace-outline" size={20} color={colors.text} /></View></View>
-            </View>
+            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
           </View>
         );
       case 4:
         return (
           <View style={styles.phoneShell}>
             <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /></View>
-            <View style={styles.detailStack}>
-              <AppText variant="heading" weight="800">Pagando</AppText>
-              <AppText variant="heading" weight="800">R$ 164,20</AppText>
-              <AppText variant="small" color={colors.textMuted}>para KOIN ADM. DE CARTÕES</AppText>
-              <View style={styles.detailTable}>
-                <View style={styles.detailRow}><AppText color={colors.textMuted}>CNPJ</AppText><AppText>12.345.678/0001-00</AppText></View>
-                <View style={styles.detailRow}><AppText color={colors.textMuted}>Instituição</AppText><AppText>KOIN</AppText></View>
-                <View style={styles.detailRow}><AppText color={colors.textMuted}>Identificador</AppText><AppText>F26052037935790230909</AppText></View>
-              </View>
-            </View>
-            <View style={styles.bottomAction}><Button label="Escolher como quer pagar" variant="primary" onPress={() => void engine.submit({ action: 'continue' })} /></View>
-          </View>
-        );
-      case 5:
-        return (
-          <View style={styles.phoneShell}>
-            <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /></View>
-            <View style={styles.methodHeading}>
-              <AppText variant="heading" weight="800">Como você gostaria de pagar R$ 164,20?</AppText>
-              <AppText variant="small" color={colors.textMuted}>para KOIN ADM. DE CARTÕES</AppText>
-            </View>
-            <View style={styles.choiceCard}>
-              <View style={styles.choiceRow}><View style={styles.radio} /><View style={styles.choiceText}><AppText weight="800">Saldo da conta</AppText><AppText color={colors.textMuted}>Saldo disponível de R$ 1.200,46</AppText></View></View>
-              <View style={styles.choiceRow}><View style={styles.radioEmpty} /><View style={styles.choiceText}><AppText>Você tem um limite de R$ 4.127,20 para usar com Pix no cartão de crédito este mês.</AppText></View></View>
-            </View>
-            <View style={styles.bottomAction}><Button label="Continuar com saldo da conta" variant="primary" onPress={() => void engine.submit({ action: 'continue' })} /></View>
-          </View>
-        );
-      case 6:
-        return (
-          <View style={styles.phoneShell}>
-            <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.loadingText}><AppText variant="heading" weight="800">Pagando...</AppText></View>
-            <View style={styles.progressBarTrack}><View style={styles.progressBarFill} /></View>
-            <View style={styles.bottomAction}><Button label="Continuar" variant="primary" onPress={() => void engine.submit({ action: 'continue' })} /></View>
-          </View>
-        );
-      default:
-        return (
-          <View style={styles.phoneShell}>
-            <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /></View>
-            <View style={styles.successCircle}><Ionicons name="checkmark" size={28} color={colors.surface} /></View>
-            <AppText variant="heading" weight="800" style={styles.successTitle}>Pagamento concluído</AppText>
-            <View style={styles.successTable}>
-              <View style={styles.successRow}><AppText>Para</AppText><AppText>Koin Adm. de Cartões</AppText></View>
-              <View style={styles.successRow}><AppText>Valor enviado</AppText><AppText>R$ 164,20</AppText></View>
-              <View style={styles.successRow}><AppText>Quando</AppText><AppText>Agora</AppText></View>
-            </View>
-            <View style={styles.bottomAction}><Button label="Abrir comprovante" variant="primary" onPress={() => void engine.submit({ action: 'continue' })} /></View>
+            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Tag label="DECISÃO SEGURA" tone="green" /></View>
+            <View style={styles.pixWarningCard}><Ionicons name="warning-outline" size={34} color={colors.warning} /><AppText variant="subheading" weight="900" style={styles.center}>O valor está diferente</AppText><AppText color={colors.textMuted} style={styles.center}>Quando os dados não conferem, não prossiga com a transferência.</AppText></View>
+            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
           </View>
         );
     }
@@ -796,7 +729,6 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         <AppText color={colors.textMuted}>{step.instruction}</AppText>
         <ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
-      <Button label={bottomLabel} icon="arrow-forward" variant="primary" disabled={engine.busy} onPress={() => void engine.submit({ action: 'continue' })} />
       <View style={styles.supportActions}>
         <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} />
         <Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} />
@@ -917,7 +849,7 @@ const styles = StyleSheet.create({
   chatInputRow: { alignItems: 'center', backgroundColor: colors.primary, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   inputBox: { backgroundColor: '#1d3747', borderRadius: 14, flex: 1, height: 36 },
   pixMockCard: { backgroundColor: '#e9e9e9', borderColor: '#d8d8d8', borderRadius: 28, overflow: 'hidden', padding: 0 },
-  phoneShell: { backgroundColor: '#f5f5f5', minHeight: 660, paddingHorizontal: 18, paddingTop: 18, width: '100%' },
+  phoneShell: { backgroundColor: '#f5f5f5', gap: spacing.lg, minHeight: 520, padding: 18, width: '100%' },
   statusBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18, paddingHorizontal: 6 },
   signalGroup: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   signal: { backgroundColor: '#1f1f1f', borderRadius: 8, height: 8, width: 8 },
@@ -957,6 +889,16 @@ const styles = StyleSheet.create({
   successTable: { backgroundColor: '#ffffff', borderRadius: 16, gap: 12, marginBottom: 18, padding: 18 },
   successRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   bottomAction: { marginTop: 24 },
+  pixTrainingHeader: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  pixTrainingIcon: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: radius.round, height: 52, justifyContent: 'center', width: 52 },
+  pixSummaryCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, gap: spacing.xs, padding: spacing.lg },
+  pixSummaryCompact: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  pixDivider: { backgroundColor: colors.border, height: 1, marginVertical: spacing.sm },
+  pixSafetyRow: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  pixComparisonRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  pixComparisonCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, gap: spacing.xs, padding: spacing.md },
+  pixComparisonWarning: { backgroundColor: colors.warningSoft, borderColor: colors.warning },
+  pixWarningCard: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm, padding: spacing.xl },
   govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
   govScreenContainer: { backgroundColor: '#F8FAFC', paddingBottom: spacing.lg },
   govTopNav: { alignItems: 'center', backgroundColor: colors.primarySoft, borderBottomColor: colors.primaryMuted, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
