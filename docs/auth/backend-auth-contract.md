@@ -48,9 +48,11 @@ e production; `config.toml` governa somente a stack local.
 | `active`, com vínculo/admin | `null` | Somente papéis server-side ativos |
 | `blocked` | `ACCOUNT_BLOCKED` | Negado imediatamente |
 
-Uma identidade Google nova cria perfil `pending`. Apenas operação server-side
-administrativa pode ativar/bloquear a conta e cadastrar vínculos. O cliente não
-tem grant para `account_status`, `memberships` ou `administrators`.
+Uma identidade Google com e-mail verificado cria perfil `active` e vínculo de
+`participant` na turma pública Comunidade Celular Sem Medo. Outros provedores e
+identidades sem e-mail verificado continuam `pending`. A entrada pública nunca
+concede `admin`; esse papel permanece uma concessão server-side explícita. O
+cliente não tem grant para `account_status`, `memberships` ou `administrators`.
 
 Resposta conceitual de `auth/me`:
 
