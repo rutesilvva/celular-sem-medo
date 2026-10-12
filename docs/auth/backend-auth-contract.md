@@ -55,6 +55,9 @@ tanto na criação do usuário quanto na vinculação de `auth.identities`, evit
 dependência da ordem interna do OAuth. A entrada pública nunca
 concede `admin`; esse papel permanece uma concessão server-side explícita. O
 cliente não tem grant para `account_status`, `memberships` ou `administrators`.
+As preferências de acessibilidade têm atualização restrita às colunas permitidas
+e a RLS exige `user_id = auth.uid()` tanto no registro existente quanto no valor
+resultante.
 
 Resposta conceitual de `auth/me`:
 
