@@ -663,10 +663,9 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="small" weight="700">9:41</AppText>
               <View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View>
             </View>
-            <View style={styles.pixTrainingHeader}>
-              <View style={styles.pixTrainingIcon}><Ionicons name="shield-checkmark-outline" size={28} color={colors.surface} /></View>
-              <View style={styles.flex1}><AppText variant="small" color={colors.surface}>PIX DE TREINAMENTO</AppText><AppText variant="subheading" weight="900" color={colors.surface}>Revise antes de decidir</AppText></View>
-            </View>
+            <PixBankHeader />
+            <View style={styles.bankBalanceCard}><View><AppText variant="small" color={colors.textMuted}>Saldo disponível</AppText><AppText variant="subheading" weight="900">R$ ••••••</AppText></View><Ionicons name="eye-off-outline" size={22} color={colors.textMuted} /></View>
+            <View style={styles.bankSectionTitle}><AppText variant="subheading" weight="900">Resumo do Pix</AppText><Tag label="SIMULAÇÃO" tone="purple" /></View>
             <View style={styles.pixSummaryCard}>
               <AppText variant="small" color={colors.textMuted}>Destinatária fictícia</AppText>
               <AppText variant="heading" weight="900">Ana Treino</AppText>
@@ -676,23 +675,27 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
             </View>
             <View style={styles.pixSafetyRow}><Ionicons name="lock-closed-outline" size={20} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Dados inventados. Nenhuma transferência será realizada.</AppText></View>
             <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankNav />
           </View>
         );
       case 2:
         return (
           <View style={styles.phoneShell}>
             <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Tag label="PASSO 2" tone="purple" /></View>
+            <PixBankHeader compact />
+            <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>CONFERÊNCIA DO PIX</AppText><Tag label="PASSO 2" tone="purple" /></View>
             <View style={styles.textStack}><AppText variant="heading" weight="900">Quem aparece no resumo?</AppText><AppText color={colors.textMuted}>Compare o nome antes de continuar.</AppText></View>
             <View style={styles.pixSummaryCompact}><Ionicons name="person-circle-outline" size={42} color={colors.primary} /><View style={styles.flex1}><AppText variant="small" color={colors.textMuted}>Destinatária</AppText><AppText weight="900">Ana Treino</AppText></View></View>
             <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankNav />
           </View>
         );
       case 3:
         return (
           <View style={styles.phoneShell}>
             <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Tag label="PASSO 3" tone="purple" /></View>
+            <PixBankHeader compact />
+            <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>CONFERÊNCIA DO PIX</AppText><Tag label="PASSO 3" tone="purple" /></View>
             <View style={styles.textStack}><AppText variant="heading" weight="900">Confira o valor</AppText><AppText color={colors.textMuted}>Compare o valor combinado com o valor exibido.</AppText></View>
             <View style={styles.pixComparisonRow}>
               <View style={styles.pixComparisonCard}><AppText variant="small" color={colors.textMuted}>Pedido</AppText><AppText variant="subheading" weight="900">R$ 20,00</AppText></View>
@@ -700,15 +703,18 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <View style={[styles.pixComparisonCard, styles.pixComparisonWarning]}><AppText variant="small" color={colors.textMuted}>Na tela</AppText><AppText variant="subheading" weight="900">R$ 25,00</AppText></View>
             </View>
             <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankNav />
           </View>
         );
       case 4:
         return (
           <View style={styles.phoneShell}>
             <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
-            <View style={styles.modalTop}><Ionicons name="close" size={24} color={colors.text} /><Tag label="DECISÃO SEGURA" tone="green" /></View>
+            <PixBankHeader compact />
+            <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>REVISÃO FINAL</AppText><Tag label="DECISÃO SEGURA" tone="green" /></View>
             <View style={styles.pixWarningCard}><Ionicons name="warning-outline" size={34} color={colors.warning} /><AppText variant="subheading" weight="900" style={styles.center}>O valor está diferente</AppText><AppText color={colors.textMuted} style={styles.center}>Quando os dados não conferem, não prossiga com a transferência.</AppText></View>
             <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankNav />
           </View>
         );
     }
@@ -734,6 +740,33 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         <Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} />
       </View>
     </Screen>
+  );
+}
+
+function PixBankHeader({ compact = false }: { compact?: boolean }) {
+  return (
+    <View style={[styles.bankHeader, compact && styles.bankHeaderCompact]}>
+      <View style={styles.bankHeaderTop}>
+        <View style={styles.bankAvatar}><Ionicons name="person-outline" size={22} color={colors.surface} /></View>
+        <View style={styles.flex1}>
+          <AppText variant="caption" color={colors.surface}>BANCO DE TREINAMENTO</AppText>
+          <AppText weight="900" color={colors.surface}>{compact ? 'Área Pix' : 'Olá! Vamos praticar?'}</AppText>
+        </View>
+        <View style={styles.bankHeaderActions}><Ionicons name="help-circle-outline" size={22} color={colors.surface} /><Ionicons name="notifications-outline" size={22} color={colors.surface} /></View>
+      </View>
+      {!compact ? <AppText variant="small" color={colors.surface}>Ambiente educativo · nenhuma operação real</AppText> : null}
+    </View>
+  );
+}
+
+function PixBankNav() {
+  return (
+    <View style={styles.bankBottomNav} accessibilityLabel="Navegação ilustrativa do banco de treinamento">
+      <View style={styles.bankNavItem}><Ionicons name="home-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Início</AppText></View>
+      <View style={[styles.bankNavItem, styles.bankNavItemActive]}><Ionicons name="swap-horizontal" size={20} color={colors.primary} /><AppText variant="caption" weight="800" color={colors.primary}>Pix</AppText></View>
+      <View style={styles.bankNavItem}><Ionicons name="card-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Cartões</AppText></View>
+      <View style={styles.bankNavItem}><Ionicons name="menu-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Menu</AppText></View>
+    </View>
   );
 }
 
@@ -849,7 +882,7 @@ const styles = StyleSheet.create({
   chatInputRow: { alignItems: 'center', backgroundColor: colors.primary, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   inputBox: { backgroundColor: '#1d3747', borderRadius: 14, flex: 1, height: 36 },
   pixMockCard: { backgroundColor: '#e9e9e9', borderColor: '#d8d8d8', borderRadius: 28, overflow: 'hidden', padding: 0 },
-  phoneShell: { backgroundColor: '#f5f5f5', gap: spacing.lg, minHeight: 520, padding: 18, width: '100%' },
+  phoneShell: { backgroundColor: '#F4F1F7', gap: spacing.lg, minHeight: 620, padding: 18, width: '100%' },
   statusBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18, paddingHorizontal: 6 },
   signalGroup: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   signal: { backgroundColor: '#1f1f1f', borderRadius: 8, height: 8, width: 8 },
@@ -899,6 +932,16 @@ const styles = StyleSheet.create({
   pixComparisonCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, gap: spacing.xs, padding: spacing.md },
   pixComparisonWarning: { backgroundColor: colors.warningSoft, borderColor: colors.warning },
   pixWarningCard: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm, padding: spacing.xl },
+  bankHeader: { backgroundColor: colors.primary, borderRadius: radius.lg, gap: spacing.md, padding: spacing.lg },
+  bankHeaderCompact: { paddingVertical: spacing.md },
+  bankHeaderTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  bankAvatar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.55)', borderRadius: radius.round, borderWidth: 1, height: 44, justifyContent: 'center', width: 44 },
+  bankHeaderActions: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  bankBalanceCard: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
+  bankSectionTitle: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  bankBottomNav: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-around', marginTop: 'auto', paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  bankNavItem: { alignItems: 'center', borderRadius: radius.md, gap: 2, minWidth: 58, paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
+  bankNavItemActive: { backgroundColor: colors.primarySoft },
   govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
   govScreenContainer: { backgroundColor: '#F8FAFC', paddingBottom: spacing.lg },
   govTopNav: { alignItems: 'center', backgroundColor: colors.primarySoft, borderBottomColor: colors.primaryMuted, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
