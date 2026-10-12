@@ -726,7 +726,7 @@ function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: 
 }
 
 function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
-  const [installPhase, setInstallPhase] = useState<'details' | 'downloading' | 'installed'>('details');
+  const [installPhase, setInstallPhase] = useState<'details' | 'downloading' | 'installed' | 'opened'>('details');
   const [downloadProgress, setDownloadProgress] = useState(0);
   const searched = query.trim().length >= 3;
 
@@ -755,6 +755,15 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
     <Pressable accessibilityRole="button" accessibilityLabel="Escolher Conecta Grátis de desenvolvedor desconhecido" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'copy' })} style={({ pressed }) => [styles.storeResultCard, pressed && styles.bankActionRowPressed]}><View style={[styles.fakeAppIcon, styles.fakeAppIconUnknown]}><Ionicons name="help" size={28} color={colors.textMuted} /></View><View style={styles.flex1}><AppText weight="900">Conecta Grátis</AppText><AppText variant="small" color={colors.danger}>Desenvolvedor desconhecido</AppText><AppText variant="caption" color={colors.danger}>Sem avaliações suficientes</AppText></View><Ionicons name="chevron-forward" size={24} color={colors.textMuted} /></Pressable>
   </View>;
 
+  if (installPhase === 'opened') return <View style={styles.storeOpenedScreen}>
+    <View style={[styles.storeOpenedLogo, { backgroundColor: accent }]}><Ionicons name="apps" size={64} color={colors.surface} /></View>
+    <AppText variant="heading" weight="900">Conecta Fácil</AppText>
+    <Tag label="APLICATIVO DE TREINAMENTO" tone="purple" />
+    <AppText color={colors.textMuted} style={styles.center}>Você abriu o aplicativo fictício com sucesso. Nenhum aplicativo real foi iniciado.</AppText>
+    <View style={styles.storeOpenedWelcome}><Ionicons name="sparkles-outline" size={26} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Bem-vindo ao treino!</AppText><AppText variant="small" color={colors.textMuted}>Agora você já conhece as etapas para buscar, instalar e abrir um aplicativo.</AppText></View></View>
+    <Button label="Concluir treinamento" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'install-training' })} />
+  </View>;
+
   return <View style={styles.storeExperience}>
     <View style={styles.storeAppDetail}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo · sem anúncios</AppText></View><Ionicons name="ellipsis-vertical" size={22} color={colors.textMuted} /></View>
     <View style={styles.storeStats}><View style={styles.storeStat}><AppText weight="900">4,8 ★</AppText><AppText variant="caption" color={colors.textMuted}>1 mil avaliações</AppText></View><View style={styles.storeStat}><AppText weight="900">Livre</AppText><AppText variant="caption" color={colors.textMuted}>Classificação</AppText></View><View style={styles.storeStat}><AppText weight="900">18 MB</AppText><AppText variant="caption" color={colors.textMuted}>Tamanho fictício</AppText></View></View>
@@ -767,7 +776,7 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
       <Button label="Cancelar instalação simulada" variant="secondary" onPress={() => { setInstallPhase('details'); setDownloadProgress(0); }} />
     </> : <>
       <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.storeInstalled}><Ionicons name="checkmark-circle" size={34} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Aplicativo instalado no treino</AppText><AppText variant="small" color={colors.textMuted}>Nenhum aplicativo foi instalado no seu aparelho.</AppText></View></View>
-      <View style={styles.storeInstalledActions}><Button label="Desinstalar" variant="secondary" onPress={() => { setInstallPhase('details'); setDownloadProgress(0); }} /><Button label="Abrir" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'install-training' })} /></View>
+      <View style={styles.storeInstalledActions}><Button label="Desinstalar" variant="secondary" onPress={() => { setInstallPhase('details'); setDownloadProgress(0); }} /><Button label="Abrir" disabled={busy} onPress={() => setInstallPhase('opened')} /></View>
     </>}
     <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Tudo acontece apenas na simulação</AppText><AppText variant="small" color={colors.textMuted}>Você pode acompanhar o progresso sem consumir internet, memória ou instalar arquivos.</AppText></View></View>
   </View>;
@@ -1160,6 +1169,9 @@ const styles = StyleSheet.create({
   storeProgressFill: { borderRadius: radius.round, height: '100%' },
   storeInstalled: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   storeInstalledActions: { gap: spacing.sm },
+  storeOpenedScreen: { alignItems: 'center', gap: spacing.lg, justifyContent: 'center', minHeight: 410, padding: spacing.xl },
+  storeOpenedLogo: { alignItems: 'center', borderRadius: 28, height: 120, justifyContent: 'center', width: 120, ...shadow },
+  storeOpenedWelcome: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   fakeProduct: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   fakeAppIcon: { alignItems: 'center', borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 },
   fakeAppIconUnknown: { backgroundColor: '#E4E4E8' },
