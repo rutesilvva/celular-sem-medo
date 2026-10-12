@@ -701,7 +701,8 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   const [originAddress, setOriginAddress] = useState('Rua das Flores, 120');
   const [mobilityApp, setMobilityApp] = useState<'uber' | '99'>('uber');
   const [mobilityLoggedIn, setMobilityLoggedIn] = useState(false);
-  const [loginStage, setLoginStage] = useState<'phone' | 'code' | 'profile' | 'password' | 'terms'>('phone');
+  const [loginStage, setLoginStage] = useState<'welcome' | 'phone' | 'code' | 'profile' | 'password' | 'terms'>('welcome');
+  const [accountFlow, setAccountFlow] = useState<'login' | 'signup'>('signup');
   const [trainingPhone, setTrainingPhone] = useState('(83) 90000-0000');
   const [trainingCode, setTrainingCode] = useState('');
   const [trainingFirstName, setTrainingFirstName] = useState('');
@@ -739,20 +740,24 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   if (step.position === 1 && !mobilityLoggedIn) return <View style={styles.mobilityLogin}>
     <View style={[styles.mobilityLoginBrand, { backgroundColor: mobilityApp === 'uber' ? '#1E252B' : '#F3C623' }]}><Ionicons name="car-sport" size={42} color={mobilityApp === 'uber' ? colors.surface : colors.text} /><AppText variant="heading" weight="900" color={mobilityApp === 'uber' ? colors.surface : colors.text}>{mobilityApp === 'uber' ? 'Uber · treino' : '99 · treino'}</AppText></View>
     <View style={styles.mobilityAppChooser}>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === 'uber' }} onPress={() => { setMobilityApp('uber'); setLoginStage('phone'); }} style={[styles.mobilityAppChoice, mobilityApp === 'uber' && styles.mobilityAppChoiceUber]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogramUber]}><AppText weight="900" color={colors.surface}>U</AppText></View><AppText weight="900">Treinar Uber</AppText></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === '99' }} onPress={() => { setMobilityApp('99'); setLoginStage('phone'); }} style={[styles.mobilityAppChoice, mobilityApp === '99' && styles.mobilityAppChoice99]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogram99]}><AppText weight="900" color={colors.text}>99</AppText></View><AppText weight="900">Treinar 99</AppText></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === 'uber' }} onPress={() => { setMobilityApp('uber'); setLoginStage('welcome'); }} style={[styles.mobilityAppChoice, mobilityApp === 'uber' && styles.mobilityAppChoiceUber]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogramUber]}><AppText weight="900" color={colors.surface}>U</AppText></View><AppText weight="900">Treinar Uber</AppText></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === '99' }} onPress={() => { setMobilityApp('99'); setLoginStage('welcome'); }} style={[styles.mobilityAppChoice, mobilityApp === '99' && styles.mobilityAppChoice99]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogram99]}><AppText weight="900" color={colors.text}>99</AppText></View><AppText weight="900">Treinar 99</AppText></Pressable>
     </View>
-    {loginStage === 'phone' ? <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Entre para pedir uma viagem</AppText><AppText color={colors.textMuted}>Em aplicativos de mobilidade, o acesso costuma começar pelo número do celular.</AppText></View>
+    {loginStage === 'welcome' ? <>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Bem-vindo!</AppText><AppText color={colors.textMuted}>Escolha se deseja praticar a entrada em uma conta ou criar uma conta pela primeira vez.</AppText></View>
+      <Button label="Entrar em uma conta de treino" icon="log-in-outline" onPress={() => { setAccountFlow('login'); setTrainingCode(''); setLoginStage('phone'); }} />
+      <Button label="Criar cadastro de treino" icon="person-add-outline" variant="secondary" onPress={() => { setAccountFlow('signup'); setTrainingCode(''); setLoginStage('phone'); }} />
+    </> : loginStage === 'phone' ? <>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">{accountFlow === 'signup' ? 'Qual é o seu telefone?' : 'Entre para pedir uma viagem'}</AppText><AppText color={colors.textMuted}>{accountFlow === 'signup' ? 'O cadastro começa pela confirmação do número do celular.' : 'Digite o telefone vinculado à conta.'}</AppText></View>
       <View style={styles.mobilityPhoneRow}><View style={styles.mobilityCountryCode}><AppText weight="900">+55</AppText></View><TextInput accessibilityLabel="Número de celular fictício" inputMode="tel" onChangeText={setTrainingPhone} placeholder="Número do celular" placeholderTextColor={colors.placeholder} style={styles.mobilityPhoneInput} value={trainingPhone} /></View>
       <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Use somente o número fictício já preenchido. Nenhum SMS será enviado.</AppText></View>
       <Button label="Continuar" icon="arrow-forward" disabled={trainingPhone.replace(/\D/g, '').length < 10} onPress={() => { setTrainingCode(''); setLoginStage('code'); }} />
-      <Button label="Criar cadastro de treino" icon="person-add-outline" variant="secondary" onPress={() => { setTrainingCode(''); setLoginStage('code'); }} />
+      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('welcome')} />
     </> : loginStage === 'code' ? <>
       <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Digite o código</AppText><AppText color={colors.textMuted}>Em um acesso real, o código chegaria por SMS. Neste treino, use <AppText weight="900">1234</AppText>.</AppText></View>
       <TextInput accessibilityLabel="Código de verificação fictício" inputMode="numeric" maxLength={4} onChangeText={(value) => setTrainingCode(value.replace(/\D/g, ''))} placeholder="Código de 4 números" placeholderTextColor={colors.placeholder} style={styles.mobilityCodeInput} value={trainingCode} />
       {trainingCode.length === 4 && trainingCode !== '1234' ? <View accessibilityRole="alert" style={styles.mobilityLoginError}><Ionicons name="information-circle" size={22} color={colors.danger} /><AppText variant="small" color={colors.danger} style={styles.flex1}>Código incorreto. Digite 1234 para continuar o treinamento.</AppText></View> : null}
-      <Button label="Confirmar código" icon="checkmark-circle-outline" disabled={trainingCode !== '1234'} onPress={() => setLoginStage('profile')} />
+      <Button label="Confirmar código" icon="checkmark-circle-outline" disabled={trainingCode !== '1234'} onPress={() => accountFlow === 'signup' ? setLoginStage('profile') : setMobilityLoggedIn(true)} />
       <Button label="Voltar e corrigir o telefone" variant="secondary" onPress={() => { setTrainingCode(''); setLoginStage('phone'); }} />
     </> : loginStage === 'profile' ? <>
       <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Como devemos chamar você?</AppText><AppText color={colors.textMuted}>Preencha todos os campos usando dados fictícios.</AppText></View>
