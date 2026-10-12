@@ -51,12 +51,12 @@ export default function ParticipantResultScreen() {
   const progress = progressQuery.data;
 
   const continueTrail = () => {
-    router.dismissAll();
+    if (router.canDismiss()) router.dismissAll();
     router.replace('/participant/progress');
   };
 
   const practiceAgain = () => {
-    router.dismissAll();
+    if (router.canDismiss()) router.dismissAll();
     router.replace({ pathname: '/participant/mission-details', params: { assignmentId: details.assignmentId } });
   };
 

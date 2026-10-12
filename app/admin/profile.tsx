@@ -41,7 +41,7 @@ export default function AdminProfileScreen() {
       <Button label="Administrar certificados" icon="ribbon-outline" variant="secondary" onPress={()=>router.push('/admin/certificates')}/>
       <Button label="Sair da conta" icon="log-out-outline" variant="secondary" onPress={() => {
         void signOut().finally(() => {
-          router.dismissAll();
+          if (router.canDismiss()) router.dismissAll();
           router.replace('/login');
         });
       }} />

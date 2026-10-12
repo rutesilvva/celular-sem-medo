@@ -27,7 +27,7 @@ export default function ParticipantAccessibilityScreen() {
     const saved = await completeParticipantOnboarding(preferences);
     if (saved) {
       showNotice('Preferências salvas');
-      router.dismissAll();
+      if (router.canDismiss()) router.dismissAll();
       router.replace('/participant/diagnostic');
     } else {
       showNotice('Não foi possível salvar. Verifique sua conexão e tente novamente.');

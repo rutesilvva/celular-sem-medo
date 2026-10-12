@@ -27,7 +27,7 @@ export default function ParticipantProfileScreen() {
       await signOut();
     } finally {
       showNotice('Sessão encerrada com segurança.');
-      router.dismissAll();
+      if (router.canDismiss()) router.dismissAll();
       router.replace('/login');
     }
   };

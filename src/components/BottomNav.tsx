@@ -41,7 +41,7 @@ function BottomNav({ items, active, compact = false }: { items: NavItem[]; activ
   const insets = useSafeAreaInsets();
 
   const openTab = (href: Href) => {
-    router.dismissAll();
+    if (router.canDismiss()) router.dismissAll();
     router.replace(href);
   };
 

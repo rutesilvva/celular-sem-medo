@@ -139,7 +139,7 @@ export default function ParticipantDiagnosticScreen() {
     const synced = await saveDiagnosticResilient(currentUser.id, { experienceLevel, preferredFormat, goals, categoryConfidence: confidence, barriers, scamResponse, independentActions, supportResponse });
     await clearDiagnosticDraft(currentUser.id);
     showNotice(synced ? 'Plano de aprendizagem criado' : 'Plano salvo no aparelho e será sincronizado depois');
-    router.dismissAll();
+    if (router.canDismiss()) router.dismissAll();
     router.replace('/participant/home');
   };
 
