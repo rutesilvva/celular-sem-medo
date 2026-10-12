@@ -678,6 +678,8 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
         <View style={styles.environmentToolbar}><Ionicons name="chevron-back" size={22} color={colors.text} /><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
         {presentation === 'app-store' ? (
           <AppStoreExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
+        ) : presentation === 'mobility' ? (
+          <MobilityExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
         ) : (
           <><EnvironmentScene presentation={presentation} step={step} accent={config.accent} query={environmentQuery} onQueryChange={setEnvironmentQuery} /><EnvironmentActions step={step} busy={engine.busy} accent={config.accent} onSubmit={engine.submit} /></>
         )}
@@ -691,6 +693,64 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
       <View style={styles.supportActions}><Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} /><Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} /></View>
     </Screen>
   );
+}
+
+function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
+  const [pickupReview, setPickupReview] = useState(false);
+  const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'confirming'>('options');
+  const [selectedRide, setSelectedRide] = useState<'economy' | 'comfort'>('economy');
+  const hasDestination = query.trim().length >= 3;
+
+  if (step.position === 1) return <View style={styles.mobilityExperience}>
+    <View style={styles.mobilityTopRow}><View><AppText variant="caption" color={colors.textMuted}>PONTO DE PARTIDA FICTÍCIO</AppText><AppText weight="900">Localização de treino</AppText></View><Ionicons name="notifications-outline" size={24} color={colors.text} /></View>
+    <View style={styles.mobilityTabs}><View style={styles.mobilityTabActive}><Ionicons name="car-sport" size={22} color={accent} /><AppText weight="900">Viagens</AppText></View><View style={styles.mobilityTab}><Ionicons name="cube-outline" size={21} color={colors.textMuted} /><AppText color={colors.textMuted}>Entregas</AppText></View></View>
+    <View style={styles.mobilitySearchBox}><Ionicons name="search" size={25} color={colors.text} /><TextInput accessibilityLabel="Digite o destino da viagem simulada" autoCorrect={false} onChangeText={onQueryChange} placeholder="Para onde?" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.mobilitySearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar destino" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={23} color={colors.textMuted} /></Pressable> : null}</View>
+    <View style={styles.mobilityCoach}><Ionicons name="information-circle-outline" size={26} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Digite um lugar conhecido</AppText><AppText variant="small" color={colors.textMuted}>Experimente “Biblioteca Municipal”. O aplicativo não acessa sua localização real.</AppText></View></View>
+    <Button label="Procurar destinos" icon="search" disabled={!hasDestination || busy} onPress={() => void onSubmit({ action: 'continue' })} />
+  </View>;
+
+  if (step.position === 2 && !pickupReview) return <View style={styles.mobilityExperience}>
+    <View style={styles.mobilityPlanningHeader}><Ionicons name="arrow-back" size={25} color={colors.text} /><View style={styles.flex1}><AppText variant="subheading" weight="900">Planeje sua viagem</AppText><AppText variant="caption" color={colors.textMuted}>Agora · Para mim</AppText></View></View>
+    <View style={styles.mobilityRouteFields}><View style={styles.mobilityRouteDots}><View style={styles.mobilityOriginDot} /><View style={styles.mobilityDotsLine} /><View style={styles.mobilityEndSquare} /></View><View style={styles.flex1}><View style={styles.mobilityField}><AppText variant="small">Localização de treino</AppText></View><View style={styles.mobilityField}><AppText variant="small" color={colors.textMuted}>{query || 'Para onde?'}</AppText></View></View></View>
+    <AppText variant="caption" weight="800" color={colors.textMuted}>DESTINOS DE TREINAMENTO</AppText>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher Biblioteca Municipal" disabled={busy} onPress={() => setPickupReview(true)} style={({ pressed }) => [styles.mobilityPlaceRow, pressed && styles.bankActionRowPressed]}><View style={styles.mobilityPlaceIcon}><Ionicons name="library-outline" size={24} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Biblioteca Municipal</AppText><AppText variant="small" color={colors.textMuted}>Praça Central · endereço fictício</AppText></View><Ionicons name="chevron-forward" size={22} color={colors.textMuted} /></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher endereço desconhecido" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'unknown' })} style={({ pressed }) => [styles.mobilityPlaceRow, pressed && styles.bankActionRowPressed]}><View style={styles.mobilityPlaceIcon}><Ionicons name="help-outline" size={24} color={colors.textMuted} /></View><View style={styles.flex1}><AppText weight="800">Endereço desconhecido</AppText><AppText variant="small" color={colors.textMuted}>Confira antes de escolher</AppText></View></Pressable>
+  </View>;
+
+  if (step.position === 2) return <View style={styles.mobilityExperience}>
+    <MobilityMapScene />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o destino</AppText><View style={styles.mobilityAddressRow}><Ionicons name="location" size={24} color={accent} /><View style={styles.flex1}><AppText weight="900">Biblioteca Municipal</AppText><AppText variant="small" color={colors.textMuted}>Praça Central · local fictício</AppText></View></View><Button label="Usar este destino" icon="checkmark" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'library' })} /><Button label="Voltar aos resultados" variant="secondary" onPress={() => setPickupReview(false)} /></View>
+  </View>;
+
+  if (ridePhase === 'pickup') return <View style={styles.mobilityExperience}>
+    <MobilityMapScene route />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o ponto de partida</AppText><View style={styles.mobilityAddressRow}><Ionicons name="navigate-circle" size={28} color={accent} /><View style={styles.flex1}><AppText weight="900">Entrada principal</AppText><AppText variant="small" color={colors.textMuted}>Local de treino · nenhum GPS utilizado</AppText></View></View><Button label="Confirmar partida" disabled={busy} onPress={() => setRidePhase('confirming')} /><Button label="Voltar às opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+  </View>;
+
+  if (ridePhase === 'confirming') return <View style={styles.mobilityExperience}>
+    <MobilityMapScene route />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityConfirmIcon}><Ionicons name="car-sport" size={38} color={accent} /></View><AppText variant="subheading" weight="900" style={styles.center}>Confirmar viagem simulada?</AppText><AppText color={colors.textMuted} style={styles.center}>Biblioteca Municipal · {selectedRide === 'economy' ? 'Econômico · R$ 8,50' : 'Conforto · R$ 12,90'}</AppText><View style={styles.mobilitySafetyRow}><Ionicons name="shield-checkmark" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum carro será chamado e nenhuma cobrança será feita.</AppText></View><Button label="Confirmar somente o treino" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-training' })} /><Button label="Revisar opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+  </View>;
+
+  return <View style={styles.mobilityExperience}>
+    <MobilityMapScene route />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="caption" weight="800" color={colors.success}>PREÇOS FICTÍCIOS</AppText><AppText variant="subheading" weight="900">Escolha uma opção</AppText>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedRide === 'economy' }} onPress={() => setSelectedRide('economy')} style={[styles.mobilityRideRow, selectedRide === 'economy' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="car-sport" size={29} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Econômico</AppText><AppText variant="small" color={colors.textMuted}>Chegada em 5 min · até 4 pessoas</AppText></View><AppText weight="900">R$ 8,50</AppText></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedRide === 'comfort' }} onPress={() => setSelectedRide('comfort')} style={[styles.mobilityRideRow, selectedRide === 'comfort' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="car" size={29} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Conforto</AppText><AppText variant="small" color={colors.textMuted}>Chegada em 7 min · mais espaço</AppText></View><AppText weight="900">R$ 12,90</AppText></Pressable>
+      <Button label={`Escolher ${selectedRide === 'economy' ? 'Econômico' : 'Conforto'}`} icon="car-outline" disabled={busy} onPress={() => setRidePhase('pickup')} />
+    </View>
+  </View>;
+}
+
+function MobilityMapScene({ route = false }: { route?: boolean }) {
+  return <View style={styles.mobilityMap}>
+    <View style={[styles.mobilityRoad, styles.mobilityRoadHorizontal]} />
+    <View style={[styles.mobilityRoad, styles.mobilityRoadVertical]} />
+    <View style={[styles.mobilityRoad, styles.mobilityRoadDiagonal]} />
+    <View style={styles.mobilityMapLabel}><AppText variant="caption" color={colors.textMuted}>Mapa ilustrativo · sem GPS</AppText></View>
+    <View style={styles.mobilityPickupDot}><View style={styles.mobilityPickupDotInner} /></View>
+    {route ? <><View style={styles.mobilityRouteLine} /><View style={styles.mobilityDestinationPin}><Ionicons name="flag" size={20} color={colors.surface} /></View></> : null}
+  </View>;
 }
 
 function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: { presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call'; step: ParticipantMissionStep; accent: string; query: string; onQueryChange: (value: string) => void }) {
@@ -1148,6 +1208,41 @@ const styles = StyleSheet.create({
   fakeMap: { alignItems: 'center', backgroundColor: '#DDE9DF', borderRadius: radius.lg, flexDirection: 'row', height: 180, justifyContent: 'space-around', overflow: 'hidden' },
   fakeRoute: { borderColor: '#FFFFFF', borderStyle: 'dashed', borderTopWidth: 4, width: '45%' },
   fakeSearch: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  mobilityExperience: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  mobilityTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  mobilityTabs: { borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.lg },
+  mobilityTab: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
+  mobilityTabActive: { alignItems: 'center', borderBottomColor: '#28323C', borderBottomWidth: 3, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
+  mobilitySearchBox: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1.5, flexDirection: 'row', gap: spacing.sm, minHeight: 62, paddingHorizontal: spacing.lg, ...shadow },
+  mobilitySearchInput: { color: colors.text, flex: 1, fontSize: 20, minHeight: 58 },
+  mobilityCoach: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  mobilityPlanningHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  mobilityRouteFields: { backgroundColor: colors.surface, borderColor: colors.text, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  mobilityRouteDots: { alignItems: 'center', paddingVertical: 7, width: 18 },
+  mobilityOriginDot: { backgroundColor: '#3478F6', borderRadius: radius.round, height: 12, width: 12 },
+  mobilityDotsLine: { backgroundColor: colors.textMuted, flex: 1, marginVertical: 3, width: 2 },
+  mobilityEndSquare: { backgroundColor: colors.text, borderRadius: 2, height: 12, width: 12 },
+  mobilityField: { borderBottomColor: colors.border, borderBottomWidth: 1, minHeight: 42, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  mobilityPlaceRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 76, padding: spacing.md },
+  mobilityPlaceIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 46, justifyContent: 'center', width: 46 },
+  mobilityMap: { backgroundColor: '#E8ECEF', borderRadius: radius.lg, height: 260, overflow: 'hidden', position: 'relative' },
+  mobilityRoad: { backgroundColor: '#FFFFFF', position: 'absolute' },
+  mobilityRoadHorizontal: { height: 30, left: -20, right: -20, top: 110, transform: [{ rotate: '-8deg' }] },
+  mobilityRoadVertical: { bottom: -30, right: 90, top: -30, transform: [{ rotate: '12deg' }], width: 34 },
+  mobilityRoadDiagonal: { bottom: 35, height: 25, left: -30, right: -30, transform: [{ rotate: '20deg' }] },
+  mobilityMapLabel: { backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: radius.round, left: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, position: 'absolute', top: spacing.sm },
+  mobilityPickupDot: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 34, justifyContent: 'center', left: '28%', position: 'absolute', top: '48%', width: 34, ...shadow },
+  mobilityPickupDotInner: { backgroundColor: '#3478F6', borderRadius: radius.round, height: 15, width: 15 },
+  mobilityRouteLine: { backgroundColor: '#28323C', height: 6, left: '32%', position: 'absolute', top: '53%', transform: [{ rotate: '-18deg' }], width: '42%' },
+  mobilityDestinationPin: { alignItems: 'center', backgroundColor: '#28323C', borderRadius: radius.round, height: 42, justifyContent: 'center', position: 'absolute', right: '21%', top: '31%', width: 42, ...shadow },
+  mobilityBottomSheet: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, gap: spacing.md, marginTop: -42, padding: spacing.lg, ...shadow },
+  mobilitySheetHandle: { alignSelf: 'center', backgroundColor: colors.border, borderRadius: radius.round, height: 5, width: 54 },
+  mobilityAddressRow: { alignItems: 'center', backgroundColor: '#F5F6F7', borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  mobilityRideRow: { alignItems: 'center', borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 78, padding: spacing.md },
+  mobilityRideSelected: { backgroundColor: colors.primarySoft, borderColor: '#28323C', borderWidth: 2.5 },
+  mobilityVehicleIcon: { alignItems: 'center', backgroundColor: '#EEF0F2', borderRadius: radius.md, height: 52, justifyContent: 'center', width: 58 },
+  mobilityConfirmIcon: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#EEF0F2', borderRadius: radius.round, height: 76, justifyContent: 'center', width: 76 },
+  mobilitySafetyRow: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   storeSearchBox: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.round, borderWidth: 2, flexDirection: 'row', gap: spacing.sm, minHeight: 54, paddingHorizontal: spacing.md },
   storeSearchInput: { color: colors.text, flex: 1, fontSize: 17, minHeight: 50 },
   storeEmptyState: { alignItems: 'center', gap: spacing.sm, justifyContent: 'center', minHeight: 150, padding: spacing.lg },
