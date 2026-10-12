@@ -726,6 +726,7 @@ function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: 
 }
 
 function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
+  const [showUnsafeFeedback, setShowUnsafeFeedback] = useState(false);
   const searched = query.trim().length >= 3;
   if (step.position === 1) return <View style={styles.storeExperience}>
     <View style={styles.storeSearchBox}><Ionicons name="search" size={22} color={colors.textMuted} /><TextInput accessibilityLabel="Digite o nome do aplicativo" autoCapitalize="none" autoCorrect={false} onChangeText={onQueryChange} placeholder="Digite: Conecta Fácil" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.storeSearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar busca" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={22} color={colors.textMuted} /></Pressable> : null}</View>
@@ -744,8 +745,9 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
     <View style={styles.storeAppDetail}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo</AppText></View><Tag label="TREINO" tone="purple" /></View>
     <View style={styles.storePermissionAlert}><Ionicons name="alert-circle" size={30} color={colors.warning} /><View style={styles.flex1}><AppText weight="900">Permissão inesperada</AppText><AppText variant="small">Este aplicativo quer acessar todos os seus contatos, mas não explicou por quê.</AppText></View></View>
     <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Pare quando algo não fizer sentido</AppText><AppText variant="small" color={colors.textMuted}>Uma permissão sem relação com a função do aplicativo é motivo para cancelar.</AppText></View></View>
+    {showUnsafeFeedback ? <View accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.storeUnsafeFeedback}><Ionicons name="close-circle" size={30} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>Não instale ainda</AppText><AppText variant="small">O acesso aos contatos não é necessário para a função informada. Cancele e procure uma opção confiável ou peça ajuda.</AppText></View></View> : null}
     <Button label="Cancelar com segurança" icon="shield-checkmark-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'cancel' })} />
-    <Button label="Instalar mesmo assim" variant="secondary" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'install' })} />
+    <Button label="Instalar mesmo assim" variant="secondary" disabled={busy} onPress={() => { setShowUnsafeFeedback(true); void onSubmit({ action: 'choose', optionId: 'install' }); }} />
   </View>;
 }
 
@@ -1126,6 +1128,7 @@ const styles = StyleSheet.create({
   storeResultTrusted: { borderColor: colors.success },
   storeAppDetail: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   storePermissionAlert: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  storeUnsafeFeedback: { alignItems: 'center', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   fakeProduct: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   fakeAppIcon: { alignItems: 'center', borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 },
   fakeAppIconUnknown: { backgroundColor: '#E4E4E8' },
