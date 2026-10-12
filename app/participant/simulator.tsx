@@ -674,7 +674,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="heading" weight="900">R$ 25,00</AppText>
             </View>
             <View style={styles.pixSafetyRow}><Ionicons name="lock-closed-outline" size={20} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Dados inventados. Nenhuma transferência será realizada.</AppText></View>
-            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
             <PixBankNav />
           </View>
         );
@@ -686,7 +686,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
             <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>CONFERÊNCIA DO PIX</AppText><Tag label="PASSO 2" tone="purple" /></View>
             <View style={styles.textStack}><AppText variant="heading" weight="900">Quem aparece no resumo?</AppText><AppText color={colors.textMuted}>Compare o nome antes de continuar.</AppText></View>
             <View style={styles.pixSummaryCompact}><Ionicons name="person-circle-outline" size={42} color={colors.primary} /><View style={styles.flex1}><AppText variant="small" color={colors.textMuted}>Destinatária</AppText><AppText weight="900">Ana Treino</AppText></View></View>
-            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
             <PixBankNav />
           </View>
         );
@@ -702,7 +702,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <Ionicons name="arrow-forward" size={24} color={colors.primary} />
               <View style={[styles.pixComparisonCard, styles.pixComparisonWarning]}><AppText variant="small" color={colors.textMuted}>Na tela</AppText><AppText variant="subheading" weight="900">R$ 25,00</AppText></View>
             </View>
-            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
             <PixBankNav />
           </View>
         );
@@ -713,7 +713,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
             <PixBankHeader compact />
             <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>REVISÃO FINAL</AppText><Tag label="DECISÃO SEGURA" tone="green" /></View>
             <View style={styles.pixWarningCard}><Ionicons name="warning-outline" size={34} color={colors.warning} /><AppText variant="subheading" weight="900" style={styles.center}>O valor está diferente</AppText><AppText color={colors.textMuted} style={styles.center}>Quando os dados não conferem, não prossiga com a transferência.</AppText></View>
-            <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
             <PixBankNav />
           </View>
         );
@@ -766,6 +766,50 @@ function PixBankNav() {
       <View style={[styles.bankNavItem, styles.bankNavItemActive]}><Ionicons name="swap-horizontal" size={20} color={colors.primary} /><AppText variant="caption" weight="800" color={colors.primary}>Pix</AppText></View>
       <View style={styles.bankNavItem}><Ionicons name="card-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Cartões</AppText></View>
       <View style={styles.bankNavItem}><Ionicons name="menu-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Menu</AppText></View>
+    </View>
+  );
+}
+
+function PixBankActions({ step, busy, onSubmit }: { step: ParticipantMissionStep; busy: boolean; onSubmit: (action: MissionAction) => Promise<void> }) {
+  const expected = asObject(step.expectedAction);
+  const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+
+  if (!options.length) {
+    return <Button label="Continuar conferência" icon="arrow-forward" variant="primary" disabled={busy} onPress={() => void onSubmit({ action: 'continue' })} />;
+  }
+
+  return (
+    <View style={styles.bankActionList}>
+      <AppText variant="small" weight="800" color={colors.textMuted}>{step.position === 4 ? 'ESCOLHA UMA AÇÃO' : 'TOQUE NA INFORMAÇÃO CORRETA'}</AppText>
+      {options.map((option) => {
+        const cancelAction = option.id === 'cancel';
+        const riskyAction = option.id === 'confirm';
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={option.label}
+            disabled={busy}
+            key={option.id}
+            onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })}
+            style={({ pressed }) => [
+              styles.bankActionRow,
+              cancelAction && styles.bankActionRowSafe,
+              riskyAction && styles.bankActionRowRisky,
+              pressed && styles.bankActionRowPressed,
+            ]}
+          >
+            <View style={[styles.bankActionIcon, cancelAction && styles.bankActionIconSafe]}>
+              <Ionicons
+                name={cancelAction ? 'close-circle-outline' : step.position === 2 ? 'person-outline' : step.position === 3 ? 'calculator-outline' : 'arrow-forward-outline'}
+                size={24}
+                color={cancelAction ? colors.success : colors.primary}
+              />
+            </View>
+            <AppText weight="800" style={styles.flex1}>{option.label}</AppText>
+            <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -942,6 +986,13 @@ const styles = StyleSheet.create({
   bankBottomNav: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-around', marginTop: 'auto', paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   bankNavItem: { alignItems: 'center', borderRadius: radius.md, gap: 2, minWidth: 58, paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
   bankNavItemActive: { backgroundColor: colors.primarySoft },
+  bankActionList: { gap: spacing.sm },
+  bankActionRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 64, padding: spacing.md },
+  bankActionRowSafe: { backgroundColor: colors.successSoft, borderColor: colors.success },
+  bankActionRowRisky: { borderColor: colors.border },
+  bankActionRowPressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
+  bankActionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
+  bankActionIconSafe: { backgroundColor: colors.successSoft },
   govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
   govScreenContainer: { backgroundColor: '#F8FAFC', paddingBottom: spacing.lg },
   govTopNav: { alignItems: 'center', backgroundColor: colors.primarySoft, borderBottomColor: colors.primaryMuted, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
