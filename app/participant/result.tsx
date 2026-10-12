@@ -49,6 +49,7 @@ export default function ParticipantResultScreen() {
   if (!query.data) return <ResultState kind="empty" retry={query.retry} />;
   const details = query.data.details;
   const progress = progressQuery.data;
+  const requiresConfidenceRegistration = Boolean(assessmentId && attemptId) && gain === null && !assessmentPending;
 
   const continueTrail = () => {
     if (router.canDismiss()) router.dismissAll();
@@ -112,7 +113,7 @@ export default function ParticipantResultScreen() {
       </Card>
 
       <Card style={styles.feedbackCard}>
-        <AppText variant="subheading" weight="800">Ajude a melhorar esta missão</AppText>
+        <View style={styles.feedbackTitleRow}><AppText variant="subheading" weight="800">Ajude a melhorar esta missão</AppText><Tag label="OPCIONAL" tone="purple" /></View>
         <AppText variant="small" color={colors.textMuted}>Sua avaliação orienta melhorias. O painel administrativo recebe somente resultados agregados.</AppText>
         <ConfidencePicker label="Quanto esta missão ajudou você?" value={helpful} onChange={setHelpful} />
         <ConfidencePicker label="A explicação estava clara?" value={clarity} onChange={setClarity} />
@@ -124,7 +125,8 @@ export default function ParticipantResultScreen() {
 
       <Card style={styles.progressCard}>
         <ConfidencePicker label="E agora, quanta confiança você sente?" value={confidenceAfter} onChange={setConfidenceAfter} />
-        <Button label={gain === null ? 'Registrar minha evolução' : `Evolução registrada: ${gain >= 0 ? '+' : ''}${gain}`} disabled={!confidenceAfter || gain !== null || !assessmentId || !attemptId || !currentUser} onPress={() => void completeAssessmentResilient(currentUser!.id,assessmentId!,attemptId!,confidenceAfter!).then((value) => { if (value === null) setAssessmentPending(true); else setGain(value); }).catch(() => setAssessmentPending(true))} />
+        <Button label={gain !== null ? `Evolução registrada: ${gain >= 0 ? '+' : ''}${gain}` : confidenceAfter === null ? 'Escolha uma nota de 1 a 5' : 'Registrar minha evolução'} disabled={!confidenceAfter || gain !== null || !assessmentId || !attemptId || !currentUser} onPress={() => void completeAssessmentResilient(currentUser!.id,assessmentId!,attemptId!,confidenceAfter!).then((value) => { if (value === null) setAssessmentPending(true); else setGain(value); }).catch(() => setAssessmentPending(true))} />
+        {requiresConfidenceRegistration ? <AppText accessibilityLiveRegion="polite" variant="small" color={colors.textMuted}>Para continuar, escolha como você se sente agora e registre sua evolução. Isso permite comparar sua confiança antes e depois da prática.</AppText> : null}
         {assessmentPending ? <AppText variant="small" color={colors.textMuted}>A missão foi concluída offline. A avaliação poderá ser registrada quando a tentativa terminar de sincronizar.</AppText> : null}
       </Card>
 
@@ -134,11 +136,11 @@ export default function ParticipantResultScreen() {
           message={`Parabéns, ${currentUser?.name || 'aluno'}. Você concluiu a missão ${details.title}.`}
         />
         <Button
-          label="Continuar"
+          label={requiresConfidenceRegistration ? 'Registre sua evolução para continuar' : 'Continuar'}
           icon="arrow-forward"
           accessibilityHint="Abre a tela do seu progresso"
           onPress={continueTrail}
-          disabled={Boolean(assessmentId && attemptId) && gain === null && !assessmentPending}
+          disabled={requiresConfidenceRegistration}
         />
         <Button
           label="Praticar novamente"
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
   metrics: { flexDirection: 'row' },
   metric: { alignItems: 'center', flex: 1, gap: spacing.xs },
   progressCard: { backgroundColor: '#F4EEFF', borderColor: colors.primaryMuted, gap: spacing.md },
-  feedbackCard: { gap: spacing.md }, issueList: { gap: spacing.sm },
+  feedbackCard: { gap: spacing.md }, feedbackTitleRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' }, issueList: { gap: spacing.sm },
   progressTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   actions: { gap: spacing.md },
 });
