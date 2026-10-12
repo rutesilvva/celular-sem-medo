@@ -171,6 +171,10 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
     );
   }
 
+  if (presentation === 'messaging' || presentation === 'mobility' || presentation === 'app-store' || presentation === 'marketplace' || presentation === 'phone-call') {
+    return <AppEnvironmentFlow assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} presentation={presentation} />;
+  }
+
   if (presentation === 'pix') {
     return <PixFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} />;
   }
@@ -648,6 +652,57 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   );
 }
 
+function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine, playInstruction, router, presentation }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter>; presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call' }) {
+  const step = engine.currentStep;
+  if (!step) return null;
+  const config = {
+    messaging: { app: 'Mensagens de treino', icon: 'chatbubble-ellipses-outline' as const, accent: '#176B5B', label: 'Conversa fictícia' },
+    mobility: { app: 'Mobilidade de treino', icon: 'car-outline' as const, accent: '#28323C', label: 'Mapa fictício' },
+    'app-store': { app: 'Loja de treino', icon: 'apps-outline' as const, accent: '#1769AA', label: 'Aplicativos fictícios' },
+    marketplace: { app: 'Loja virtual de treino', icon: 'bag-handle-outline' as const, accent: '#A63A2B', label: 'Compra fictícia' },
+    'phone-call': { app: 'Chamada de treino', icon: 'call-outline' as const, accent: '#315A88', label: 'Ligação fictícia' },
+  }[presentation];
+
+  return (
+    <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
+      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+      <SimulationIdentityNotice reference={config.app} />
+      <SyncStatusCard engine={engine} />
+      <Card style={styles.environmentFrame}>
+        <View style={[styles.environmentHeader, { backgroundColor: config.accent }]}>
+          <View style={styles.environmentHeaderIcon}><Ionicons name={config.icon} size={25} color={colors.surface} /></View>
+          <View style={styles.flex1}><AppText variant="caption" color={colors.surface}>AMBIENTE EDUCATIVO</AppText><AppText weight="900" color={colors.surface}>{config.app}</AppText></View>
+          <Ionicons name="ellipsis-vertical" size={22} color={colors.surface} />
+        </View>
+        <View style={styles.environmentToolbar}><Ionicons name="chevron-back" size={22} color={colors.text} /><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
+        <EnvironmentScene presentation={presentation} step={step} accent={config.accent} />
+        <EnvironmentActions step={step} busy={engine.busy} accent={config.accent} onSubmit={engine.submit} />
+        <View style={styles.environmentHomeIndicator} />
+      </Card>
+      <Card style={styles.instructionCard}>
+        <View style={styles.instructionTop}><AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText><Tag label="Simulação segura" tone="green" /></View>
+        <AppText variant="subheading" weight="800">{step.title}</AppText><AppText color={colors.textMuted}>{step.instruction}</AppText><ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
+      </Card>
+      {engine.run.mistakes > 0 ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Essa ação não é a mais segura. Nada aconteceu de verdade; tente outra opção.</AppText></Card> : null}
+      <View style={styles.supportActions}><Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} /><Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} /></View>
+    </Screen>
+  );
+}
+
+function EnvironmentScene({ presentation, step, accent }: { presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call'; step: ParticipantMissionStep; accent: string }) {
+  if (presentation === 'messaging') return <View style={styles.environmentScene}><View style={styles.fakeChatReceived}><AppText variant="small">Olá! Preciso que você faça isso agora. É urgente.</AppText></View><View style={styles.fakeChatReceived}><AppText variant="small">Use este link ou envie o valor solicitado.</AppText></View><View style={styles.fakeChatInput}><AppText variant="small" color={colors.textMuted}>Mensagem</AppText><Ionicons name="send" size={20} color={accent} /></View></View>;
+  if (presentation === 'mobility') return <View style={styles.environmentScene}><View style={styles.fakeMap}><Ionicons name="location" size={34} color={accent} /><View style={styles.fakeRoute} /><Ionicons name="flag" size={30} color={colors.primary} /></View><View style={styles.fakeSearch}><Ionicons name="search" size={20} color={colors.textMuted} /><AppText variant="small">Para onde você vai?</AppText></View></View>;
+  if (presentation === 'app-store') return <View style={styles.environmentScene}><View style={styles.fakeSearch}><Ionicons name="search" size={20} color={colors.textMuted} /><AppText variant="small">Buscar aplicativos</AppText></View><View style={styles.fakeProduct}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText weight="900">Conecta Fácil</AppText><AppText variant="caption" color={colors.textMuted}>Empresa Exemplo · aplicativo de treino</AppText></View><Tag label="VERIFICAR" tone="purple" /></View></View>;
+  if (presentation === 'marketplace') return <View style={styles.environmentScene}><View style={styles.fakeSearch}><Ionicons name="search" size={20} color={colors.textMuted} /><AppText variant="small">Buscar produtos</AppText><Ionicons name="cart-outline" size={20} color={accent} /></View><View style={styles.fakeProduct}><View style={styles.fakeProductImage}><Ionicons name="cube-outline" size={42} color={accent} /></View><View style={styles.flex1}><AppText weight="900">Produto de treinamento</AppText><AppText variant="small">R$ 30,00 + R$ 8,00 de frete</AppText><AppText variant="caption" color={colors.success}>Loja bem avaliada · descrição completa</AppText></View></View></View>;
+  return <View style={[styles.environmentScene, styles.fakeCallScene]}><View style={[styles.fakeCallerAvatar, { backgroundColor: accent }]}><Ionicons name="person" size={48} color={colors.surface} /></View><AppText variant="subheading" weight="900">Número não identificado</AppText><AppText color={colors.textMuted}>Chamada de treinamento em andamento</AppText><View style={styles.fakeCallControls}><View style={styles.fakeCallButton}><Ionicons name="mic-off" size={24} color={colors.text} /></View><View style={[styles.fakeCallButton, styles.fakeCallEnd]}><Ionicons name="call" size={24} color={colors.surface} /></View><View style={styles.fakeCallButton}><Ionicons name="volume-high" size={24} color={colors.text} /></View></View></View>;
+}
+
+function EnvironmentActions({ step, busy, accent, onSubmit }: { step: ParticipantMissionStep; busy: boolean; accent: string; onSubmit: (action: MissionAction) => Promise<void> }) {
+  const expected = asObject(step.expectedAction); const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+  if (!options.length) return <Pressable accessibilityRole="button" disabled={busy} onPress={() => void onSubmit({ action: 'continue' })} style={[styles.environmentPrimaryAction, { backgroundColor: accent }]}><AppText weight="900" color={colors.surface}>Continuar no ambiente de treino</AppText></Pressable>;
+  return <View style={styles.environmentActionList}>{options.map(option => <Pressable accessibilityRole="button" accessibilityLabel={option.label} disabled={busy} key={option.id} onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })} style={({ pressed }) => [styles.environmentOption, pressed && styles.bankActionRowPressed]}><View style={[styles.environmentOptionIcon, { backgroundColor: `${accent}18` }]}><Ionicons name={option.id.includes('cancel') || option.id.includes('refuse') || option.id.includes('ignore') || option.id.includes('do-not') ? 'shield-checkmark-outline' : 'chevron-forward-circle-outline'} size={24} color={accent} /></View><AppText weight="800" style={styles.flex1}>{option.label}</AppText><Ionicons name="chevron-forward" size={21} color={colors.textMuted} /></Pressable>)}</View>;
+}
+
 function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playInstruction, router }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter> }) {
   const step = engine.currentStep;
   if (!step) return null;
@@ -993,6 +1048,29 @@ const styles = StyleSheet.create({
   bankActionRowPressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
   bankActionIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
   bankActionIconSafe: { backgroundColor: colors.successSoft },
+  environmentFrame: { backgroundColor: '#F4F5F7', borderColor: colors.border, borderRadius: 28, borderWidth: 1, gap: spacing.md, minHeight: 590, overflow: 'hidden', padding: 0 },
+  environmentHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  environmentHeaderIcon: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: radius.round, height: 46, justifyContent: 'center', width: 46 },
+  environmentToolbar: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between', paddingHorizontal: spacing.lg },
+  environmentScene: { flex: 1, gap: spacing.md, justifyContent: 'center', minHeight: 250, padding: spacing.lg },
+  environmentActionList: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  environmentOption: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 66, padding: spacing.md },
+  environmentOptionIcon: { alignItems: 'center', borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
+  environmentPrimaryAction: { alignItems: 'center', borderRadius: radius.lg, justifyContent: 'center', marginHorizontal: spacing.lg, minHeight: 54, padding: spacing.md },
+  environmentHomeIndicator: { alignSelf: 'center', backgroundColor: '#222', borderRadius: radius.round, height: 5, marginBottom: spacing.sm, marginTop: spacing.xs, width: 110 },
+  fakeChatReceived: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: 18, maxWidth: '82%', padding: spacing.md, ...shadow },
+  fakeChatInput: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', marginTop: 'auto', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  fakeMap: { alignItems: 'center', backgroundColor: '#DDE9DF', borderRadius: radius.lg, flexDirection: 'row', height: 180, justifyContent: 'space-around', overflow: 'hidden' },
+  fakeRoute: { borderColor: '#FFFFFF', borderStyle: 'dashed', borderTopWidth: 4, width: '45%' },
+  fakeSearch: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  fakeProduct: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  fakeAppIcon: { alignItems: 'center', borderRadius: radius.lg, height: 60, justifyContent: 'center', width: 60 },
+  fakeProductImage: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, height: 88, justifyContent: 'center', width: 88 },
+  fakeCallScene: { alignItems: 'center' },
+  fakeCallerAvatar: { alignItems: 'center', borderRadius: radius.round, height: 96, justifyContent: 'center', width: 96 },
+  fakeCallControls: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.xl },
+  fakeCallButton: { alignItems: 'center', backgroundColor: '#E2E4E8', borderRadius: radius.round, height: 58, justifyContent: 'center', width: 58 },
+  fakeCallEnd: { backgroundColor: '#C93636', transform: [{ rotate: '135deg' }] },
   govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
   govScreenContainer: { backgroundColor: '#F8FAFC', paddingBottom: spacing.lg },
   govTopNav: { alignItems: 'center', backgroundColor: colors.primarySoft, borderBottomColor: colors.primaryMuted, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },

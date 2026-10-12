@@ -4,6 +4,13 @@ describe('mission presentation', () => {
   it('selects specialized renderers by stable mission id', () => {
     expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000001')).toBe('whatsapp-photo');
     expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000002')).toBe('pix');
+    expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000003')).toBe('messaging');
+    expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000004')).toBe('mobility');
+    expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000005')).toBe('app-store');
+    expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000006')).toBe('marketplace');
+    expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000007')).toBe('messaging');
+    expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000008')).toBe('messaging');
+    expect(resolveMissionPresentation('10000000-0000-4000-8000-000000000009')).toBe('phone-call');
     expect(resolveMissionPresentation('10000000-0000-4000-8000-00000000000a')).toBe('gov-br');
   });
 
