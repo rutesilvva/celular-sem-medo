@@ -701,9 +701,15 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
   const [originAddress, setOriginAddress] = useState('Rua das Flores, 120');
   const [mobilityApp, setMobilityApp] = useState<'uber' | '99'>('uber');
   const [mobilityLoggedIn, setMobilityLoggedIn] = useState(false);
-  const [loginStage, setLoginStage] = useState<'phone' | 'code'>('phone');
+  const [loginStage, setLoginStage] = useState<'phone' | 'code' | 'profile' | 'password' | 'terms'>('phone');
   const [trainingPhone, setTrainingPhone] = useState('(83) 90000-0000');
   const [trainingCode, setTrainingCode] = useState('');
+  const [trainingFirstName, setTrainingFirstName] = useState('Maria');
+  const [trainingLastName, setTrainingLastName] = useState('Treino');
+  const [trainingEmail, setTrainingEmail] = useState('maria.treino@exemplo.com');
+  const [trainingPassword, setTrainingPassword] = useState('Treino123');
+  const [trainingLanguage, setTrainingLanguage] = useState<'Português' | 'English'>('Português');
+  const [trainingTermsAccepted, setTrainingTermsAccepted] = useState(false);
   const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'payment' | 'confirming'>('options');
   const [selectedRide, setSelectedRide] = useState<'economy' | 'comfort' | 'moto' | 'delivery'>('economy');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit' | 'cash'>('credit');
@@ -741,13 +747,33 @@ function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent
       <View style={styles.mobilityPhoneRow}><View style={styles.mobilityCountryCode}><AppText weight="900">+55</AppText></View><TextInput accessibilityLabel="Número de celular fictício" inputMode="tel" onChangeText={setTrainingPhone} placeholder="Número do celular" placeholderTextColor={colors.placeholder} style={styles.mobilityPhoneInput} value={trainingPhone} /></View>
       <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Use somente o número fictício já preenchido. Nenhum SMS será enviado.</AppText></View>
       <Button label="Continuar" icon="arrow-forward" disabled={trainingPhone.replace(/\D/g, '').length < 10} onPress={() => { setTrainingCode(''); setLoginStage('code'); }} />
-      <Button label="Criar cadastro de treino" icon="person-add-outline" variant="secondary" onPress={() => setLoginStage('code')} />
-    </> : <>
+      <Button label="Criar cadastro de treino" icon="person-add-outline" variant="secondary" onPress={() => { setTrainingCode(''); setLoginStage('code'); }} />
+    </> : loginStage === 'code' ? <>
       <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Digite o código</AppText><AppText color={colors.textMuted}>Em um acesso real, o código chegaria por SMS. Neste treino, use <AppText weight="900">1234</AppText>.</AppText></View>
       <TextInput accessibilityLabel="Código de verificação fictício" inputMode="numeric" maxLength={4} onChangeText={(value) => setTrainingCode(value.replace(/\D/g, ''))} placeholder="Código de 4 números" placeholderTextColor={colors.placeholder} style={styles.mobilityCodeInput} value={trainingCode} />
       {trainingCode.length === 4 && trainingCode !== '1234' ? <View accessibilityRole="alert" style={styles.mobilityLoginError}><Ionicons name="information-circle" size={22} color={colors.danger} /><AppText variant="small" color={colors.danger} style={styles.flex1}>Código incorreto. Digite 1234 para continuar o treinamento.</AppText></View> : null}
-      <Button label="Entrar no aplicativo de treino" icon="log-in-outline" disabled={trainingCode !== '1234'} onPress={() => setMobilityLoggedIn(true)} />
+      <Button label="Confirmar código" icon="checkmark-circle-outline" disabled={trainingCode !== '1234'} onPress={() => setLoginStage('profile')} />
       <Button label="Voltar e corrigir o telefone" variant="secondary" onPress={() => { setTrainingCode(''); setLoginStage('phone'); }} />
+    </> : loginStage === 'profile' ? <>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Como devemos chamar você?</AppText><AppText color={colors.textMuted}>Pratique o preenchimento usando somente os dados fictícios abaixo.</AppText></View>
+      <View style={styles.mobilityNameRow}><TextInput accessibilityLabel="Nome fictício" autoCapitalize="words" onChangeText={setTrainingFirstName} placeholder="Nome" placeholderTextColor={colors.placeholder} style={[styles.mobilityProfileInput, styles.flex1]} value={trainingFirstName} /><TextInput accessibilityLabel="Sobrenome fictício" autoCapitalize="words" onChangeText={setTrainingLastName} placeholder="Sobrenome" placeholderTextColor={colors.placeholder} style={[styles.mobilityProfileInput, styles.flex1]} value={trainingLastName} /></View>
+      <TextInput accessibilityLabel="E-mail fictício" autoCapitalize="none" inputMode="email" onChangeText={setTrainingEmail} placeholder="E-mail" placeholderTextColor={colors.placeholder} style={styles.mobilityProfileInput} value={trainingEmail} />
+      <AppText variant="small" weight="800">Idioma preferido</AppText><View style={styles.mobilityLanguageRow}>{(['Português', 'English'] as const).map((language) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: trainingLanguage === language }} key={language} onPress={() => setTrainingLanguage(language)} style={[styles.mobilityLanguageOption, trainingLanguage === language && styles.mobilityRideSelected]}><AppText weight="800">{language}</AppText></Pressable>)}</View>
+      <Button label="Continuar" icon="arrow-forward" disabled={!trainingFirstName.trim() || !trainingLastName.trim() || !trainingEmail.includes('@')} onPress={() => setLoginStage('password')} />
+      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('code')} />
+    </> : loginStage === 'password' ? <>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Crie uma senha</AppText><AppText color={colors.textMuted}>Em uma conta real, use uma senha exclusiva e não compartilhe o código recebido por SMS.</AppText></View>
+      <TextInput accessibilityLabel="Senha fictícia" autoCapitalize="none" onChangeText={setTrainingPassword} placeholder="Senha" placeholderTextColor={colors.placeholder} secureTextEntry style={styles.mobilityProfileInput} value={trainingPassword} />
+      <View style={styles.mobilityPasswordRules}><AppText variant="small" color={trainingPassword.length >= 8 ? colors.successText : colors.textMuted}>✓ Pelo menos 8 caracteres</AppText><AppText variant="small" color={/[0-9]/.test(trainingPassword) ? colors.successText : colors.textMuted}>✓ Pelo menos um número</AppText></View>
+      <Button label="Continuar" icon="arrow-forward" disabled={trainingPassword.length < 8 || !/[0-9]/.test(trainingPassword)} onPress={() => setLoginStage('terms')} />
+      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('profile')} />
+    </> : <>
+      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Revise seu cadastro</AppText><AppText color={colors.textMuted}>Confira os dados de treinamento antes de concluir.</AppText></View>
+      <View style={styles.mobilitySignupSummary}><SignupSummaryRow label="Nome" value={`${trainingFirstName} ${trainingLastName}`} /><SignupSummaryRow label="Telefone" value={trainingPhone} /><SignupSummaryRow label="E-mail" value={trainingEmail} /><SignupSummaryRow label="Idioma" value={trainingLanguage} /></View>
+      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: trainingTermsAccepted }} onPress={() => setTrainingTermsAccepted((current) => !current)} style={styles.mobilityTermsRow}><Ionicons name={trainingTermsAccepted ? 'checkbox' : 'square-outline'} size={28} color={colors.primary} /><AppText variant="small" style={styles.flex1}>Li e aceito os termos e o aviso de privacidade <AppText variant="small" weight="900">fictícios deste treinamento</AppText>.</AppText></Pressable>
+      <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhuma conta real será criada e nenhum dado será enviado.</AppText></View>
+      <Button label="Criar conta de treinamento" icon="person-add-outline" disabled={!trainingTermsAccepted} onPress={() => setMobilityLoggedIn(true)} />
+      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('password')} />
     </>}
     <AppText variant="caption" color={colors.textMuted} style={styles.center}>Simulação educativa independente. Não cria conta no Uber ou na 99.</AppText>
   </View>;
@@ -864,6 +890,10 @@ function MobilityMapScene({ route = false, compact = false, origin = 'Entrada pr
     </View>
     {focusedPoint ? <View accessibilityLiveRegion="polite" style={styles.mobilityMapCallout}><AppText variant="small" weight="800">{focusedPoint === 'pickup' ? `Partida: ${origin}` : `Destino: ${destination}`}</AppText><AppText variant="caption" color={colors.textMuted}>Exibido somente nesta simulação</AppText></View> : null}
   </View>;
+}
+
+function SignupSummaryRow({ label, value }: { label: string; value: string }) {
+  return <View style={styles.mobilitySignupSummaryRow}><AppText variant="small" color={colors.textMuted}>{label}</AppText><AppText variant="small" weight="900">{value}</AppText></View>;
 }
 
 function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: { presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call'; step: ParticipantMissionStep; accent: string; query: string; onQueryChange: (value: string) => void }) {
@@ -1330,6 +1360,14 @@ const styles = StyleSheet.create({
   mobilityPhoneInput: { backgroundColor: '#EEF0F2', borderRadius: radius.md, color: colors.text, flex: 1, fontSize: 19, minHeight: 58, paddingHorizontal: spacing.md },
   mobilityCodeInput: { backgroundColor: '#EEF0F2', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, color: colors.text, fontSize: 26, fontWeight: '800', letterSpacing: 10, minHeight: 66, paddingHorizontal: spacing.lg, textAlign: 'center' },
   mobilityLoginError: { alignItems: 'center', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  mobilityNameRow: { flexDirection: 'row', gap: spacing.sm },
+  mobilityProfileInput: { backgroundColor: '#EEF0F2', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, fontSize: 17, minHeight: 56, paddingHorizontal: spacing.md },
+  mobilityLanguageRow: { flexDirection: 'row', gap: spacing.sm },
+  mobilityLanguageOption: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, flex: 1, minHeight: 50, justifyContent: 'center', padding: spacing.sm },
+  mobilityPasswordRules: { backgroundColor: colors.primarySoft, borderRadius: radius.md, gap: spacing.xs, padding: spacing.md },
+  mobilitySignupSummary: { backgroundColor: '#F5F6F7', borderRadius: radius.lg, gap: spacing.sm, padding: spacing.md },
+  mobilitySignupSummaryRow: { alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between', minHeight: 38 },
+  mobilityTermsRow: { alignItems: 'flex-start', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   mobilityTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   mobilityAppChooser: { flexDirection: 'row', gap: spacing.sm },
   mobilityAppChoice: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flex: 1, flexDirection: 'row', gap: spacing.sm, minHeight: 68, padding: spacing.sm },
