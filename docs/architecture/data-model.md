@@ -81,9 +81,12 @@ promovidas.
   metadata ou eventos brutos.
 - `get_admin_participant(class_id, participant_id)` aplica a mesma fronteira e
   não confirma participantes de outra turma.
-- `get_participant_mission_catalog()` projeta apenas atribuições disponíveis da
-  turma ativa, com missão ativa e versão publicada. Rascunhos nunca chegam ao
-  aplicativo.
+- `get_participant_mission_catalog()` projeta as atribuições disponíveis dos
+  vínculos ativos da pessoa. Toda conta Google verificada recebe um vínculo
+  invisível com a turma pública **Comunidade Celular Sem Medo**, e toda versão
+  publicada é automaticamente atribuída a essa turma. Assim, o catálogo é
+  universal mesmo sem vínculo com uma turma de oficina; rascunhos nunca chegam
+  ao aplicativo.
 - `get_participant_mission_details(assignment_id)` e
   `get_participant_mission_steps(assignment_id)` reutilizam essa fronteira. IDs
   inválidos ou pertencentes a outra turma retornam conjunto vazio, sem revelar a

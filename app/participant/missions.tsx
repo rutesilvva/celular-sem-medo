@@ -91,7 +91,7 @@ export default function ParticipantMissionsScreen() {
         <View style={styles.introIcon}><Ionicons name="flag" size={28} color={colors.primary} /></View>
         <View style={styles.introCopy}>
           <AppText weight="800">Qual habilidade você quer treinar?</AppText>
-          <AppText variant="small" color={colors.textMuted}>O catálogo mostra conteúdos da sua turma e treinos por Inteligência Artificial.</AppText>
+          <AppText variant="small" color={colors.textMuted}>Todas as missões publicadas ficam disponíveis, mesmo sem participar de uma turma.</AppText>
         </View>
       </Card>
 
@@ -129,11 +129,11 @@ export default function ParticipantMissionsScreen() {
       ) : null}
 
       {query.loading ? (
-        <DataState kind="loading" title="Carregando missões" message="Buscando o conteúdo publicado para sua turma." />
+        <DataState kind="loading" title="Carregando missões" message="Buscando todas as missões publicadas." />
       ) : query.error ? (
         <DataState kind="error" title="Não foi possível carregar" message="Verifique sua conexão e tente novamente." onRetry={query.retry} />
       ) : !query.data?.length ? (
-        <DataState kind="empty" title="Nenhuma missão disponível" message="Sua turma ainda não possui uma missão publicada." />
+        <DataState kind="empty" title="Nenhuma missão disponível" message="Ainda não há missões publicadas. Tente novamente em breve." />
       ) : !displayedMissions.length ? (
         <DataState kind="empty" title="Nenhuma missão nesta categoria" message="Tente selecionar outra categoria nas pílulas acima." />
       ) : (
