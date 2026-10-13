@@ -378,6 +378,8 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 {([{ name: 'Banco de treino A', icon: 'briefcase-outline' }, { name: 'Banco de treino B', icon: 'card-outline' }, { name: 'Banco de treino C', icon: 'shield-outline' }, { name: 'Banco de treino D', icon: 'wallet-outline' }] as const).map((bank) => <Pressable accessibilityRole="button" accessibilityLabel={`Continuar com ${bank.name}`} key={bank.name} onPress={() => setSelectedGovBank(bank.name)} style={({ pressed }) => [styles.govBankTile, pressed && styles.bankActionRowPressed]}><Ionicons name={bank.icon} size={22} color="#1351B4" /><AppText variant="small" weight="700" style={styles.flex1}>{bank.name}</AppText><Ionicons name="chevron-forward" size={19} color={colors.textMuted} /></Pressable>)}
               </View>
 
+              <View style={styles.govAlternativeDivider}><View style={styles.govAlternativeLine} /><AppText variant="caption" weight="800" color={colors.textMuted}>OU</AppText><View style={styles.govAlternativeLine} /></View>
+              <Pressable accessibilityRole="button" accessibilityLabel="Criar conta do zero sem usar banco" disabled={engine.busy} onPress={handleNextStep} style={({ pressed }) => [styles.govCreateAccountCard, pressed && styles.bankActionRowPressed]}><View style={styles.govCreateAccountIcon}><Ionicons name="person-add-outline" size={26} color="#1351B4" /></View><View style={styles.flex1}><AppText weight="900" color="#1351B4">Criar conta do zero, sem banco</AppText><AppText variant="small" color={colors.textMuted}>Responder perguntas, cadastrar contato, confirmar código e criar uma senha.</AppText></View><Ionicons name="chevron-forward" size={22} color="#1351B4" /></Pressable>
               <Pressable style={styles.govOutlineBtn} disabled={engine.busy} onPress={handleNextStep}>
                 <AppText weight="800" color="#1351B4">Tentar de outra forma</AppText>
               </Pressable>
@@ -1728,6 +1730,10 @@ const styles = StyleSheet.create({
   govBankTile: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, width: '48%' },
   govBackRow: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: spacing.xs, minHeight: 44 },
   govBankAuthIcon: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#E8F1FF', borderRadius: radius.round, height: 84, justifyContent: 'center', width: 84 },
+  govAlternativeDivider: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  govAlternativeLine: { backgroundColor: colors.border, flex: 1, height: 1 },
+  govCreateAccountCard: { alignItems: 'center', backgroundColor: '#E8F1FF', borderColor: '#1351B4', borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 82, padding: spacing.md },
+  govCreateAccountIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 48, justifyContent: 'center', width: 48 },
   govPillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   govPillItem: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.round, borderWidth: 1.5, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   govPillItemActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
