@@ -223,16 +223,31 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
 function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playInstruction, router }: { assignmentId?: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter> }) {
   const { preferences } = useApp();
   const step = engine.currentStep;
-  const [selectedMother, setSelectedMother] = useState('MARIA');
-  const [selectedMonth, setSelectedMonth] = useState('MAIO');
-  const [selectedYear, setSelectedYear] = useState('1964');
-  const [termsAgreed, setTermsAgreed] = useState(true);
-  const [showWarningModal, setShowWarningModal] = useState(true);
+  const [cpf, setCpf] = useState('');
+  const [selectedMother, setSelectedMother] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [humanChecked, setHumanChecked] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState<'email' | 'phone'>('phone');
+  const [govContact, setGovContact] = useState('');
+  const [govCode, setGovCode] = useState('');
+  const [govPassword, setGovPassword] = useState('');
+  const [govPasswordConfirm, setGovPasswordConfirm] = useState('');
+  const [showGovPassword, setShowGovPassword] = useState(false);
 
   if (!step) return null;
 
   const currentStepPos = Math.min(Math.max(step.position, 1), 9);
+  const cpfReady = cpf.replace(/\D/g, '') === '12345678900';
+  const questionsReady = Boolean(selectedMother && selectedMonth && selectedYear);
+  const contactReady = selectedChannel === 'phone' ? govContact.replace(/\D/g, '').length >= 10 : govContact.includes('@');
+  const passwordRules = {
+    length: govPassword.length >= 8 && govPassword.length <= 70,
+    lower: /[a-z]/.test(govPassword), upper: /[A-Z]/.test(govPassword), number: /\d/.test(govPassword), symbol: /[^A-Za-z0-9]/.test(govPassword),
+  };
+  const passwordReady = Object.values(passwordRules).every(Boolean) && govPassword === govPasswordConfirm;
 
   const handleNextStep = async () => {
     if (preferences.hapticFeedback) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -268,12 +283,11 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
 
               <View style={styles.govFieldBlock}>
                 <AppText variant="caption" weight="700">CPF</AppText>
-                <View style={styles.govInputMock}>
-                  <AppText color={colors.text}>123.456.789-00</AppText>
-                </View>
+                <TextInput accessibilityLabel="CPF fictício" keyboardType="number-pad" maxLength={14} onChangeText={setCpf} placeholder="Digite o CPF fictício" placeholderTextColor={colors.placeholder} style={styles.govTextInput} value={cpf} />
+                <Pressable accessibilityRole="button" onPress={() => setCpf('123.456.789-00')} style={styles.govTrainingFill}><Ionicons name="sparkles-outline" size={18} color="#1351B4" /><AppText variant="small" weight="800" color="#1351B4">Usar CPF de treino: 123.456.789-00</AppText></Pressable>
               </View>
 
-              <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}>
+              <Pressable style={[styles.govPrimaryBtn, (!cpfReady || engine.busy) && styles.govButtonDisabled]} disabled={!cpfReady || engine.busy} onPress={handleNextStep}>
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
 
@@ -315,15 +329,16 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 <AppText variant="small" style={styles.flex1}>Li e estou de acordo com o <AppText variant="small" color="#1351B4" weight="700">Termo de Uso e Política de Privacidade</AppText></AppText>
               </Pressable>
 
-              <View style={styles.govCaptchaBox}>
-                <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: humanChecked }} onPress={() => setHumanChecked((value) => !value)} style={styles.govCaptchaBox}>
+                <Ionicons name={humanChecked ? 'checkbox' : 'square-outline'} size={24} color={humanChecked ? colors.success : colors.textMuted} />
                 <View style={styles.flex1}>
                   <AppText weight="700">Sou humano</AppText>
                   <AppText variant="caption" color={colors.textMuted}>Verificação fictícia · nenhum dado enviado</AppText>
                 </View>
-              </View>
+                <Ionicons name="shield-checkmark-outline" size={30} color="#1351B4" />
+              </Pressable>
 
-              <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}>
+              <Pressable style={[styles.govPrimaryBtn, (!termsAgreed || !humanChecked || engine.busy) && styles.govButtonDisabled]} disabled={!termsAgreed || !humanChecked || engine.busy} onPress={handleNextStep}>
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
 
@@ -396,7 +411,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 ))}
               </View>
 
-              <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}>
+              <Pressable style={[styles.govPrimaryBtn, (!questionsReady || engine.busy) && styles.govButtonDisabled]} disabled={!questionsReady || engine.busy} onPress={handleNextStep}>
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
             </View>
@@ -418,7 +433,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 <AppText variant="caption" color={colors.textMuted}>CPF SIMULADO</AppText>
                 <AppText weight="800">***.456.789-**</AppText>
                 <AppText variant="caption" color={colors.textMuted} style={{ marginTop: 8 }}>NOME COMPLETO</AppText>
-                <AppText weight="800">MARIA DA SILVA (SIMULADO)</AppText>
+                <AppText weight="800">{selectedMother || 'PESSOA'} DA SILVA (SIMULADO)</AppText>
               </View>
 
               <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}>
@@ -471,9 +486,8 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               </Pressable>
 
               <View style={styles.govFieldBlock}>
-                <View style={styles.govInputMockGreen}>
-                  <AppText weight="800" color="#1351B4">(61) 9999-9999</AppText>
-                </View>
+                <TextInput accessibilityLabel={selectedChannel === 'phone' ? 'Telefone fictício' : 'E-mail fictício'} autoCapitalize="none" keyboardType={selectedChannel === 'phone' ? 'phone-pad' : 'email-address'} onChangeText={setGovContact} placeholder={selectedChannel === 'phone' ? '(61) 99999-9999' : 'treino@exemplo.com'} placeholderTextColor={colors.placeholder} style={styles.govTextInputGreen} value={govContact} />
+                <Pressable accessibilityRole="button" onPress={() => setGovContact(selectedChannel === 'phone' ? '(61) 99999-9999' : 'treino@exemplo.com')} style={styles.govTrainingFill}><Ionicons name="sparkles-outline" size={18} color="#1351B4" /><AppText variant="small" weight="800" color="#1351B4">Preencher contato fictício</AppText></Pressable>
               </View>
 
               {/* Modal Dialog de Atenção se ativo */}
@@ -485,13 +499,13 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                     O contato que você informar será o <AppText weight="800">contato cadastrado para sua conta gov.br</AppText>. Ele será usado para recuperar senha, ativar a conta e confirmar outras transações.
                   </AppText>
 
-                  <Pressable accessibilityRole="button" accessibilityLabel="Fechar aviso" style={styles.govOutlineBtn} onPress={() => setShowWarningModal(false)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Entendi o aviso e continuar" style={styles.govOutlineBtn} onPress={() => { setShowWarningModal(false); void handleNextStep(); }}>
                     <AppText weight="800" color="#1351B4">OK</AppText>
                   </Pressable>
                 </View>
               ) : null}
 
-              <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}>
+              <Pressable style={[styles.govPrimaryBtn, (!contactReady || showWarningModal || engine.busy) && styles.govButtonDisabled]} disabled={!contactReady || showWarningModal || engine.busy} onPress={() => setShowWarningModal(true)}>
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
 
@@ -513,14 +527,13 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText weight="800">(61) *****-9999</AppText>
 
               <View style={styles.govFieldBlock}>
-                <View style={styles.govInputMockGreen}>
-                  <AppText color={colors.textMuted}>849201 (simulado)</AppText>
-                </View>
+                <TextInput accessibilityLabel="Código fictício recebido" keyboardType="number-pad" maxLength={6} onChangeText={setGovCode} placeholder="Digite o código" placeholderTextColor={colors.placeholder} style={styles.govTextInputGreen} value={govCode} />
+                <View style={styles.govCodeHint}><Ionicons name="chatbubble-ellipses-outline" size={20} color="#1351B4" /><AppText variant="small" style={styles.flex1}>SMS de treino: seu código é <AppText variant="small" weight="900">849201</AppText></AppText></View>
               </View>
 
-              <AppText variant="small" color={colors.textMuted}>Não recebeu o código? <AppText variant="small" color="#1351B4" weight="800">Reenviar código</AppText></AppText>
+              <Pressable accessibilityRole="button" onPress={() => setGovCode('849201')}><AppText variant="small" color={colors.textMuted}>Não recebeu o código? <AppText variant="small" color="#1351B4" weight="800">Reenviar código fictício</AppText></AppText></Pressable>
 
-              <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}>
+              <Pressable style={[styles.govPrimaryBtn, (govCode !== '849201' || engine.busy) && styles.govButtonDisabled]} disabled={govCode !== '849201' || engine.busy} onPress={handleNextStep}>
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
 
@@ -548,29 +561,23 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <View style={styles.govFieldBlock}>
                 <AppText variant="caption" weight="700">Senha</AppText>
                 <View style={styles.govInputMockRow}>
-                  <AppText color={colors.text} style={styles.flex1}>••••••••••••</AppText>
-                  <Ionicons name="eye-outline" size={20} color="#1351B4" />
+                  <TextInput accessibilityLabel="Senha fictícia" autoCapitalize="none" onChangeText={setGovPassword} placeholder="Digite uma senha de treino" placeholderTextColor={colors.placeholder} secureTextEntry={!showGovPassword} style={styles.govPasswordInput} value={govPassword} />
+                  <Pressable accessibilityRole="button" accessibilityLabel={showGovPassword ? 'Ocultar senha' : 'Mostrar senha'} onPress={() => setShowGovPassword((value) => !value)}><Ionicons name={showGovPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#1351B4" /></Pressable>
                 </View>
               </View>
 
               <View style={styles.govChecklistBlock}>
                 <AppText variant="small" weight="800" color="#1351B4">Sua senha deve conter:</AppText>
-                <View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={18} color={colors.success} /><AppText variant="small" weight="700" color={colors.success}>de 8 à 70 caracteres</AppText></View>
-                <View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={18} color={colors.success} /><AppText variant="small" weight="700" color={colors.success}>letra minúscula</AppText></View>
-                <View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={18} color={colors.success} /><AppText variant="small" weight="700" color={colors.success}>letra maiúscula</AppText></View>
-                <View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={18} color={colors.success} /><AppText variant="small" weight="700" color={colors.success}>número</AppText></View>
-                <View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={18} color={colors.success} /><AppText variant="small" weight="700" color={colors.success}>símbolo (Ex: !@#%$)</AppText></View>
+                {([['length', 'de 8 a 70 caracteres'], ['lower', 'letra minúscula'], ['upper', 'letra maiúscula'], ['number', 'número'], ['symbol', 'símbolo (Ex.: !@#%$)']] as const).map(([rule, label]) => <View key={rule} style={styles.govCheckItem}><Ionicons name={passwordRules[rule] ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={passwordRules[rule] ? colors.success : colors.textMuted} /><AppText variant="small" weight="700" color={passwordRules[rule] ? colors.success : colors.textMuted}>{label}</AppText></View>)}
               </View>
 
               <View style={styles.govFieldBlock}>
                 <AppText variant="caption" weight="700">Confirmar Senha</AppText>
-                <View style={styles.govInputMockRow}>
-                  <AppText color={colors.text} style={styles.flex1}>••••••••••••</AppText>
-                  <Ionicons name="eye-outline" size={20} color="#1351B4" />
-                </View>
+                <View style={styles.govInputMockRow}><TextInput accessibilityLabel="Confirmar senha fictícia" autoCapitalize="none" onChangeText={setGovPasswordConfirm} placeholder="Digite novamente" placeholderTextColor={colors.placeholder} secureTextEntry={!showGovPassword} style={styles.govPasswordInput} value={govPasswordConfirm} />{govPasswordConfirm ? <Ionicons name={govPassword === govPasswordConfirm ? 'checkmark-circle' : 'close-circle'} size={22} color={govPassword === govPasswordConfirm ? colors.success : colors.danger} /> : null}</View>
               </View>
+              <Pressable accessibilityRole="button" onPress={() => { setGovPassword('Treino@123'); setGovPasswordConfirm('Treino@123'); }} style={styles.govTrainingFill}><Ionicons name="sparkles-outline" size={18} color="#1351B4" /><AppText variant="small" weight="800" color="#1351B4">Usar senha segura de treino</AppText></Pressable>
 
-              <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}>
+              <Pressable style={[styles.govPrimaryBtn, (!passwordReady || engine.busy) && styles.govButtonDisabled]} disabled={!passwordReady || engine.busy} onPress={handleNextStep}>
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
 
@@ -1693,7 +1700,11 @@ const styles = StyleSheet.create({
   govSectionRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
   govFieldBlock: { gap: spacing.xs, marginTop: spacing.xs },
   govInputMock: { backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, height: 48, justifyContent: 'center', paddingHorizontal: spacing.md },
-  govPrimaryBtn: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 50, justifyContent: 'center', marginTop: spacing.sm },
+  govTextInput: { backgroundColor: '#ffffff', borderColor: '#64748B', borderRadius: radius.md, borderWidth: 1.5, color: colors.text, fontSize: 17, minHeight: 52, paddingHorizontal: spacing.md },
+  govTextInputGreen: { backgroundColor: '#ffffff', borderColor: colors.success, borderRadius: radius.md, borderWidth: 1.5, color: colors.text, fontSize: 17, minHeight: 52, paddingHorizontal: spacing.md },
+  govTrainingFill: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: '#E8F1FF', borderRadius: radius.md, flexDirection: 'row', gap: spacing.xs, minHeight: 42, paddingHorizontal: spacing.md },
+  govPrimaryBtn: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, height: 50, justifyContent: 'center', marginTop: spacing.sm },
+  govButtonDisabled: { backgroundColor: '#A8B3C5', opacity: 0.75 },
   govOutlineBtn: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.round, borderWidth: 1.5, height: 48, justifyContent: 'center', marginTop: spacing.sm },
   govDividerLine: { backgroundColor: '#E2E8F0', height: 1, marginVertical: spacing.xs },
   govOptionList: { gap: spacing.sm },
@@ -1712,9 +1723,11 @@ const styles = StyleSheet.create({
   govStepLine: { backgroundColor: '#CBD5E1', height: 2, width: 24 },
   govRadioRow: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   govInputMockGreen: { backgroundColor: '#ECFDF3', borderColor: colors.success, borderRadius: radius.md, borderWidth: 1, minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.md },
+  govCodeHint: { alignItems: 'center', backgroundColor: '#E8F1FF', borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   govModalAlert: { backgroundColor: '#FFF8E1', borderColor: colors.warning, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm, padding: spacing.md },
   govModalBadge: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.warningSoft, borderRadius: radius.round, height: 36, justifyContent: 'center', width: 36 },
   govInputMockRow: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: spacing.md },
+  govPasswordInput: { color: colors.text, flex: 1, fontSize: 17, minHeight: 50 },
   govChecklistBlock: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, gap: spacing.xs, padding: spacing.md },
   govCheckItem: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
   govAccessibilityBadge: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.md, height: 42, justifyContent: 'center', width: 42 },
