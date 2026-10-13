@@ -7,9 +7,10 @@ test('valida ações usando somente a definição do passo', () => {
 
 test('erro não avança e acerto avança exatamente um passo', () => {
   const wrong = missionRunReducer(initialMissionRunState, { type: 'answer', correct: false, lastStep: false });
-  expect(wrong).toEqual({ ...initialMissionRunState, mistakes: 1 });
+  expect(wrong).toEqual({ ...initialMissionRunState, mistakes: 1, lastAnswerCorrect: false });
   const correct = missionRunReducer(wrong, { type: 'answer', correct: true, lastStep: false });
   expect(correct.stepIndex).toBe(1);
+  expect(correct.lastAnswerCorrect).toBe(true);
 });
 
 test('conclusão autônoma, com dica e com ajuda são distintas', () => {

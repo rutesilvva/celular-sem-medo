@@ -155,7 +155,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
 
         <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
 
-        {engine.run.mistakes > 0 ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
+        {engine.run.lastAnswerCorrect === false ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
         {engine.run.usedHint || engine.run.usedHelp ? <Card style={styles.hints}><AppText weight="800">{engine.run.usedHelp ? 'Ajuda passo a passo' : 'Dicas deste passo'}</AppText>{step.hints.map((hint) => <AppText key={hint}>• {hint}</AppText>)}</Card> : null}
         {engine.error ? <AppText color={colors.danger}>{engine.error}</AppText> : null}
 
@@ -205,7 +205,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
         </View>
         <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
       </Card>
-      {engine.run.mistakes > 0 ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
+      {engine.run.lastAnswerCorrect === false ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
       {engine.run.usedHint || engine.run.usedHelp ? <Card style={styles.hints}><AppText weight="800">{engine.run.usedHelp ? 'Ajuda passo a passo' : 'Dicas deste passo'}</AppText>{step.hints.map((hint) => <AppText key={hint}>• {hint}</AppText>)}</Card> : null}
       {engine.error ? <AppText color={colors.danger}>{engine.error}</AppText> : null}
       <View style={styles.supportActions}>
@@ -642,7 +642,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         <AppText color={colors.textMuted}>{step.instruction}</AppText>
         <ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
-      {engine.run.mistakes > 0 ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
+      {engine.run.lastAnswerCorrect === false ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
       {engine.run.usedHint || engine.run.usedHelp ? <Card style={styles.hints}><AppText weight="800">{engine.run.usedHelp ? 'Ajuda passo a passo' : 'Dicas deste passo'}</AppText>{step.hints.map((hint) => <AppText key={hint}>• {hint}</AppText>)}</Card> : null}
       <View style={styles.supportActions}>
         <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} />
@@ -691,7 +691,7 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
         <View style={styles.instructionTop}><AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText><Tag label="Simulação segura" tone="green" /></View>
         <AppText variant="subheading" weight="800">{step.title}</AppText><AppText color={colors.textMuted}>{step.instruction}</AppText><ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
-      {engine.run.mistakes > 0 ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Essa ação não é a mais segura. Nada aconteceu de verdade; tente outra opção.</AppText></Card> : null}
+      {engine.run.lastAnswerCorrect === false ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Essa ação não é a mais segura. Nada aconteceu de verdade; tente outra opção.</AppText></Card> : null}
       <View style={styles.supportActions}><Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} /><Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} /></View>
     </Screen>
   );

@@ -13,6 +13,7 @@ export type ExpectedMissionAction = {
 export type MissionRunState = {
   stepIndex: number;
   mistakes: number;
+  lastAnswerCorrect?: boolean | null;
   usedHint: boolean;
   usedHelp: boolean;
   completed: boolean;
@@ -27,6 +28,7 @@ export type MissionRunEvent =
 export const initialMissionRunState: MissionRunState = {
   stepIndex: 0,
   mistakes: 0,
+  lastAnswerCorrect: null,
   usedHint: false,
   usedHelp: false,
   completed: false,
@@ -44,9 +46,9 @@ export function missionRunReducer(state: MissionRunState, event: MissionRunEvent
   if (state.completed) return state;
   if (event.type === 'hint') return { ...state, usedHint: true };
   if (event.type === 'help') return { ...state, usedHelp: true };
-  if (!event.correct) return { ...state, mistakes: state.mistakes + 1 };
-  if (event.lastStep) return { ...state, completed: true };
-  return { ...state, stepIndex: state.stepIndex + 1 };
+  if (!event.correct) return { ...state, mistakes: state.mistakes + 1, lastAnswerCorrect: false };
+  if (event.lastStep) return { ...state, completed: true, lastAnswerCorrect: true };
+  return { ...state, stepIndex: state.stepIndex + 1, lastAnswerCorrect: true };
 }
 
 export function completionKind(state: MissionRunState): 'autonomous' | 'with_hint' | 'with_help' {
