@@ -236,6 +236,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   const [govPassword, setGovPassword] = useState('');
   const [govPasswordConfirm, setGovPasswordConfirm] = useState('');
   const [showGovPassword, setShowGovPassword] = useState(false);
+  const [selectedGovBank, setSelectedGovBank] = useState<string | null>(null);
 
   if (!step) return null;
 
@@ -348,6 +349,21 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         );
 
       case 3:
+        if (selectedGovBank) return (
+          <View style={styles.govScreenContainer}>
+            <View style={styles.govTopNav}><AppText variant="heading" weight="900" color={colors.primary}>Portal de serviços · TREINO</AppText></View>
+            <View style={styles.govCardInternal}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Voltar para escolher outro banco" onPress={() => setSelectedGovBank(null)} style={styles.govBackRow}><Ionicons name="arrow-back" size={22} color="#1351B4" /><AppText weight="800" color="#1351B4">Escolher outro banco</AppText></Pressable>
+              <View style={styles.govBankAuthIcon}><Ionicons name="business-outline" size={42} color="#1351B4" /></View>
+              <AppText variant="heading" weight="900" style={styles.centerText}>Continuar com {selectedGovBank}</AppText>
+              <AppText color={colors.textMuted} style={styles.centerText}>Em um cadastro real, o aplicativo do banco seria aberto para confirmar sua identidade.</AppText>
+              <View style={styles.govSimulationNotice}><Ionicons name="shield-checkmark" size={24} color={colors.success} /><AppText variant="small" weight="800" color={colors.successText} style={styles.flex1}>Simulação segura: o banco não será aberto e nenhuma senha bancária será solicitada.</AppText></View>
+              <View style={styles.govChecklistBlock}><View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={19} color={colors.success} /><AppText variant="small">Compartilharia somente nome e CPF</AppText></View><View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={19} color={colors.success} /><AppText variant="small">Não compartilharia saldo ou movimentações</AppText></View><View style={styles.govCheckItem}><Ionicons name="checkmark-circle" size={19} color={colors.success} /><AppText variant="small">Você voltaria ao portal após autorizar</AppText></View></View>
+              <Pressable style={styles.govPrimaryBtn} disabled={engine.busy} onPress={handleNextStep}><AppText weight="800" color="#ffffff">Simular autorização e continuar</AppText></Pressable>
+              <Pressable style={styles.govOutlineBtn} onPress={() => setSelectedGovBank(null)}><AppText weight="800" color="#1351B4">Cancelar</AppText></Pressable>
+            </View>
+          </View>
+        );
         return (
           <View style={styles.govScreenContainer}>
             <View style={styles.govTopNav}>
@@ -359,10 +375,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <AppText variant="caption" color={colors.textMuted}>Não teremos acesso a seus dados bancários, apenas a seu nome e CPF. Escolha o banco que você já usa pela internet:</AppText>
 
               <View style={styles.govBankGrid}>
-                <View style={styles.govBankTile}><Ionicons name="briefcase-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino A</AppText></View>
-                <View style={styles.govBankTile}><Ionicons name="card-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino B</AppText></View>
-                <View style={styles.govBankTile}><Ionicons name="shield-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino C</AppText></View>
-                <View style={styles.govBankTile}><Ionicons name="wallet-outline" size={20} color={colors.primary} /><AppText variant="small" weight="700">Banco de treino D</AppText></View>
+                {([{ name: 'Banco de treino A', icon: 'briefcase-outline' }, { name: 'Banco de treino B', icon: 'card-outline' }, { name: 'Banco de treino C', icon: 'shield-outline' }, { name: 'Banco de treino D', icon: 'wallet-outline' }] as const).map((bank) => <Pressable accessibilityRole="button" accessibilityLabel={`Continuar com ${bank.name}`} key={bank.name} onPress={() => setSelectedGovBank(bank.name)} style={({ pressed }) => [styles.govBankTile, pressed && styles.bankActionRowPressed]}><Ionicons name={bank.icon} size={22} color="#1351B4" /><AppText variant="small" weight="700" style={styles.flex1}>{bank.name}</AppText><Ionicons name="chevron-forward" size={19} color={colors.textMuted} /></Pressable>)}
               </View>
 
               <Pressable style={styles.govOutlineBtn} disabled={engine.busy} onPress={handleNextStep}>
@@ -1713,6 +1726,8 @@ const styles = StyleSheet.create({
   govCaptchaBox: { alignItems: 'center', backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   govBankGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   govBankTile: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, width: '48%' },
+  govBackRow: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: spacing.xs, minHeight: 44 },
+  govBankAuthIcon: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#E8F1FF', borderRadius: radius.round, height: 84, justifyContent: 'center', width: 84 },
   govPillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   govPillItem: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.round, borderWidth: 1.5, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   govPillItemActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
