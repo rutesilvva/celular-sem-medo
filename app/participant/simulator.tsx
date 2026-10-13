@@ -712,14 +712,15 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
   const searched = query.trim().length >= 3;
 
   if (step.position === 1) return <View style={styles.marketplaceScreen}>
-    <View style={styles.marketplaceTopBar}><AppText variant="heading" weight="900" color={colors.surface}>Loja de treino</AppText><View style={styles.marketplaceTopIcons}><Ionicons name="cart-outline" size={27} color={colors.surface} /><Ionicons name="chatbubble-ellipses-outline" size={25} color={colors.surface} /></View></View>
+    <View style={styles.marketplaceTopBar}><View><AppText variant="caption" weight="900" color={colors.surface}>AMBIENTE EDUCATIVO</AppText><AppText variant="heading" weight="900" color={colors.surface}>Compra Fácil</AppText></View><View style={styles.marketplaceTopIcons}><View style={styles.marketplaceHeaderIcon}><Ionicons name="cart-outline" size={27} color={colors.surface} /></View><View style={styles.marketplaceHeaderIcon}><Ionicons name="chatbubble-ellipses-outline" size={25} color={colors.surface} /><View style={styles.marketplaceNotificationBadge}><AppText variant="caption" weight="900" color={colors.surface}>1</AppText></View></View></View></View>
     <View style={styles.marketplaceSearch}><Ionicons name="search" size={23} color="#E45A37" /><TextInput accessibilityLabel="Pesquisar produto fictício" onChangeText={onQueryChange} placeholder="Buscar na loja de treino" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.marketplaceSearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar busca" onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={22} color={colors.textMuted} /></Pressable> : null}</View>
-    <View style={styles.marketplacePromo}><View style={styles.marketplacePromoCopy}><AppText variant="subheading" weight="900" color={colors.surface}>Ofertas educativas</AppText><AppText variant="small" color={colors.surface}>Aprenda a comparar preço, loja e avaliações</AppText></View><Ionicons name="shield-checkmark" size={58} color={colors.surface} /></View>
+    <View style={styles.marketplacePromo}><View style={styles.marketplacePromoCopy}><Tag label="TREINO SEGURO" tone="green" /><AppText variant="subheading" weight="900" color={colors.surface}>Ofertas educativas</AppText><AppText variant="small" color={colors.surface}>Aprenda a comparar preço, loja, frete e avaliações</AppText><View style={styles.marketplacePromoDots}><View style={styles.marketplacePromoDotActive} /><View style={styles.marketplacePromoDot} /><View style={styles.marketplacePromoDot} /></View></View><Ionicons name="bag-handle" size={65} color={colors.surface} /></View>
     <View style={styles.marketplaceShortcuts}><MarketplaceShortcut icon="ticket-outline" label="Cupons" /><MarketplaceShortcut icon="storefront-outline" label="Lojas" /><MarketplaceShortcut icon="videocam-outline" label="Vídeos" /><MarketplaceShortcut icon="person-outline" label="Conta" /></View>
     <AppText variant="subheading" weight="900">Sugestões de treinamento</AppText>
-    <View style={styles.marketplaceGrid}><MarketplaceProduct icon="book-outline" title="Luminária de leitura" price="R$ 30,00" /><MarketplaceProduct icon="leaf-outline" title="Kit de jardinagem" price="R$ 42,00" /></View>
+    <View style={styles.marketplaceGrid}><MarketplaceProduct icon="bulb-outline" title="Luminária de leitura" price="R$ 30,00" sold="340 vendidos" onPress={() => { onQueryChange('Luminária de leitura'); void onSubmit({ action: 'continue' }); }} /><MarketplaceProduct icon="leaf-outline" title="Kit de jardinagem" price="R$ 42,00" sold="82 vendidos" /></View>
     <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Todos os produtos, lojas e preços são fictícios.</AppText></View>
     <Button label="Pesquisar produto" icon="search" disabled={!searched || busy} onPress={() => void onSubmit({ action: 'continue' })} />
+    <MarketplaceBottomNav active="home" />
   </View>;
 
   if (step.position === 2 && listingOpen) return <View style={styles.marketplaceScreen}>
@@ -733,6 +734,7 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
     <View style={styles.marketplaceProtection}><Ionicons name="shield-checkmark" size={24} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Compra protegida no ambiente de treino</AppText><AppText variant="small" color={colors.textMuted}>Confira sempre avaliações, descrição e pagamento dentro do aplicativo.</AppText></View></View>
     {cartAdded ? <View style={styles.marketplaceAddedNotice}><Ionicons name="checkmark-circle" size={26} color={colors.success} /><View style={styles.flex1}><AppText weight="900" color={colors.successText}>Produto adicionado ao carrinho</AppText><AppText variant="small" color={colors.successText}>Toque em “Ir para o carrinho” para continuar.</AppText></View></View> : null}
     {cartAdded ? <View style={styles.marketplaceCartActions}><Button label="Continuar comprando" variant="secondary" onPress={() => setListingOpen(false)} /><Button label="Ir para o carrinho (1)" icon="cart-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'safe-listing' })} /></View> : <Button label="Adicionar ao carrinho" icon="cart-outline" disabled={busy} onPress={() => setCartAdded(true)} />}
+    <MarketplaceBottomNav active="home" cartCount={cartAdded ? 1 : 0} />
   </View>;
 
   if (step.position === 2) return <View style={styles.marketplaceScreen}>
@@ -740,6 +742,7 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
     <AppText variant="caption" weight="900" color={colors.textMuted}>COMPARE ANTES DE COMPRAR</AppText>
     <Pressable accessibilityRole="button" accessibilityLabel="Abrir anúncio seguro" disabled={busy} onPress={() => setListingOpen(true)} style={({ pressed }) => [styles.marketplaceListing, styles.marketplaceListingSafe, pressed && styles.bankActionRowPressed]}><View style={styles.marketplaceProductImage}><Ionicons name="bulb-outline" size={48} color="#E45A37" /></View><View style={styles.flex1}><Tag label="LOJA BEM AVALIADA" tone="green" /><AppText weight="900">Luminária de leitura ajustável</AppText><AppText variant="small" color={colors.textMuted}>Casa Clara — Loja Exemplo</AppText><AppText variant="small" weight="900" color="#E45A37">R$ 30,00</AppText><AppText variant="caption" color={colors.success}>4,8 ★ · 126 avaliações · 340 vendidos</AppText></View><Ionicons name="chevron-forward" size={24} color={colors.textMuted} /></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Escolher anúncio inseguro" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'unsafe-listing' })} style={({ pressed }) => [styles.marketplaceListing, pressed && styles.bankActionRowPressed]}><View style={[styles.marketplaceProductImage, styles.marketplaceProductImageRisk]}><Ionicons name="warning-outline" size={45} color={colors.danger} /></View><View style={styles.flex1}><Tag label="ATENÇÃO" tone="red" /><AppText weight="900">Oferta sem identificação</AppText><AppText variant="small" color={colors.danger}>Pagamento solicitado por mensagem</AppText><AppText variant="small" weight="900" color={colors.danger}>R$ 5,00</AppText></View></Pressable>
+    <MarketplaceBottomNav active="home" cartCount={cartAdded ? 1 : 0} />
   </View>;
 
   if (step.position === 3) return <View style={styles.marketplaceScreen}>
@@ -748,6 +751,7 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
     <View style={styles.marketplaceTotals}><View style={styles.marketplaceTotalRow}><AppText>Produto</AppText><AppText>R$ 30,00</AppText></View><View style={styles.marketplaceTotalRow}><AppText>Frete</AppText><AppText>R$ 8,00</AppText></View><View style={styles.marketplaceDivider} /><AppText weight="900">Qual é o total correto?</AppText></View>
     {!cartSelected ? <View style={styles.marketplaceWarning}><Ionicons name="information-circle" size={22} color={colors.warning} /><AppText variant="small" style={styles.flex1}>Marque o produto para continuar a compra.</AppText></View> : null}
     <View style={styles.marketplaceTotalChoices}><Button label="R$ 30,00" variant="secondary" disabled={busy || !cartSelected} onPress={() => void onSubmit({ action: 'choose', optionId: 'total-30' })} /><Button label="R$ 38,00" disabled={busy || !cartSelected} onPress={() => void onSubmit({ action: 'choose', optionId: 'total-38' })} /><Button label="R$ 80,00" variant="secondary" disabled={busy || !cartSelected} onPress={() => void onSubmit({ action: 'choose', optionId: 'total-80' })} /></View>
+    <MarketplaceBottomNav active="cart" cartCount={1} />
   </View>;
 
   if (checkoutStage === 'success') return <View style={styles.marketplaceSuccessScreen}>
@@ -776,8 +780,19 @@ function MarketplaceShortcut({ icon, label }: { icon: 'ticket-outline' | 'storef
   return <View style={styles.marketplaceShortcut}><View style={styles.marketplaceShortcutIcon}><Ionicons name={icon} size={23} color="#E45A37" /></View><AppText variant="caption" style={styles.center}>{label}</AppText></View>;
 }
 
-function MarketplaceProduct({ icon, title, price }: { icon: 'book-outline' | 'leaf-outline'; title: string; price: string }) {
-  return <View style={styles.marketplaceProductTile}><View style={styles.marketplaceProductTileImage}><Ionicons name={icon} size={52} color="#E45A37" /></View><AppText variant="small" weight="800">{title}</AppText><AppText weight="900" color="#E45A37">{price}</AppText></View>;
+function MarketplaceProduct({ icon, title, price, sold, onPress }: { icon: 'bulb-outline' | 'leaf-outline'; title: string; price: string; sold: string; onPress?: () => void }) {
+  return <Pressable accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={onPress ? `Abrir ${title}` : undefined} onPress={onPress} style={({ pressed }) => [styles.marketplaceProductTile, pressed && styles.bankActionRowPressed]}><View style={styles.marketplaceProductTileImage}><Ionicons name={icon} size={52} color="#E45A37" /><View style={styles.marketplaceDiscountBadge}><AppText variant="caption" weight="900" color={colors.surface}>-20%</AppText></View></View><AppText variant="small" weight="800" numberOfLines={2}>{title}</AppText><AppText weight="900" color="#E45A37">{price}</AppText><View style={styles.marketplaceProductMeta}><AppText variant="caption" color={colors.textMuted}>{sold}</AppText><AppText variant="caption" color="#E6A300">4,8 ★</AppText></View></Pressable>;
+}
+
+function MarketplaceBottomNav({ active, cartCount = 0 }: { active: 'home' | 'cart'; cartCount?: number }) {
+  const items = [
+    { key: 'home', icon: 'home-outline' as const, label: 'Início' },
+    { key: 'feed', icon: 'play-circle-outline' as const, label: 'Vídeos' },
+    { key: 'notifications', icon: 'notifications-outline' as const, label: 'Notificações' },
+    { key: 'cart', icon: 'cart-outline' as const, label: 'Carrinho' },
+    { key: 'account', icon: 'person-outline' as const, label: 'Eu' },
+  ];
+  return <View style={styles.marketplaceBottomNav}>{items.map((item) => <View key={item.key} style={styles.marketplaceBottomNavItem}><View style={styles.marketplaceBottomIcon}><Ionicons name={item.icon} size={23} color={active === item.key ? '#E45A37' : colors.textMuted} />{item.key === 'cart' && cartCount > 0 ? <View style={styles.marketplaceBottomBadge}><AppText variant="caption" weight="900" color={colors.surface}>{cartCount}</AppText></View> : null}</View><AppText variant="caption" weight={active === item.key ? '900' : '500'} color={active === item.key ? '#E45A37' : colors.textMuted}>{item.label}</AppText></View>)}</View>;
 }
 
 function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
@@ -1439,18 +1454,25 @@ const styles = StyleSheet.create({
   marketplaceScreen: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   marketplaceTopBar: { alignItems: 'center', backgroundColor: '#E45A37', borderRadius: radius.lg, flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
   marketplaceTopIcons: { flexDirection: 'row', gap: spacing.lg },
+  marketplaceHeaderIcon: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 34, position: 'relative' },
+  marketplaceNotificationBadge: { alignItems: 'center', backgroundColor: '#C93636', borderColor: colors.surface, borderRadius: radius.round, borderWidth: 2, height: 21, justifyContent: 'center', position: 'absolute', right: -7, top: -4, width: 21 },
   marketplaceCartIcon: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44, position: 'relative' },
   marketplaceCartBadge: { alignItems: 'center', backgroundColor: '#E45A37', borderColor: colors.surface, borderRadius: radius.round, borderWidth: 2, height: 23, justifyContent: 'center', position: 'absolute', right: -3, top: -2, width: 23 },
   marketplaceSearch: { alignItems: 'center', backgroundColor: colors.surface, borderColor: '#F2A48F', borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', gap: spacing.sm, minHeight: 54, paddingHorizontal: spacing.md },
   marketplaceSearchInput: { color: colors.text, flex: 1, fontSize: 17, minHeight: 50 },
   marketplacePromo: { alignItems: 'center', backgroundColor: '#E45A37', borderRadius: radius.lg, flexDirection: 'row', justifyContent: 'space-between', minHeight: 112, padding: spacing.lg },
   marketplacePromoCopy: { flex: 1, gap: spacing.xs },
+  marketplacePromoDots: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
+  marketplacePromoDot: { backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: radius.round, height: 6, width: 6 },
+  marketplacePromoDotActive: { backgroundColor: colors.surface, borderRadius: radius.round, height: 6, width: 18 },
   marketplaceShortcuts: { flexDirection: 'row', justifyContent: 'space-between' },
   marketplaceShortcut: { alignItems: 'center', gap: spacing.xs, width: '23%' },
   marketplaceShortcutIcon: { alignItems: 'center', backgroundColor: colors.surface, borderColor: '#F2C4B7', borderRadius: radius.md, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
   marketplaceGrid: { flexDirection: 'row', gap: spacing.md },
   marketplaceProductTile: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flex: 1, gap: spacing.xs, padding: spacing.sm },
-  marketplaceProductTileImage: { alignItems: 'center', backgroundColor: '#FFF1EC', borderRadius: radius.md, height: 110, justifyContent: 'center' },
+  marketplaceProductTileImage: { alignItems: 'center', backgroundColor: '#FFF1EC', borderRadius: radius.md, height: 110, justifyContent: 'center', position: 'relative' },
+  marketplaceDiscountBadge: { alignItems: 'center', backgroundColor: '#E45A37', borderBottomLeftRadius: radius.sm, borderTopRightRadius: radius.md, justifyContent: 'center', paddingHorizontal: spacing.xs, paddingVertical: 3, position: 'absolute', right: 0, top: 0 },
+  marketplaceProductMeta: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   marketplaceListing: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 130, padding: spacing.md },
   marketplaceListingSafe: { borderColor: colors.success },
   marketplaceProductImage: { alignItems: 'center', backgroundColor: '#FFF1EC', borderRadius: radius.md, height: 90, justifyContent: 'center', width: 90 },
@@ -1490,6 +1512,10 @@ const styles = StyleSheet.create({
   marketplaceSellerInput: { backgroundColor: '#F7F7F8', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 52, paddingHorizontal: spacing.md },
   marketplaceSuccessScreen: { alignItems: 'stretch', gap: spacing.lg, padding: spacing.xl },
   marketplaceSuccessCircle: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.success, borderRadius: radius.round, height: 92, justifyContent: 'center', width: 92 },
+  marketplaceBottomNav: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: spacing.xs, paddingVertical: spacing.sm },
+  marketplaceBottomNavItem: { alignItems: 'center', gap: 2, minWidth: 54 },
+  marketplaceBottomIcon: { alignItems: 'center', justifyContent: 'center', minHeight: 28, minWidth: 30, position: 'relative' },
+  marketplaceBottomBadge: { alignItems: 'center', backgroundColor: '#E45A37', borderColor: colors.surface, borderRadius: radius.round, borderWidth: 1, height: 19, justifyContent: 'center', position: 'absolute', right: -4, top: -5, width: 19 },
   fakeChatReceived: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderRadius: 18, maxWidth: '82%', padding: spacing.md, ...shadow },
   fakeChatInput: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', marginTop: 'auto', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   fakeMap: { alignItems: 'center', backgroundColor: '#DDE9DF', borderRadius: radius.lg, flexDirection: 'row', height: 180, justifyContent: 'space-around', overflow: 'hidden' },
