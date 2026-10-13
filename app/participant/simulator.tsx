@@ -399,7 +399,9 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
             <View style={styles.govCardInternal}>
               <AppText variant="subheading" weight="800">Vamos criar sua conta gov.br confirmando alguns de seus dados pessoais?</AppText>
 
-              <AppText variant="small" weight="700">1. Qual é o primeiro nome da sua mãe?</AppText>
+              <View style={styles.govFictionNotice}><Ionicons name="information-circle" size={25} color="#1351B4" /><View style={styles.flex1}><AppText weight="900" color="#1351B4">Todas as respostas desta tela são simuladas</AppText><AppText variant="small">Não escolha o nome real da sua mãe nem sua data de nascimento. Use qualquer uma das opções fictícias para aprender como a tela funciona.</AppText></View></View>
+
+              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>1</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um nome fictício</AppText><AppText variant="caption" color={colors.textMuted}>Na situação real, seria o primeiro nome da sua mãe.</AppText></View></View>
               <View style={styles.govPillGrid}>
                 {['MARIA', 'LEONA', 'ESTRELA', 'JEWEL', 'LILA', 'CARMEZINDA', 'NADINA'].map((name) => (
                   <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedMother === name }} accessibilityLabel={`Escolher ${name} como nome fictício`} key={name} onPress={() => setSelectedMother(name)} style={[styles.govPillItem, selectedMother === name && styles.govPillItemActive]}>
@@ -408,7 +410,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 ))}
               </View>
 
-              <AppText variant="small" weight="700">2. Qual é o seu mês de nascimento ?</AppText>
+              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>2</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um mês fictício</AppText><AppText variant="caption" color={colors.textMuted}>Não precisa ser o seu mês verdadeiro.</AppText></View></View>
               <View style={styles.govPillGrid}>
                 {['MAIO', 'FEVEREIRO', 'DEZEMBRO', 'ABRIL'].map((m) => (
                   <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedMonth === m }} accessibilityLabel={`Escolher mês fictício ${m}`} key={m} onPress={() => setSelectedMonth(m)} style={[styles.govPillItem, selectedMonth === m && styles.govPillItemActive]}>
@@ -417,7 +419,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 ))}
               </View>
 
-              <AppText variant="small" weight="700">3. Qual é o seu ano de nascimento ?</AppText>
+              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um ano fictício</AppText><AppText variant="caption" color={colors.textMuted}>Use somente uma das alternativas de treinamento.</AppText></View></View>
               <View style={styles.govPillGrid}>
                 {['1964', '1966', '1962', '1967', '1968', '1963', '1965'].map((y) => (
                   <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedYear === y }} accessibilityLabel={`Escolher ano fictício ${y}`} key={y} onPress={() => setSelectedYear(y)} style={[styles.govPillItem, selectedYear === y && styles.govPillItemActive]}>
@@ -654,7 +656,10 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
       <SimulationIdentityNotice reference="Gov.br" />
       <SyncStatusCard engine={engine} />
-      <Card style={styles.govFrame}>{renderGovScreen()}</Card>
+      <Card style={styles.govFrame}>
+        <View style={styles.govStepGuide}><View style={styles.govStepGuideBadge}><AppText weight="900" color={colors.surface}>{step.position}</AppText></View><View style={styles.flex1}><AppText variant="caption" weight="900" color="#1351B4">PASSO {step.position} DE {steps.length} · O QUE FAZER AGORA</AppText><AppText weight="900">{step.title}</AppText><AppText variant="small">{step.instruction}</AppText><View style={styles.govStepSafety}><Ionicons name="shield-checkmark-outline" size={18} color={colors.success} /><AppText variant="caption" color={colors.successText} style={styles.flex1}>{step.safetyNote || 'Use somente informações fictícias nesta simulação.'}</AppText></View></View></View>
+        {renderGovScreen()}
+      </Card>
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
           <AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText>
@@ -1708,6 +1713,9 @@ const styles = StyleSheet.create({
   fakeCallButton: { alignItems: 'center', backgroundColor: '#E2E4E8', borderRadius: radius.round, height: 58, justifyContent: 'center', width: 58 },
   fakeCallEnd: { backgroundColor: '#C93636', transform: [{ rotate: '135deg' }] },
   govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
+  govStepGuide: { alignItems: 'flex-start', backgroundColor: '#E8F1FF', borderBottomColor: '#B8D2FA', borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  govStepGuideBadge: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
+  govStepSafety: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, padding: spacing.sm },
   govScreenContainer: { backgroundColor: '#F8FAFC', paddingBottom: spacing.lg },
   govTopNav: { alignItems: 'center', backgroundColor: colors.primarySoft, borderBottomColor: colors.primaryMuted, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   govNavIcons: { flexDirection: 'row', gap: spacing.md },
@@ -1735,6 +1743,9 @@ const styles = StyleSheet.create({
   govCreateAccountCard: { alignItems: 'center', backgroundColor: '#E8F1FF', borderColor: '#1351B4', borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 82, padding: spacing.md },
   govCreateAccountIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 48, justifyContent: 'center', width: 48 },
   govPillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  govFictionNotice: { alignItems: 'flex-start', backgroundColor: '#FFF8D9', borderColor: '#E6AC00', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  govQuestionHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  govQuestionNumber: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, height: 30, justifyContent: 'center', width: 30 },
   govPillItem: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#CBD5E1', borderRadius: radius.round, borderWidth: 1.5, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   govPillItemActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
   govMaskedBox: { alignItems: 'center', backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, gap: spacing.xs, padding: spacing.lg },
