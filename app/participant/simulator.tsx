@@ -401,7 +401,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
 
               <View style={styles.govFictionNotice}><Ionicons name="information-circle" size={25} color="#1351B4" /><View style={styles.flex1}><AppText weight="900" color="#1351B4">Todas as respostas desta tela são simuladas</AppText><AppText variant="small">Não escolha o nome real da sua mãe nem sua data de nascimento. Use qualquer uma das opções fictícias para aprender como a tela funciona.</AppText></View></View>
 
-              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>1</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um nome fictício</AppText><AppText variant="caption" color={colors.textMuted}>Na situação real, seria o primeiro nome da sua mãe.</AppText></View></View>
+              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>1</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um nome fictício neste treino</AppText><AppText variant="caption" color={colors.textMuted}>No Gov.br verdadeiro, responda com o primeiro nome real da sua mãe.</AppText></View></View>
               <View style={styles.govPillGrid}>
                 {['MARIA', 'LEONA', 'ESTRELA', 'JEWEL', 'LILA', 'CARMEZINDA', 'NADINA'].map((name) => (
                   <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedMother === name }} accessibilityLabel={`Escolher ${name} como nome fictício`} key={name} onPress={() => setSelectedMother(name)} style={[styles.govPillItem, selectedMother === name && styles.govPillItemActive]}>
@@ -410,7 +410,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 ))}
               </View>
 
-              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>2</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um mês fictício</AppText><AppText variant="caption" color={colors.textMuted}>Não precisa ser o seu mês verdadeiro.</AppText></View></View>
+              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>2</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um mês fictício neste treino</AppText><AppText variant="caption" color={colors.textMuted}>No Gov.br verdadeiro, escolha o seu mês real de nascimento.</AppText></View></View>
               <View style={styles.govPillGrid}>
                 {['MAIO', 'FEVEREIRO', 'DEZEMBRO', 'ABRIL'].map((m) => (
                   <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedMonth === m }} accessibilityLabel={`Escolher mês fictício ${m}`} key={m} onPress={() => setSelectedMonth(m)} style={[styles.govPillItem, selectedMonth === m && styles.govPillItemActive]}>
@@ -419,7 +419,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 ))}
               </View>
 
-              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um ano fictício</AppText><AppText variant="caption" color={colors.textMuted}>Use somente uma das alternativas de treinamento.</AppText></View></View>
+              <View style={styles.govQuestionHeading}><View style={styles.govQuestionNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText variant="small" weight="800">Escolha um ano fictício neste treino</AppText><AppText variant="caption" color={colors.textMuted}>No Gov.br verdadeiro, escolha o seu ano real de nascimento.</AppText></View></View>
               <View style={styles.govPillGrid}>
                 {['1964', '1966', '1962', '1967', '1968', '1963', '1965'].map((y) => (
                   <Pressable accessibilityRole="radio" accessibilityState={{ checked: selectedYear === y }} accessibilityLabel={`Escolher ano fictício ${y}`} key={y} onPress={() => setSelectedYear(y)} style={[styles.govPillItem, selectedYear === y && styles.govPillItemActive]}>
