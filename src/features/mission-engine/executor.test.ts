@@ -27,3 +27,9 @@ test('uma tentativa concluída não pode perder a conquista', () => {
   expect(missionRunReducer(completed, { type: 'restart' }).completed).toBe(false);
   expect(missionRunReducer(completed, { type: 'answer', correct: false, lastStep: false }).completed).toBe(true);
 });
+
+test('voltar recua somente uma etapa e nunca passa do início', () => {
+  const advanced = { ...initialMissionRunState, stepIndex: 2, lastAnswerCorrect: true };
+  expect(missionRunReducer(advanced, { type: 'back' }).stepIndex).toBe(1);
+  expect(missionRunReducer(initialMissionRunState, { type: 'back' }).stepIndex).toBe(0);
+});

@@ -23,6 +23,7 @@ export type MissionRunEvent =
   | { type: 'answer'; correct: boolean; lastStep: boolean }
   | { type: 'hint' }
   | { type: 'help' }
+  | { type: 'back' }
   | { type: 'restart' };
 
 export const initialMissionRunState: MissionRunState = {
@@ -44,6 +45,7 @@ export function isExpectedAction(expected: unknown, received: MissionAction): bo
 export function missionRunReducer(state: MissionRunState, event: MissionRunEvent): MissionRunState {
   if (event.type === 'restart') return initialMissionRunState;
   if (state.completed) return state;
+  if (event.type === 'back') return { ...state, stepIndex: Math.max(0, state.stepIndex - 1), lastAnswerCorrect: null };
   if (event.type === 'hint') return { ...state, usedHint: true };
   if (event.type === 'help') return { ...state, usedHelp: true };
   if (!event.correct) return { ...state, mistakes: state.mistakes + 1, lastAnswerCorrect: false };

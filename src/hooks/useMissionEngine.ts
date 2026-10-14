@@ -59,7 +59,9 @@ export function useMissionEngine(assignmentId:string,steps:ParticipantMissionSte
 
   const registerSupport=useCallback(async(kind:'hint'|'help'|'audio')=>{const local=attemptRef.current;if(!local||!currentStep||busy)return;setBusy(true);const eventType=kind==='hint'?'hint_requested':kind==='help'?'help_requested':'audio_started';const nextRun=kind==='audio'?local.run:missionRunReducer(local.run,{type:kind});const next=enqueueOfflineEvent({...local,run:nextRun},event(eventType,currentStep.id));await applyAttempt(next);setSyncStatus('pending');setBusy(false);void synchronize(next)},[applyAttempt,busy,currentStep,synchronize]);
 
-  return useMemo(()=>({attemptId:attempt?.remoteAttemptId??attempt?.localAttemptId??null,localAttemptId:attempt?.localAttemptId??null,busy,completion:completionKind(run),currentStep,error,loading,pendingCount:attempt?.pending.length??0,run,syncStatus,retry:()=>synchronize(),submit,registerSupport}),[attempt,busy,currentStep,error,loading,registerSupport,run,submit,syncStatus,synchronize]);
+  const goBack=useCallback(async()=>{const local=attemptRef.current;if(!local||busy||local.run.stepIndex<=0||local.run.completed)return;setBusy(true);await applyAttempt({...local,run:missionRunReducer(local.run,{type:'back'}),updatedAt:new Date().toISOString()});setBusy(false)},[applyAttempt,busy]);
+
+  return useMemo(()=>({attemptId:attempt?.remoteAttemptId??attempt?.localAttemptId??null,localAttemptId:attempt?.localAttemptId??null,busy,completion:completionKind(run),currentStep,error,loading,pendingCount:attempt?.pending.length??0,run,syncStatus,retry:()=>synchronize(),submit,registerSupport,goBack}),[attempt,busy,currentStep,error,goBack,loading,registerSupport,run,submit,syncStatus,synchronize]);
 }
 
 function event(eventType:OfflineMissionEvent['eventType'],stepId?:string,progressStepId?:string,completed=false):OfflineMissionEvent{return{operationId:createUuid(),eventType,stepId,occurredAt:new Date().toISOString(),progressStepId,completed}}
