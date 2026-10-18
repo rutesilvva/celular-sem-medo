@@ -1,15 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import NetInfo from '@react-native-community/netinfo';
-import { Redirect, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { ParticipantNav } from '@/components/BottomNav';
 import { Screen } from '@/components/Screen';
 import { AppText, Button, Card, Header, MetricCard, ProgressBar, Tag } from '@/components/ui';
-import { competitionDemoSteps as presentationSteps, COMPETITION_DEMO_TARGET_SECONDS } from '@/features/impact/story';
+import { publicDemoMissions } from '@/features/public-demo/catalog';
 import { colors, radius, spacing } from '@/theme/tokens';
-import { isDemoModeEnabled } from '@/lib/demo-mode';
-import { getPresentationReadiness } from '@/lib/presentation-readiness';
 
 type DemoMission = {
   id: string;
@@ -19,93 +17,56 @@ type DemoMission = {
   duration: string;
   summary: string;
   accent: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
 };
 
-const missions: DemoMission[] = [
-  {
-    id: 'pix',
-    title: 'Fazer um Pix seguro',
-    category: 'Financeiro',
-    difficulty: 'Média',
-    duration: '8 min',
-    summary: 'Você aprende a verificar a chave Pix, conferir o valor e confirmar apenas depois de revisar os dados.',
-    accent: '#4a2d7b',
-  },
-  {
-    id: 'whatsapp',
-    title: 'Enviar uma foto pelo WhatsApp',
-    category: 'Comunicação',
-    difficulty: 'Fácil',
-    duration: '6 min',
-    summary: 'A missão mostra como anexar uma imagem, revisar o contato e enviar somente para o destino certo.',
-    accent: '#1DBB4F',
-  },
-  {
-    id: 'localizacao',
-    title: 'Compartilhar localização',
-    category: 'Segurança digital',
-    difficulty: 'Difícil',
-    duration: '7 min',
-    summary: 'Você pratica o cuidado ao compartilhar localização e evita enviar dados sensíveis para qualquer pessoa.',
-    accent: '#4A90E2',
-  },
-];
+const missionAccents = ['#4A2D7B', '#176B5B', '#4A90E2', '#28323C', '#1769AA', '#C75B12', '#A63A2B', '#C93636', '#315A88', '#1351B4'];
+const missions: DemoMission[] = publicDemoMissions.map((mission, index) => ({
+  id: mission.key,
+  title: mission.details.title,
+  category: mission.details.category,
+  difficulty: mission.details.difficulty === 'easy' ? 'Fácil' : mission.details.difficulty === 'medium' ? 'Média' : 'Difícil',
+  duration: `${mission.details.estimatedMinutes} min`,
+  summary: mission.details.summary,
+  accent: missionAccents[index] ?? colors.primary,
+  icon: mission.icon,
+}));
 export default function DemoScreen() {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>('pix');
-  const [presentationStep, setPresentationStep] = useState(0);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [networkAvailable, setNetworkAvailable] = useState<boolean | null>(null);
-  useEffect(() => { if (startedAt === null) return; const timer=setInterval(()=>setElapsedSeconds(Math.floor((Date.now()-startedAt)/1000)),1000);return()=>clearInterval(timer); }, [startedAt]);
-  useEffect(() => { let active=true;void NetInfo.fetch().then((state)=>{if(active)setNetworkAvailable(state.isConnected!==false&&state.isInternetReachable!==false);}).catch(()=>{if(active)setNetworkAvailable(false);});return()=>{active=false}; }, []);
+  const [showEducator, setShowEducator] = useState(true);
 
   const selected = useMemo<DemoMission>(() => {
-    return missions.find((mission) => mission.id === selectedId) ?? {
-      id: 'pix',
-      title: 'Fazer um Pix seguro',
-      category: 'Financeiro',
-      difficulty: 'Média',
-      duration: '8 min',
-      summary: 'Você aprende a verificar a chave Pix, conferir o valor e confirmar apenas depois de revisar os dados.',
-      accent: '#4a2d7b',
-    };
+    return missions.find((mission) => mission.id === selectedId) ?? missions[0]!;
   }, [selectedId]);
-  const presentation = presentationSteps[presentationStep] ?? presentationSteps[0];
-  const readiness = useMemo(() => getPresentationReadiness(), []);
-  const resetPresentation = () => { setPresentationStep(0); setStartedAt(null); setElapsedSeconds(0); setSelectedId('pix'); };
-  const startPresentation = () => { setPresentationStep(0); setStartedAt(Date.now()); setElapsedSeconds(0); setSelectedId('pix'); };
-
-  if (!isDemoModeEnabled()) return <Redirect href="/login" />;
-
   return (
-    <Screen contentStyle={styles.content}>
-      <Header title="Missões de demonstração" subtitle="Modo controlado e sem dados reais" onBack={() => router.replace('/login')} />
+    <Screen footer={<ParticipantNav active="home" publicDemo />} contentStyle={styles.content}>
+      <Header title="Celular Sem Medo" subtitle="Apresentação pública · nenhum dado real é usado" />
       <Tag label="Modo seguro de teste" tone="green" />
 
-      <Card style={styles.readinessCard}>
-        <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name="pulse-outline" size={28} color={colors.primary}/></View><View style={styles.flex}><AppText variant="subheading" weight="800">Verificação da apresentação</AppText><AppText variant="small" color={colors.textMuted}>Nenhum token, e-mail ou segredo é exibido.</AppText></View><Tag label={networkAvailable===null?'Verificando rede':networkAvailable?'Online':'Offline seguro'} tone={networkAvailable===false?'yellow':'green'}/></View>
-        <View style={styles.checkList}>{readiness.map((check)=><View key={check.id} style={styles.checkRow}><Ionicons name={check.status==='ready'?'checkmark-circle':'alert-circle'} size={22} color={check.status==='ready'?colors.success:colors.warning}/><View style={styles.flex}><AppText weight="800" variant="small">{check.label}</AppText><AppText variant="caption" color={colors.textMuted}>{check.detail}</AppText></View></View>)}</View>
+      <Card style={styles.publicAccessCard}>
+        <AppText variant="heading" weight="800">Experimente o Celular Sem Medo</AppText>
+        <AppText color={colors.textMuted}>Entre na demonstração e experimente as missões como um participante.</AppText>
+        <View style={styles.publicActions}>
+          <Button label="Começar demonstração" icon="play-outline" onPress={() => router.push('/demo-app')} />
+          <Button label={showEducator ? 'Ocultar painel do educador' : 'Ver painel do educador'} icon="people-outline" variant="secondary" onPress={() => setShowEducator((current) => !current)} />
+        </View>
       </Card>
 
-      <Card style={styles.dynamicCard}>
-        <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name="sparkles-outline" size={28} color={colors.primary}/></View><View style={styles.flex}><AppText variant="subheading" weight="800">Missões montadas por JSON seguro</AppText><AppText variant="small" color={colors.textMuted}>Funcionam offline e usam somente componentes permitidos pelo aplicativo.</AppText></View></View>
-        <View style={styles.detailActions}><Button label="Assistir e buscar vídeos" onPress={()=>router.push({pathname:'/dynamic-mission',params:{id:'video'}})}/><Button label="Abrir fallback" variant="secondary" onPress={()=>router.push({pathname:'/dynamic-mission',params:{id:'fallback'}})}/></View>
+      <Card style={styles.demoDisclosureCard}>
+        <View style={styles.presentationTitle}>
+          <Ionicons name="information-circle-outline" size={28} color={colors.primary} />
+          <View style={styles.flex}>
+            <AppText weight="800">Demonstração para conhecer o aplicativo</AppText>
+            <AppText variant="small" color={colors.textMuted}>
+              Todos os nomes, percentuais e resultados desta tela são exemplos fictícios. Eles não representam uma pesquisa com pessoas idosas.
+            </AppText>
+          </View>
+        </View>
       </Card>
 
-      <Card style={styles.presentationCard}>
-        <View style={styles.missionHeader}><Tag label={`Roteiro ${presentationStep + 1} de ${presentationSteps.length}`} tone="purple" /><Tag label={`${Math.floor(elapsedSeconds/60)}:${String(elapsedSeconds%60).padStart(2,'0')} / 3:00`} tone={elapsedSeconds <= COMPETITION_DEMO_TARGET_SECONDS ? 'green' : 'yellow'}/><AppText variant="caption" weight="800" color={colors.primary}>APRESENTAÇÃO PARA A BANCA</AppText></View>
-        <View style={styles.stepTrack}>{presentationSteps.map((step,index)=><View accessibilityLabel={`${step.title}${index===presentationStep?', etapa atual':''}`} key={step.key} style={[styles.stepDot,index<=presentationStep&&styles.stepDotActive]}/>)}</View>
-        <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name={presentation.icon} size={28} color={colors.primary}/></View><AppText variant="heading" weight="800" style={styles.flex}>{presentationStep + 1}. {presentation.title}</AppText></View>
-        <AppText>{presentation.text}</AppText>
-        <Tag label={presentation.metric} tone="green" />
-        <DemoJourneyEvidence step={presentationStep} onOpenMission={()=>router.push({pathname:'/dynamic-mission',params:{id:'video'}})}/>
-        {startedAt === null ? <Button label="Iniciar roteiro de 3 minutos" icon="play-outline" onPress={startPresentation}/> : <View style={styles.detailActions}>
-          <Button label="Anterior" variant="secondary" disabled={presentationStep === 0} onPress={() => setPresentationStep((value) => Math.max(0, value - 1))} />
-          <Button label={presentationStep === presentationSteps.length - 1 ? 'Concluir e reiniciar' : 'Próximo'} onPress={() => { if (presentationStep === presentationSteps.length - 1) { resetPresentation(); return; } setPresentationStep((value) => value + 1); }} />
-        </View>}
-        {startedAt !== null ? <Button label="Reiniciar apresentação" icon="refresh-outline" variant="soft" onPress={resetPresentation}/> : null}
-      </Card>
+      <PublicProductOverview />
+      {showEducator ? <PublicEducatorPreview /> : null}
 
       <Card style={styles.headerCard}>
         <AppText variant="caption" weight="800" color={colors.primary}>MISSÃO ATIVA</AppText>
@@ -126,6 +87,9 @@ export default function DemoScreen() {
             ]}
           >
             <View style={[styles.missionAccent, { backgroundColor: mission.accent }]} />
+            <View style={[styles.missionIcon, { backgroundColor: `${mission.accent}18` }]}>
+              <Ionicons name={mission.icon} size={30} color={mission.accent} />
+            </View>
             <View style={styles.missionBody}>
               <View style={styles.missionHeader}>
                 <AppText variant="subheading" weight="800">{mission.title}</AppText>
@@ -145,18 +109,20 @@ export default function DemoScreen() {
                 </View>
               </View>
             </View>
+            <Ionicons name="chevron-forward" size={25} color={colors.primary} />
           </Pressable>
         ))}
       </View>
 
       <Card style={styles.detailCard}>
-        <AppText variant="caption" weight="800" color={colors.primary}>{selected.category.toUpperCase()}</AppText>
-        <AppText variant="heading" weight="800">Resumo da missão</AppText>
+        <View style={styles.detailHeading}>
+          <View style={[styles.detailIcon, { backgroundColor: `${selected.accent}18` }]}><Ionicons name={selected.icon} size={34} color={selected.accent} /></View>
+          <View style={styles.flex}><AppText variant="caption" weight="800" color={colors.primary}>{selected.category.toUpperCase()}</AppText><AppText variant="heading" weight="800">Resumo da missão</AppText></View>
+        </View>
         <AppText variant="small" color={colors.textMuted}>{selected.summary}</AppText>
 
         <View style={styles.detailActions}>
-          <Button label="Ver no roteiro da banca" onPress={() => setPresentationStep(2)} />
-          <Button label="Voltar" variant="secondary" onPress={() => router.replace('/login')} />
+          <Button label="Abrir esta missão passo a passo" onPress={() => router.push({ pathname: '/demo-mission-details', params: { mission: selected.id } })} />
         </View>
       </Card>
 
@@ -167,22 +133,50 @@ export default function DemoScreen() {
   );
 }
 
-function DemoJourneyEvidence({step,onOpenMission}:{step:number;onOpenMission:()=>void}){
-  if(step===0)return <Card style={styles.evidenceCard}><AppText weight="800">Perfil fictício de Ana</AppText><View style={styles.pillRow}><Tag label="Prefere áudio" tone="purple"/><Tag label="Letras maiores" tone="purple"/><Tag label="Confiança 2/5" tone="yellow"/></View><AppText variant="small" color={colors.textMuted}>Objetivo: aprender Pix sem cair em golpes.</AppText></Card>;
-  if(step===1)return <Card style={styles.evidenceCard}><AppText variant="caption" weight="800" color={colors.primary}>QUERO APRENDER ISTO</AppText><View style={styles.fakeInput}><AppText>Quero aprender a fazer um Pix com segurança</AppText></View><AppText variant="small" color={colors.textMuted}>Recomendamos esta prática porque Ana escolheu Pix e informou receio de golpes.</AppText></Card>;
-  if(step===2)return <Card style={styles.evidenceCard}><View style={styles.presentationTitle}><Ionicons name="shield-checkmark-outline" size={28} color={colors.success}/><View style={styles.flex}><AppText weight="800">Simulação sem risco</AppText><AppText variant="small" color={colors.textMuted}>Componentes controlados, sem transferência ou ação externa.</AppText></View></View><Button label="Abrir missão dinâmica" onPress={onOpenMission}/></Card>;
-  if(step===3)return <Card style={styles.evidenceCard}><AppText weight="800">História de evolução</AppText><View style={styles.metricGrid}><MetricCard icon="trending-up-outline" value="2 → 4" label="confiança" tone="blue"/><MetricCard icon="hand-left-outline" value="100%" label="autonomia" tone="green"/></View><AppText variant="small">Praticou em ambiente seguro e concluiu sem pedir ajuda.</AppText></Card>;
-  return <Card style={styles.evidenceCard}><AppText weight="800">Impacto agregado da oficina</AppText><View style={styles.metricGrid}><MetricCard icon="people-outline" value="12" label="alunos"/><MetricCard icon="checkmark-done-outline" value="24" label="missões" tone="green"/></View><View style={styles.progressCopy}><AppText variant="small" weight="700">Autonomia da turma</AppText><AppText variant="small" weight="800" color={colors.primary}>78%</AppText></View><ProgressBar value={78}/><AppText variant="small" color={colors.textMuted}>Pedidos de ajuda: 8 antes → 4 depois.</AppText></Card>;
+function PublicProductOverview() {
+  return <Card style={styles.overviewCard}>
+    <Tag label="CONHEÇA O APLICATIVO" tone="purple" />
+    <AppText variant="heading" weight="800">Aprender fazendo, sem medo de errar</AppText>
+    <AppText>O Celular Sem Medo ensina pessoas idosas a usar recursos digitais e reconhecer golpes por meio de missões curtas e seguras.</AppText>
+    <View style={styles.learningList}>
+      <LearningItem icon="hand-left-outline" title="Passo a passo" text="Uma instrução principal e um local claro para tocar em cada etapa." />
+      <LearningItem icon="shield-checkmark-outline" title="Simulações sem risco" text="Nenhum dinheiro, mensagem ou dado pessoal real é enviado." />
+      <LearningItem icon="volume-high-outline" title="Apoio quando solicitado" text="Texto ampliado, contraste e áudio opcional ajudam sem tirar a autonomia." />
+    </View>
+  </Card>;
+}
+
+function PublicEducatorPreview() {
+  return <Card style={styles.educatorCard}>
+    <View style={styles.presentationTitle}><View style={styles.presentationIcon}><Ionicons name="people-outline" size={28} color={colors.primary}/></View><View style={styles.flex}><AppText variant="heading" weight="800">Painel do educador</AppText><AppText variant="small" color={colors.textMuted}>Prévia demonstrativa com dados inteiramente fictícios.</AppText></View></View>
+    <Tag label="DADOS FICTÍCIOS" tone="yellow" />
+    <View style={styles.metricGrid}><MetricCard icon="people-outline" value="12" label="participantes de exemplo"/><MetricCard icon="checkmark-done-outline" value="24" label="missões de exemplo" tone="green"/></View>
+    <Card style={styles.educatorProgress}>
+      <View style={styles.progressCopy}><AppText weight="800">Progresso demonstrativo da turma</AppText><AppText weight="800" color={colors.primary}>78%</AppText></View>
+      <ProgressBar value={78} />
+      <View style={styles.metricGrid}><MetricCard icon="hand-left-outline" value="78%" label="autonomia fictícia" tone="blue"/><MetricCard icon="help-circle-outline" value="8 → 4" label="pedidos de ajuda fictícios" tone="green"/></View>
+      <AppText variant="caption" color={colors.textMuted}>Exemplo visual de como o educador acompanharia uma oficina. Estes números são simulados e não representam usuários ou pesquisa real.</AppText>
+    </Card>
+    <AppText variant="small">No uso real, somente profissionais autorizados visualizam as turmas sob sua responsabilidade. O painel ajuda a identificar dificuldades e planejar novas oficinas.</AppText>
+  </Card>;
+}
+
+function LearningItem({ icon, title, text }: { icon: keyof typeof Ionicons.glyphMap; title: string; text: string }) {
+  return <View style={styles.learningItem}><Ionicons name={icon} size={26} color={colors.primary}/><View style={styles.flex}><AppText weight="800">{title}</AppText><AppText variant="small" color={colors.textMuted}>{text}</AppText></View></View>;
 }
 
 const styles = StyleSheet.create({
   content: { gap: spacing.lg },
+  publicAccessCard: { backgroundColor: colors.surface, borderColor: colors.primary, gap: spacing.md },
+  publicActions: { gap: spacing.sm },
+  overviewCard: { gap: spacing.md },
+  educatorCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, gap: spacing.md },
+  educatorProgress: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, gap: spacing.md },
+  learningList: { gap: spacing.md },
+  learningItem: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.md },
   headerCard: { gap: spacing.sm },
   presentationCard: { backgroundColor: colors.primarySoft, borderColor: colors.primary, gap: spacing.md },
-  dynamicCard: { borderColor: colors.primaryMuted, gap: spacing.md },
-  readinessCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, gap: spacing.md },
-  checkList: { gap: spacing.sm },
-  checkRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
+  demoDisclosureCard: { backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, gap: spacing.md },
   evidenceCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, gap: spacing.md },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   fakeInput: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1.5, minHeight: 52, justifyContent: 'center', paddingHorizontal: spacing.md },
@@ -209,6 +203,7 @@ const styles = StyleSheet.create({
     height: 72,
     width: 8,
   },
+  missionIcon: { alignItems: 'center', borderRadius: radius.lg, height: 58, justifyContent: 'center', width: 58 },
   missionBody: { flex: 1, gap: spacing.sm },
   missionHeader: { alignItems: 'flex-start', gap: spacing.sm },
   presentationTitle: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
@@ -220,6 +215,8 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   metaItem: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   detailCard: { gap: spacing.md },
+  detailHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  detailIcon: { alignItems: 'center', borderRadius: radius.lg, height: 62, justifyContent: 'center', width: 62 },
   detailActions: { flexDirection: 'row', gap: spacing.md },
   note: { textAlign: 'center' },
   pressed: { opacity: 0.7 },

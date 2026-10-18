@@ -1,14 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
 import { Screen } from '@/components/Screen';
 import { SimulationIdentityNotice } from '@/components/SimulationIdentityNotice';
-import { AppText, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
+import { AppText, AudioButton, Button, Card, Header, ProgressBar, Tag } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import type { MissionAction } from '@/features/mission-engine/executor';
 import { resolveMissionPresentation, type MissionPresentation } from '@/features/mission-engine/presentation';
@@ -19,18 +19,18 @@ import type { ParticipantMissionDetails, ParticipantMissionStep } from '@/lib/ba
 import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 export default function ParticipantSimulatorScreen() {
-  const { assignmentId, assessmentId, aiSessionId } = useLocalSearchParams<{ assignmentId?: string; assessmentId?: string; aiSessionId?: string }>();
+  const { assignmentId, assessmentId, aiSessionId, restart } = useLocalSearchParams<{ assignmentId?: string; assessmentId?: string; aiSessionId?: string; restart?: string }>();
   const aiSession = aiSessionId ? getAiMissionSession(aiSessionId) : null;
   const query = useMissionContent(aiSession ? null : (assignmentId ?? null));
 
   if (aiSession) {
-    return <MissionExecutor assignmentId={aiSession.id} assessmentId={assessmentId} details={aiSession.details} steps={aiSession.steps} presentation={aiSession.presentation} />;
+    return <MissionExecutor assignmentId={aiSession.id} assessmentId={assessmentId} details={aiSession.details} steps={aiSession.steps} presentation={aiSession.presentation} restart={restart === '1'} />;
   }
 
   if (query.loading) return <SimulatorState kind="loading" retry={query.retry} />;
   if (query.error) return <SimulatorState kind="error" retry={query.retry} />;
   if (!query.data) return <SimulatorState kind="empty" retry={query.retry} />;
-  return <MissionExecutor assignmentId={query.data.details.assignmentId} assessmentId={assessmentId} details={query.data.details} steps={query.data.steps} />;
+  return <MissionExecutor assignmentId={query.data.details.assignmentId} assessmentId={assessmentId} details={query.data.details} steps={query.data.steps} restart={restart === '1'} />;
 }
 
 function buildScamAwarenessSteps(steps: ParticipantMissionStep[]): ParticipantMissionStep[] {
@@ -152,12 +152,141 @@ function buildLocationSharingSteps(steps: ParticipantMissionStep[]): Participant
   return definitions.map((definition, index) => ({ ...template, ...definition, id: `32000000-0000-4000-8000-00000000003${index}`, position: index + 1, type: index < 2 ? 'tap_target' : 'multiple_choice', audioText: definition.instruction, safetyNote: 'O GPS não será acessado e nenhuma localização real será compartilhada.', hints: [index === 0 ? 'O clipe fica ao lado do campo de mensagem.' : index === 1 ? 'Procure o ícone verde de um pino.' : 'Leia as opções com calma antes de tocar.'], optional: false }));
 }
 
-function MissionExecutor({ assignmentId, assessmentId, details, steps, presentation: requestedPresentation }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; presentation?: MissionPresentation }) {
+function buildMobilitySteps(steps: ParticipantMissionStep[]): ParticipantMissionStep[] {
+  const template = steps[0];
+  if (!template) return steps;
+  const lessons = [
+    {
+      title: 'Entre no aplicativo de transporte',
+      instruction: 'Escolha o aplicativo e entre com uma conta de treinamento.',
+      audioText: 'No mundo real, abra o aplicativo oficial e entre na sua conta. Neste treino, escolha Uber ou 99 e toque em entrar com conta de treino.',
+      expectedAction: { action: 'continue' },
+      hint: 'Escolha Uber ou 99 e toque no botão preto para começar.',
+    },
+    {
+      title: 'Informe para onde você vai',
+      instruction: 'Toque no campo de destino e digite Biblioteca Municipal.',
+      audioText: 'No aplicativo real, você informa o lugar para onde deseja ir. Digite Biblioteca Municipal ou use o destino de treinamento sugerido.',
+      expectedAction: { action: 'continue' },
+      hint: 'Toque em Para onde e digite Biblioteca Municipal.',
+    },
+    {
+      title: 'Confira o endereço do destino',
+      instruction: 'Leia o endereço encontrado e escolha somente o resultado que você reconhece.',
+      audioText: 'No mundo real, podem aparecer lugares com nomes parecidos. Confira rua, número e bairro antes de escolher o destino.',
+      expectedAction: { action: 'choose', option_id: 'library' },
+      hint: 'Escolha Biblioteca Municipal, o destino conhecido deste exercício.',
+    },
+    {
+      title: 'Escolha o tipo de viagem',
+      instruction: 'Compare preço, quantidade de passageiros e tipo de serviço antes de continuar.',
+      audioText: 'O aplicativo real mostra categorias com preços e tempos diferentes. Escolha um carro para passageiro; a opção Envios serve para objetos.',
+      expectedAction: { action: 'choose', option_id: 'ride-selected' },
+      hint: 'Toque em uma categoria de carro e depois no botão Escolher.',
+    },
+    {
+      title: 'Confirme onde o carro buscará você',
+      instruction: 'Confira o ponto de partida e escolha um lugar seguro e fácil de localizar.',
+      audioText: 'No mundo real, o motorista vai ao ponto mostrado no mapa. Confirme se você está do lado certo da rua e espere em um local iluminado.',
+      expectedAction: { action: 'choose', option_id: 'confirm-pickup' },
+      hint: 'Confira o ponto azul no mapa e toque em Confirmar ponto de partida.',
+    },
+    {
+      title: 'Escolha como pagar',
+      instruction: 'Selecione a forma de pagamento e veja quando a cobrança acontece.',
+      audioText: 'No aplicativo real, escolha cartão, Pix ou dinheiro. Nunca faça um Pix enviado pelo motorista fora do aplicativo.',
+      expectedAction: { action: 'choose', option_id: 'payment-selected' },
+      hint: 'Escolha uma forma de pagamento e toque em Continuar.',
+    },
+    {
+      title: 'Revise antes de pedir o carro',
+      instruction: 'Confira destino, categoria, preço estimado, embarque e pagamento.',
+      audioText: 'Esta é a última tela antes de chamar um carro de verdade. Leia destino, categoria, preço e pagamento. Se algo estiver errado, volte e corrija.',
+      expectedAction: { action: 'choose', option_id: 'confirm-training' },
+      hint: 'Confira todos os dados no resumo e toque em Confirmar somente o treino.',
+    },
+    {
+      title: 'Confira o carro antes de entrar',
+      instruction: 'Escolha a atitude segura quando o aplicativo mostrar que o motorista chegou.',
+      audioText: 'No mundo real, depois que o motorista aceitar, compare placa, modelo, cor e foto. Só entre se todos os dados forem iguais aos do aplicativo.',
+      expectedAction: { action: 'choose', option_id: 'check-driver' },
+      hint: 'Nunca entre olhando apenas a cor do carro. Confira principalmente a placa.',
+    },
+  ];
+  return lessons.map((lesson, index) => ({
+    ...template,
+    ...lesson,
+    id: `33000000-0000-4000-8000-00000000003${index}`,
+    position: index + 1,
+    type: index === 0 || index === 1 ? 'instruction' : index === 7 ? 'multiple_choice' : 'confirmation',
+    safetyNote: index === 7
+      ? 'Os dados do motorista e do veículo são fictícios. Nenhum carro foi chamado.'
+      : 'Esta é uma simulação segura: não usamos GPS, não chamamos veículos e não fazemos cobranças.',
+    hints: [lesson.hint],
+    options: index === 7 ? [
+      { id: 'check-driver', label: 'Confiro placa, modelo, cor e foto antes de entrar' },
+      { id: 'enter-by-color', label: 'Entro no primeiro carro da mesma cor' },
+    ] : [],
+    optional: false,
+  }));
+}
+
+function buildAppStoreSteps(steps: ParticipantMissionStep[]): ParticipantMissionStep[] {
+  const template = steps[0];
+  if (!template) return steps;
+  const definitions = [
+    {
+      title: 'Busque o aplicativo na loja',
+      instruction: 'Digite “Conecta Fácil” para encontrar os resultados fictícios.',
+      audioText: 'Digite Conecta Fácil no campo de busca. Esta loja é apenas uma simulação.',
+      expectedAction: { action: 'continue' },
+      options: [],
+      hints: ['Toque no campo de busca, escreva Conecta Fácil e depois toque em Mostrar resultados.'],
+    },
+    {
+      title: 'Confira quem publicou o aplicativo',
+      instruction: 'Compare o nome, o desenvolvedor e as avaliações antes de escolher.',
+      audioText: 'Antes de instalar, confira o nome e quem publicou o aplicativo. Escolha Conecta Fácil, da Empresa Exemplo.',
+      expectedAction: { action: 'choose', option_id: 'official' },
+      options: [{ id: 'official', label: 'Conecta Fácil — Empresa Exemplo' }, { id: 'copy', label: 'Conecta Grátis — Desenvolvedor desconhecido' }],
+      hints: ['Escolha o resultado com desenvolvedor conhecido, muitas avaliações e indicação de verificado.'],
+    },
+    {
+      title: 'Avalie a permissão solicitada',
+      instruction: 'Este aplicativo precisa mesmo dos seus contatos para funcionar? Leia a explicação e escolha com calma.',
+      audioText: 'Acesso aos contatos não é sempre perigoso. Pense se essa permissão combina com a função do aplicativo. Na dúvida, não permita agora. Você poderá autorizar depois nas configurações.',
+      expectedAction: { action: 'choose', option_id: 'reject-permission' },
+      options: [{ id: 'allow-permission', label: 'Permitir porque o aplicativo pediu' }, { id: 'reject-permission', label: 'Não permitir agora; primeiro quero entender a necessidade' }],
+      hints: ['Uma permissão deve ter relação clara com o que o aplicativo faz.', 'Você pode negar agora e permitir depois nas configurações, se for necessário.'],
+    },
+    {
+      title: 'Instale somente depois de conferir',
+      instruction: 'Acompanhe a instalação fictícia, abra o aplicativo de treino e conclua.',
+      audioText: 'Agora acompanhe a instalação simulada. Quando terminar, toque em Abrir e depois em Concluir treinamento.',
+      expectedAction: { action: 'choose', option_id: 'install-training' },
+      options: [{ id: 'install-training', label: 'Concluir treinamento' }],
+      hints: ['Nada será instalado no seu aparelho. Acompanhe a animação e toque em Abrir.'],
+    },
+  ];
+  return definitions.map((definition, index) => ({
+    ...template,
+    ...definition,
+    id: `34000000-0000-4000-8000-00000000003${index}`,
+    position: index + 1,
+    type: index === 0 ? 'instruction' : index === 3 ? 'confirmation' : 'multiple_choice',
+    safetyNote: 'Nenhum aplicativo será baixado e nenhuma permissão real será solicitada.',
+    optional: false,
+  }));
+}
+
+export function MissionExecutor({ assignmentId, assessmentId, details, steps, presentation: requestedPresentation, restart = false, publicDemo = false }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; presentation?: MissionPresentation; restart?: boolean; publicDemo?: boolean }) {
   const router = useRouter();
-  const { playInstruction, preferences, stopInstruction } = useApp();
+  const { playInstruction, stopInstruction } = useApp();
   const presentation = resolveMissionPresentation(details.missionId, requestedPresentation);
   const runtimeSteps = useMemo(() => {
     if (details.missionId === '10000000-0000-4000-8000-000000000003') return buildLocationSharingSteps(steps);
+    if (details.missionId === '10000000-0000-4000-8000-000000000004') return buildMobilitySteps(steps);
+    if (details.missionId === '10000000-0000-4000-8000-000000000005') return buildAppStoreSteps(steps);
     if (details.missionId === '10000000-0000-4000-8000-000000000007') return buildScamAwarenessSteps(steps);
     if (details.missionId === '10000000-0000-4000-8000-000000000008') return buildFakeFamilySteps(steps);
     return details.missionId === '10000000-0000-4000-8000-000000000002'
@@ -180,35 +309,29 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
       } : item)
       : steps;
   }, [details.missionId, steps]);
-  const engine = useMissionEngine(assignmentId, runtimeSteps);
+  const engine = useMissionEngine(assignmentId, runtimeSteps, { restart, demo: publicDemo });
   const step = engine.currentStep;
-  const lastAutoPlayedStep = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!step || presentation === 'pix' || !preferences.autoAudio || lastAutoPlayedStep.current === step.id) return;
-    lastAutoPlayedStep.current = step.id;
-    playInstruction(step.audioText);
-  }, [playInstruction, preferences.autoAudio, presentation, step]);
-
   useEffect(() => () => stopInstruction(), [stopInstruction]);
 
   useEffect(() => {
     if (!engine.completedThisSession || !engine.run.completed) return;
-    router.replace({ pathname: '/participant/result', params: { assignmentId, assessmentId: assessmentId ?? '', completion: engine.completion, attemptId: engine.localAttemptId ?? '' } });
-  }, [assessmentId, assignmentId, engine.completedThisSession, engine.completion, engine.localAttemptId, engine.run.completed, router]);
+    router.replace(publicDemo
+      ? { pathname: '/demo-result', params: { mission: publicDemoKey(details.missionId), completion: engine.completion } }
+      : { pathname: '/participant/result', params: { assignmentId, assessmentId: assessmentId ?? '', completion: engine.completion, attemptId: engine.localAttemptId ?? '' } });
+  }, [assessmentId, assignmentId, details.missionId, engine.completedThisSession, engine.completion, engine.localAttemptId, engine.run.completed, publicDemo, router]);
 
   if (engine.loading) return <SimulatorState kind="loading" retry={engine.retry} />;
   if (!step) return <SimulatorState kind="empty" retry={engine.retry} />;
 
   if (presentation === 'gov-br') {
-    return <GovFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} />;
+    return <GovFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} publicDemo={publicDemo} />;
   }
 
   if (presentation === 'whatsapp-photo') {
-    const target = asObject(step.expectedAction).target;
-    const isAttachmentStep = target === 'attachment_button' || step.title.toLowerCase().includes('clipe') || step.title.toLowerCase().includes('anex');
-    const hasOptions = Array.isArray(step.options) && step.options.length > 0;
-    const optionTarget = target ?? 'training_photo_flowers';
+    const isAttachmentStep = step.position === 2;
+    const isGalleryStep = step.position === 3;
+    const isPhotoStep = step.position === 4;
+    const isReviewStep = step.position === 5;
 
     const handlePhotoAction = async (nextTarget: string) => {
       await engine.submit({ action: 'tap', target: nextTarget });
@@ -218,70 +341,86 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
       await engine.submit({ action: 'select', target: nextTarget, optionId: nextTarget });
     };
 
-    const showPhotoSheet = isAttachmentStep || hasOptions;
-
     return (
-      <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-        <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+      <Screen footer={<ParticipantNav active="missions" publicDemo={publicDemo} />} contentStyle={styles.content}>
+        <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => publicDemo ? router.replace({ pathname: '/demo-mission-details', params: { mission: 'photo' } }) : router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
         <SimulationIdentityNotice reference="serviços de mensagens" />
         <SyncStatusCard engine={engine} />
 
         <Card style={styles.whatsappFrame}>
           <View style={styles.whatsappHeader}>
             <View style={styles.headerLeft}>
-              <Ionicons name="chevron-back" size={22} color={colors.surface} />
-              <View style={styles.avatarMini} />
-              <AppText weight="800" color={colors.surface}>Contato de treino</AppText>
+              <Ionicons name="chevron-back" size={25} color={colors.surface} />
+              <View style={styles.avatarMini}><AppText weight="900" color="#075E54">A</AppText></View>
+              <View style={styles.contactMeta}>
+                <AppText weight="900" color={colors.surface}>Ana</AppText>
+                <AppText variant="caption" color="#D8F3EC" numberOfLines={1}>online · contato de treinamento</AppText>
+              </View>
             </View>
             <View style={styles.headerRight}>
-              <Ionicons name="call-outline" size={18} color={colors.surface} />
-              <Ionicons name="videocam-outline" size={18} color={colors.surface} />
-              <Ionicons name="ellipsis-vertical" size={18} color={colors.surface} />
+              <Ionicons name="videocam-outline" size={20} color={colors.surface} />
+              <Ionicons name="call-outline" size={20} color={colors.surface} />
+              <Ionicons name="ellipsis-vertical" size={20} color={colors.surface} />
             </View>
           </View>
 
           <View style={styles.chatBody}>
-            <View style={styles.chatBubbleRow}><View style={styles.chatBubble}><AppText variant="small">Mensagem</AppText></View></View>
-            <View style={styles.chatBubbleRowRight}><View style={styles.chatBubbleGreen}><AppText variant="small">Mensagem</AppText></View></View>
-
-            {showPhotoSheet ? (
-              <View style={styles.attachmentScene}>
-                {isAttachmentStep ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Abrir opções de anexo" style={styles.cameraButton} disabled={engine.busy} onPress={() => void handlePhotoAction('attachment_button')}>
-                    <Ionicons name="camera-outline" size={62} color={colors.surface} />
-                  </Pressable>
-                ) : (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher foto de treinamento" style={styles.cameraButton} disabled={engine.busy} onPress={() => void handlePhotoChoice(optionTarget)}>
-                    <Ionicons name="camera-outline" size={62} color={colors.surface} />
-                  </Pressable>
-                )}
-
-                <View style={styles.actionSheet}>
-                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher foto" style={styles.optionRowSelected} disabled={engine.busy} onPress={() => void handlePhotoChoice(optionTarget)}>
-                    <Ionicons name="images-outline" size={20} color={colors.primary} />
-                    <AppText weight="800" color={colors.primary}>Foto</AppText>
-                  </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher vídeo" style={styles.optionRow} disabled={engine.busy} onPress={() => void engine.submit({ action: 'select', target: 'video_option', optionId: 'video_option' })}>
-                    <Ionicons name="videocam-outline" size={20} color={colors.textMuted} />
-                    <AppText color={colors.textMuted}>Vídeo</AppText>
-                  </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher documento" style={styles.optionRow} disabled={engine.busy} onPress={() => void engine.submit({ action: 'select', target: 'document_option', optionId: 'document_option' })}>
-                    <Ionicons name="document-outline" size={20} color={colors.textMuted} />
-                    <AppText color={colors.textMuted}>Documento</AppText>
-                  </Pressable>
+            <View style={styles.chatDatePill}><AppText variant="caption" weight="800" color={colors.textMuted}>HOJE</AppText></View>
+            <View style={styles.chatBubbleRow}>
+              <View style={styles.chatBubble}>
+                <AppText variant="small">Oi! Você pode me enviar uma foto das flores?</AppText>
+                <AppText variant="caption" color={colors.textMuted} style={styles.chatTime}>15:20</AppText>
+              </View>
+            </View>
+            <View style={styles.chatBubbleRowRight}>
+              <View style={styles.chatBubbleGreen}>
+                <AppText variant="small">Claro! Vou escolher a foto agora.</AppText>
+                <View style={styles.chatSentMeta}>
+                  <AppText variant="caption" color={colors.textMuted}>15:21</AppText>
+                  <Ionicons name="checkmark-done" size={16} color="#53BDEB" />
                 </View>
               </View>
-            ) : (
-              <View style={styles.photoCard}><View style={styles.photoScene} /></View>
-            )}
+            </View>
 
-            <View style={styles.chatBubbleRow}><View style={styles.chatBubble}><AppText variant="small">Mensagem</AppText></View></View>
+            {isGalleryStep ? (
+              <View style={styles.attachmentScene}>
+                <View style={styles.actionSheet}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotos" style={styles.optionRowSelected} disabled={engine.busy} onPress={() => void handlePhotoAction('gallery_option')}>
+                    <Ionicons name="images-outline" size={20} color={colors.primary} />
+                    <AppText weight="800" color={colors.primary}>Galeria</AppText>
+                  </Pressable>
+                  <View style={styles.optionRow}><Ionicons name="camera-outline" size={20} color={colors.textMuted} /><AppText color={colors.textMuted}>Câmera</AppText></View>
+                  <View style={styles.optionRow}><Ionicons name="document-outline" size={20} color={colors.textMuted} /><AppText color={colors.textMuted}>Documento</AppText></View>
+                </View>
+              </View>
+            ) : isPhotoStep ? (
+              <View style={styles.trainingGallery}>
+                <View style={styles.galleryHeader}><Ionicons name="images-outline" size={25} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Fotos de treinamento</AppText><AppText variant="caption" color={colors.textMuted}>Escolha qualquer imagem fictícia</AppText></View></View>
+                <View style={styles.galleryGrid}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher foto fictícia de flores" disabled={engine.busy} onPress={() => void handlePhotoChoice('training_photo_flowers')} style={styles.galleryTile}><View style={[styles.galleryArt, styles.galleryFlowers]}><Ionicons name="flower-outline" size={46} color={colors.surface} /></View><AppText variant="caption" weight="800">Flores</AppText></Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Escolher foto fictícia de paisagem" disabled={engine.busy} onPress={() => void handlePhotoChoice('training_photo_landscape')} style={styles.galleryTile}><View style={[styles.galleryArt, styles.galleryLandscape]}><Ionicons name="image-outline" size={46} color={colors.surface} /></View><AppText variant="caption" weight="800">Paisagem</AppText></Pressable>
+                </View>
+              </View>
+            ) : isReviewStep ? (
+              <View style={styles.photoReview}>
+                <View style={[styles.galleryArt, styles.galleryFlowers]}><Ionicons name="flower-outline" size={58} color={colors.surface} /></View>
+                <View style={styles.reviewRecipient}><Ionicons name="person-circle-outline" size={27} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Enviar para Ana</AppText><AppText variant="caption" color={colors.textMuted}>Confira o nome antes de enviar</AppText></View></View>
+                <View style={styles.chatSafetyNote}><Ionicons name="shield-checkmark-outline" size={21} color={colors.success} /><AppText variant="small" style={styles.safeCopy}>Antes de enviar no mundo real, confira se o nome no alto da conversa é o contato certo.</AppText></View>
+                <Button label="Enviar foto no treino" icon="send" disabled={engine.busy} onPress={() => void engine.submit({ action: 'choose', optionId: 'send-photo' })} />
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.chatInputRow}>
-            <Ionicons name="add" size={20} color={colors.surface} />
-            <View style={styles.inputBox} />
-            <Ionicons name="mic" size={20} color={colors.surface} />
+            <View style={styles.whatsappComposer}>
+              <Ionicons name="happy-outline" size={24} color="#667781" />
+              <AppText variant="small" color="#667781" style={styles.flex1}>Mensagem</AppText>
+              <Pressable accessibilityRole="button" accessibilityLabel="Abrir opções de anexo" disabled={!isAttachmentStep || engine.busy} onPress={() => void handlePhotoAction('attachment_button')} style={[styles.chatClipButton, isAttachmentStep && styles.chatClipButtonActive]}>
+                <Ionicons name="attach" size={25} color={isAttachmentStep ? '#075E54' : '#667781'} />
+              </Pressable>
+              <Ionicons name="camera-outline" size={23} color="#667781" />
+            </View>
+            <View style={styles.whatsappMic}><Ionicons name="mic" size={22} color={colors.surface} /></View>
           </View>
         </Card>
 
@@ -295,35 +434,36 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
           <ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
         </Card>
 
-        <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} />
+        {step.position === 1 ? <StepActions step={step} busy={engine.busy} onSubmit={engine.submit} /> : null}
+        {step.position > 1 ? <Button label="Voltar ao passo anterior" icon="arrow-back" variant="secondary" disabled={engine.busy} onPress={() => void engine.goBack()} /> : null}
 
         {engine.run.lastAnswerCorrect === false ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
         {engine.run.usedHint || engine.run.usedHelp ? <Card style={styles.hints}><AppText weight="800">{engine.run.usedHelp ? 'Ajuda passo a passo' : 'Dicas deste passo'}</AppText>{step.hints.map((hint) => <AppText key={hint}>• {hint}</AppText>)}</Card> : null}
-        {engine.error ? <AppText color={colors.danger}>{engine.error}</AppText> : null}
+        {engine.error ? <MissionError message={engine.error} onRetry={engine.retry} /> : null}
 
         <View style={styles.supportActions}>
           <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} />
           <Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} />
-          <Button label="Pedir ajuda" icon="chatbubble-ellipses-outline" variant="soft" disabled={engine.busy || !engine.attemptId} onPress={() => {
+          {!publicDemo ? <Button label="Pedir ajuda" icon="chatbubble-ellipses-outline" variant="soft" disabled={engine.busy || !engine.attemptId} onPress={() => {
             void engine.registerSupport('help');
             router.push({ pathname: '/participant/help-requests', params: { attemptId: engine.attemptId ?? '', stepId: step.id } });
-          }} />
+          }} /> : null}
         </View>
       </Screen>
     );
   }
 
   if (presentation === 'messaging' || presentation === 'mobility' || presentation === 'app-store' || presentation === 'marketplace' || presentation === 'phone-call') {
-    return <AppEnvironmentFlow assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={runtimeSteps} engine={engine} playInstruction={playInstruction} router={router} presentation={presentation} />;
+    return <AppEnvironmentFlow assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={runtimeSteps} engine={engine} playInstruction={playInstruction} router={router} presentation={presentation} publicDemo={publicDemo} />;
   }
 
   if (presentation === 'pix') {
-    return <PixFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} />;
+    return <PixFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} publicDemo={publicDemo} />;
   }
 
   return (
-    <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+    <Screen footer={<ParticipantNav active="missions" publicDemo={publicDemo} />} contentStyle={styles.content}>
+      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => publicDemo ? router.replace({ pathname: '/demo-mission-details', params: { mission: publicDemoKey(details.missionId) } }) : router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
       <SimulationIdentityNotice />
       <SyncStatusCard engine={engine} />
       <Card style={styles.instructionCard}>
@@ -349,20 +489,20 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
       </Card>
       {engine.run.lastAnswerCorrect === false ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Ainda não é essa opção. Nada aconteceu de verdade; tente novamente ou peça uma dica.</AppText></Card> : null}
       {engine.run.usedHint || engine.run.usedHelp ? <Card style={styles.hints}><AppText weight="800">{engine.run.usedHelp ? 'Ajuda passo a passo' : 'Dicas deste passo'}</AppText>{step.hints.map((hint) => <AppText key={hint}>• {hint}</AppText>)}</Card> : null}
-      {engine.error ? <AppText color={colors.danger}>{engine.error}</AppText> : null}
+      {engine.error ? <MissionError message={engine.error} onRetry={engine.retry} /> : null}
       <View style={styles.supportActions}>
         <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} />
         <Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} />
-        <Button label="Pedir ajuda" icon="chatbubble-ellipses-outline" variant="soft" disabled={engine.busy || !engine.attemptId} onPress={() => {
+        {!publicDemo ? <Button label="Pedir ajuda" icon="chatbubble-ellipses-outline" variant="soft" disabled={engine.busy || !engine.attemptId} onPress={() => {
           void engine.registerSupport('help');
           router.push({ pathname: '/participant/help-requests', params: { attemptId: engine.attemptId ?? '', stepId: step.id } });
-        }} />
+        }} /> : null}
       </View>
     </Screen>
   );
 }
 
-function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playInstruction, router }: { assignmentId?: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter> }) {
+function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playInstruction, router, publicDemo = false }: { assignmentId?: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter>; publicDemo?: boolean }) {
   const { preferences } = useApp();
   const step = engine.currentStep;
   const [cpf, setCpf] = useState('');
@@ -695,7 +835,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
                 <AppText weight="800" color="#ffffff">Continuar</AppText>
               </Pressable>
 
-              <Pressable accessibilityRole="button" accessibilityLabel="Sair do treino e voltar aos detalhes" style={styles.govOutlineBtn} onPress={() => router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Sair do treino e voltar aos detalhes" style={styles.govOutlineBtn} onPress={() => publicDemo ? router.replace({ pathname: '/demo-mission-details', params: { mission: 'gov-br' } }) : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })}>
                 <AppText weight="800" color="#1351B4">Voltar aos detalhes da missão</AppText>
               </Pressable>
 
@@ -795,8 +935,8 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   };
 
   return (
-    <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+    <Screen footer={<ParticipantNav active="missions" publicDemo={publicDemo} />} contentStyle={styles.content}>
+      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => publicDemo ? router.replace({ pathname: '/demo-mission-details', params: { mission: 'gov-br' } }) : router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
       <SimulationIdentityNotice reference="Gov.br" />
       <SyncStatusCard engine={engine} />
       <Card style={styles.govFrame}>
@@ -823,7 +963,7 @@ function GovFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   );
 }
 
-function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine, playInstruction, router, presentation }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter>; presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call' }) {
+function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine, playInstruction, router, presentation, publicDemo = false }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter>; presentation: 'messaging' | 'mobility' | 'app-store' | 'marketplace' | 'phone-call'; publicDemo?: boolean }) {
   const step = engine.currentStep;
   const [environmentQuery, setEnvironmentQuery] = useState('');
   if (!step) return null;
@@ -836,8 +976,8 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
   }[presentation];
 
   return (
-    <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+    <Screen footer={<ParticipantNav active="missions" publicDemo={publicDemo} />} contentStyle={styles.content}>
+      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => publicDemo ? router.replace({ pathname: '/demo-mission-details', params: { mission: publicDemoKey(details.missionId) } }) : router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
       <SimulationIdentityNotice reference={config.app} />
       <SyncStatusCard engine={engine} />
       <Card style={styles.environmentFrame}>
@@ -846,13 +986,13 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
           <View style={styles.flex1}><AppText variant="caption" color={colors.surface}>AMBIENTE EDUCATIVO</AppText><AppText weight="900" color={colors.surface}>{config.app}</AppText></View>
           <Ionicons name="ellipsis-vertical" size={22} color={colors.surface} />
         </View>
-        <View style={styles.environmentToolbar}><Pressable accessibilityRole="button" accessibilityLabel="Voltar aos detalhes da missão" hitSlop={10} onPress={() => router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })}><Ionicons name="chevron-back" size={22} color={colors.text} /></Pressable><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
+        <View style={styles.environmentToolbar}><Pressable accessibilityRole="button" accessibilityLabel="Voltar aos detalhes da missão" hitSlop={10} onPress={() => publicDemo ? router.replace({ pathname: '/demo-mission-details', params: { mission: publicDemoKey(details.missionId) } }) : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })}><Ionicons name="chevron-back" size={22} color={colors.text} /></Pressable><AppText variant="small" weight="800">{config.label}</AppText><Tag label={`ETAPA ${step.position}/${steps.length}`} tone="purple" /></View>
         {presentation === 'app-store' ? (
-          <AppStoreExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
+          <AppStoreExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} onBack={engine.goBack} accent={config.accent} />
         ) : presentation === 'mobility' ? (
-          <MobilityExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
+          <MobilityExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} onBack={engine.goBack} accent={config.accent} />
         ) : presentation === 'marketplace' ? (
-          <MarketplaceExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} />
+          <MarketplaceExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} onBack={engine.goBack} />
         ) : presentation === 'phone-call' ? (
           <PhoneCallExperience key={step.id} step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} onBack={engine.goBack} onSubmit={engine.submit} accent={config.accent} />
         ) : presentation === 'messaging' && details.missionId === '10000000-0000-4000-8000-000000000003' ? (
@@ -870,7 +1010,7 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
         <View style={styles.instructionTop}><AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText><Tag label="Simulação segura" tone="green" /></View>
         <AppText variant="subheading" weight="800">{step.title}</AppText><AppText color={colors.textMuted}>{step.instruction}</AppText><ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
-      {engine.run.lastAnswerCorrect === false && details.missionId !== '10000000-0000-4000-8000-000000000007' ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText accessibilityRole="alert" style={styles.safeCopy}>{presentation === 'phone-call' ? phoneCallFeedback(step.position) : 'Essa ação não é a mais segura. Nada aconteceu de verdade; tente outra opção.'}</AppText></Card> : null}
+      {engine.run.lastAnswerCorrect === false && details.missionId !== '10000000-0000-4000-8000-000000000007' ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText accessibilityRole="alert" style={styles.safeCopy}>{presentation === 'phone-call' ? phoneCallFeedback(step.position) : presentation === 'mobility' ? mobilityFeedback(step.position) : presentation === 'app-store' && step.position === 3 ? 'Essa permissão não é um golpe por si só. Porém, ela não tem relação clara com a função deste aplicativo fictício. Na dúvida, não permita agora; você poderá autorizar depois nas configurações.' : 'Essa ação não é a mais segura. Nada aconteceu de verdade; tente outra opção.'}</AppText></Card> : null}
       <View style={styles.supportActions}><Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} /><Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} /></View>
     </Screen>
   );
@@ -1023,6 +1163,12 @@ function phoneCallFeedback(position: number) {
   return 'Não retorne para o número que ligou. Procure você mesmo o telefone no verso do cartão ou abra o aplicativo oficial do banco.';
 }
 
+function mobilityFeedback(position: number) {
+  if (position === 3) return 'Esse endereço não é o local conhecido do exercício. No mundo real, confira rua, número e bairro; nomes parecidos podem levar você ao lugar errado.';
+  if (position === 8) return 'A cor do carro não basta. Compare a placa inteira, o modelo, a cor e a foto do motorista antes de entrar.';
+  return 'Revise a informação destacada e tente novamente. Nenhum carro foi chamado e nenhuma cobrança aconteceu.';
+}
+
 function phoneCallLesson(position: number) {
   if (position === 1) return {
     title: 'Senha é sempre secreta',
@@ -1143,7 +1289,7 @@ function PhoneCallExperience({ step, busy, lastAnswerCorrect, onBack, onSubmit, 
   </View>;
 }
 
-function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void> }) {
+function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit, onBack }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; onBack: () => Promise<void> }) {
   const [payment, setPayment] = useState<'pix' | 'card'>('pix');
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
@@ -1173,7 +1319,7 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
     <AppText variant="subheading" weight="900">Sugestões de treinamento</AppText>
     <View style={styles.marketplaceGrid}><MarketplaceProduct icon="bulb-outline" title="Luminária de leitura" price="R$ 30,00" sold="340 vendidos" onPress={() => { onQueryChange('Luminária de leitura'); void onSubmit({ action: 'continue' }); }} /><MarketplaceProduct icon="leaf-outline" title="Kit de jardinagem" price="R$ 42,00" sold="82 vendidos" /></View>
     <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Todos os produtos, lojas e preços são fictícios.</AppText></View>
-    <Button label="Pesquisar produto" icon="search" disabled={!searched || busy} onPress={() => void onSubmit({ action: 'continue' })} />
+    <Button label="Pesquisar produto" icon="search" disabled={!searched || busy} disabledReason={!searched ? 'Digite o nome do produto para pesquisar.' : undefined} onPress={() => void onSubmit({ action: 'continue' })} />
     <MarketplaceBottomNav active="home" />
   </View>;
 
@@ -1200,7 +1346,7 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
   </View>;
 
   if (step.position === 3) return <View style={styles.marketplaceScreen}>
-    <View style={styles.marketplacePageTitle}><Ionicons name="arrow-back" size={25} color="#E45A37" /><AppText variant="heading" weight="900">Carrinho (1)</AppText><AppText color={colors.textMuted}>Editar</AppText></View>
+    <View style={styles.marketplacePageTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar aos produtos" disabled={busy} onPress={() => void onBack()}><Ionicons name="arrow-back" size={25} color="#E45A37" /></Pressable><AppText variant="heading" weight="900">Carrinho (1)</AppText><AppText color={colors.textMuted}>Editar</AppText></View>
     <View style={styles.marketplaceCartCard}><Pressable accessibilityRole="checkbox" accessibilityState={{ checked: cartSelected }} onPress={() => setCartSelected((value) => !value)} style={styles.marketplaceStoreRow}><Ionicons name={cartSelected ? 'checkbox' : 'square-outline'} size={25} color="#E45A37" /><Tag label="INDICADO" tone="green" /><AppText weight="900">Casa Clara</AppText></Pressable><View style={styles.marketplaceCartProduct}><View style={styles.marketplaceProductImage}><Ionicons name="bulb-outline" size={44} color="#E45A37" /></View><View style={styles.flex1}><AppText weight="800">Luminária de leitura ajustável</AppText><AppText variant="small" color={colors.textMuted}>Cor: {variant} · Quantidade: 1</AppText><AppText weight="900" color="#E45A37">R$ 30,00</AppText></View><View style={styles.marketplaceQuantity}><Ionicons name="remove" size={18} color={colors.textMuted} /><AppText weight="900">1</AppText><Ionicons name="add" size={18} color={colors.textMuted} /></View></View><Pressable accessibilityRole="button" onPress={() => setCouponOpen((value) => !value)} style={styles.marketplaceCouponRow}><Ionicons name="ticket-outline" size={22} color="#E45A37" /><AppText style={styles.flex1}>Cupom da loja</AppText><AppText variant="small" color="#E45A37">{couponOpen ? 'Fechar' : 'Inserir código'}</AppText></Pressable>{couponOpen ? <View style={styles.marketplaceCouponInputRow}><TextInput accessibilityLabel="Código de cupom fictício" onChangeText={setCoupon} placeholder="Digite um cupom fictício" placeholderTextColor={colors.placeholder} style={styles.marketplaceCouponInput} value={coupon} /><Button label="Aplicar" variant="soft" onPress={() => setCoupon('SEM CUPOM DISPONÍVEL')} /></View> : null}</View>
     <View style={styles.marketplaceTotals}><View style={styles.marketplaceTotalRow}><AppText>Subtotal do produto</AppText><AppText>R$ 30,00</AppText></View><View style={styles.marketplaceTotalRow}><AppText>Frete</AppText><AppText>R$ 8,00</AppText></View><View style={styles.marketplaceDivider} /><View style={styles.marketplaceTotalRow}><AppText weight="900">Total</AppText><AppText weight="900" color="#E45A37">R$ 38,00</AppText></View></View>
     {!cartSelected ? <View style={styles.marketplaceWarning}><Ionicons name="information-circle" size={22} color={colors.warning} /><AppText variant="small" style={styles.flex1}>Marque o produto para continuar a compra.</AppText></View> : null}
@@ -1219,7 +1365,7 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
     <View style={styles.marketplaceFakeCode}><AppText variant="caption" weight="900" color={colors.textMuted}>CÓDIGO EXCLUSIVO DE TREINO</AppText><AppText variant="small" selectable>{fakePixCode}</AppText></View>
     <Button label={pixCopied ? 'Código de treino copiado' : 'Copiar código Pix'} icon={pixCopied ? 'checkmark-circle-outline' : 'copy-outline'} onPress={() => setPixCopied(true)} />
     <View style={styles.marketplacePixWarning}><Ionicons name="warning-outline" size={25} color={colors.warning} /><View style={styles.flex1}><AppText weight="900">Não cole este código no banco de verdade</AppText><AppText variant="small">Ele é fictício e serve apenas para aprender o processo. Nenhum pagamento será realizado.</AppText></View></View>
-    <Button label="Simular pagamento concluído" variant="secondary" disabled={!pixCopied} onPress={() => setCheckoutStage('success')} />
+    <Button label="Simular pagamento concluído" variant="secondary" disabled={!pixCopied} disabledReason="Primeiro toque em “Copiar código Pix”. Em um pagamento real, use esse código no aplicativo do seu banco." onPress={() => setCheckoutStage('success')} />
   </View>;
 
   if (checkoutStage === 'review') return <View style={styles.marketplaceScreen}>
@@ -1231,9 +1377,9 @@ function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: {
   </View>;
 
   return <View style={styles.marketplaceScreen}>
-    <View style={styles.marketplacePageTitle}><Ionicons name="arrow-back" size={25} color="#E45A37" /><AppText variant="heading" weight="900">Revisar pedido</AppText></View>
+    <View style={styles.marketplacePageTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar ao carrinho" disabled={busy} onPress={() => void onBack()}><Ionicons name="arrow-back" size={25} color="#E45A37" /></Pressable><AppText variant="heading" weight="900">Revisar pedido</AppText></View>
     <View style={styles.marketplaceCheckoutCard}><AppText variant="caption" weight="900" color={colors.textMuted}>ENDEREÇO FICTÍCIO</AppText><View style={[styles.marketplaceAddressRow, addressError && styles.marketplaceAddressRowError]}><Ionicons name="location" size={24} color={addressError ? colors.danger : '#E45A37'} /><TextInput accessibilityLabel="Endereço fictício de entrega" onChangeText={(value) => { setAddress(value); if (value.trim()) setAddressError(false); }} placeholder="Ex.: Rua das Flores, 100" placeholderTextColor={colors.placeholder} style={styles.marketplaceAddressInput} value={address} /></View>{addressError ? <AppText variant="small" weight="800" color={colors.danger}>Informe um endereço fictício para continuar.</AppText> : null}<Pressable accessibilityRole="button" onPress={() => { setAddress('Rua das Flores, 100 — Centro'); setAddressError(false); }} style={styles.marketplaceFakeAddressButton}><Ionicons name="sparkles-outline" size={20} color="#E45A37" /><AppText variant="small" weight="900" color="#E45A37">Usar endereço fictício de treino</AppText></Pressable><AppText variant="caption" color={colors.textMuted}>Para sua segurança, não use seu endereço real neste treinamento.</AppText></View>
-    <View style={styles.marketplaceCheckoutCard}><View style={styles.marketplaceCartProduct}><View style={styles.marketplaceProductImage}><Ionicons name="bulb-outline" size={42} color="#E45A37" /></View><View style={styles.flex1}><AppText weight="900">Luminária de leitura ajustável</AppText><AppText variant="small" color={colors.textMuted}>Cor: {variant} · 1 unidade</AppText><AppText weight="900" color="#E45A37">R$ 30,00</AppText></View></View><AppText weight="900">Opção de entrega</AppText><Pressable accessibilityRole="radio" accessibilityState={{ checked: delivery === 'standard' }} onPress={() => setDelivery('standard')} style={[styles.marketplaceDeliveryOption, delivery === 'standard' && styles.marketplaceDeliverySelected]}><Ionicons name="cube-outline" size={25} color="#E45A37" /><View style={styles.flex1}><AppText weight="900">Entrega padrão</AppText><AppText variant="small" color={colors.textMuted}>Prazo fictício de 5 dias</AppText></View><AppText weight="900">R$ 8,00</AppText></Pressable><Pressable accessibilityRole="radio" accessibilityState={{ checked: delivery === 'express' }} onPress={() => setDelivery('express')} style={[styles.marketplaceDeliveryOption, delivery === 'express' && styles.marketplaceDeliverySelected]}><Ionicons name="flash-outline" size={25} color="#E45A37" /><View style={styles.flex1}><AppText weight="900">Entrega rápida</AppText><AppText variant="small" color={colors.textMuted}>Prazo fictício de 2 dias</AppText></View><AppText variant="small" color={colors.textMuted}>Indisponível no treino</AppText></Pressable><TextInput accessibilityLabel="Mensagem fictícia para o vendedor" onChangeText={setSellerMessage} placeholder="Mensagem para o vendedor (opcional)" placeholderTextColor={colors.placeholder} style={styles.marketplaceSellerInput} value={sellerMessage} /><View style={styles.marketplaceDivider} /><View style={styles.marketplaceTotalRow}><AppText weight="900">Total</AppText><AppText weight="900" color="#E45A37">R$ 38,00</AppText></View></View>
+    <View style={styles.marketplaceCheckoutCard}><View style={styles.marketplaceCartProduct}><View style={styles.marketplaceProductImage}><Ionicons name="bulb-outline" size={42} color="#E45A37" /></View><View style={styles.flex1}><AppText weight="900">Luminária de leitura ajustável</AppText><AppText variant="small" color={colors.textMuted}>Cor: {variant} · 1 unidade</AppText><AppText weight="900" color="#E45A37">R$ 30,00</AppText></View></View><AppText weight="900">Opção de entrega</AppText><Pressable accessibilityRole="radio" accessibilityState={{ checked: delivery === 'standard' }} onPress={() => setDelivery('standard')} style={[styles.marketplaceDeliveryOption, delivery === 'standard' && styles.marketplaceDeliverySelected]}><Ionicons name="cube-outline" size={25} color="#E45A37" /><View style={styles.flex1}><AppText weight="900">Entrega padrão</AppText><AppText variant="small" color={colors.textMuted}>Prazo fictício de 5 dias</AppText></View><AppText weight="900">R$ 8,00</AppText></Pressable><Pressable accessibilityRole="radio" accessibilityState={{ checked: false, disabled: true }} disabled style={[styles.marketplaceDeliveryOption, styles.marketplaceDeliveryUnavailable]}><Ionicons name="flash-outline" size={25} color={colors.textMuted} /><View style={styles.flex1}><AppText weight="900" color={colors.textMuted}>Entrega rápida</AppText><AppText variant="small" color={colors.textMuted}>Prazo fictício de 2 dias</AppText></View><AppText variant="small" weight="800" color={colors.textMuted}>Indisponível</AppText></Pressable><TextInput accessibilityLabel="Mensagem fictícia para o vendedor" onChangeText={setSellerMessage} placeholder="Mensagem para o vendedor (opcional)" placeholderTextColor={colors.placeholder} style={styles.marketplaceSellerInput} value={sellerMessage} /><View style={styles.marketplaceDivider} /><View style={styles.marketplaceTotalRow}><AppText weight="900">Total</AppText><AppText weight="900" color="#E45A37">R$ 38,00</AppText></View></View>
     <View style={styles.marketplaceCheckoutCard}><AppText variant="subheading" weight="900">Método de pagamento</AppText><Pressable accessibilityRole="radio" accessibilityState={{ checked: payment === 'pix' }} onPress={() => setPayment('pix')} style={styles.marketplacePaymentRow}><Ionicons name="qr-code-outline" size={26} color="#24A99B" /><View style={styles.flex1}><AppText>Pix</AppText><AppText variant="caption" color={colors.textMuted}>O código será mostrado depois da confirmação</AppText></View><Ionicons name={payment === 'pix' ? 'radio-button-on' : 'radio-button-off'} size={25} color="#E45A37" /></Pressable><Pressable accessibilityRole="radio" accessibilityState={{ checked: payment === 'card' }} onPress={() => setPayment('card')} style={styles.marketplacePaymentRow}><Ionicons name="card-outline" size={26} color="#3478F6" /><View style={styles.flex1}><AppText>Cartão de crédito</AppText><AppText variant="caption" color={colors.textMuted}>{cardReady ? `Cartão fictício •••• ${cardNumber.slice(-4)}` : 'Adicionar cartão fictício'}</AppText></View><Ionicons name={payment === 'card' ? 'radio-button-on' : 'radio-button-off'} size={25} color="#E45A37" /></Pressable>{payment === 'card' ? <View style={styles.marketplaceCardForm}><View style={styles.marketplacePixWarning}><Ionicons name="shield-checkmark-outline" size={23} color={colors.warning} /><AppText variant="small" style={styles.flex1}>Use somente os dados fictícios fornecidos pelo treino. Nunca digite seu cartão verdadeiro.</AppText></View><TextInput accessibilityLabel="Número fictício do cartão" keyboardType="number-pad" maxLength={19} onChangeText={setCardNumber} placeholder="Número do cartão fictício" placeholderTextColor={colors.placeholder} style={styles.marketplaceCardInput} value={cardNumber} /><TextInput accessibilityLabel="Nome fictício no cartão" autoCapitalize="characters" onChangeText={setCardName} placeholder="Nome impresso no cartão" placeholderTextColor={colors.placeholder} style={styles.marketplaceCardInput} value={cardName} /><View style={styles.marketplaceCardInputRow}><TextInput accessibilityLabel="Validade fictícia" keyboardType="number-pad" maxLength={5} onChangeText={setCardExpiry} placeholder="MM/AA" placeholderTextColor={colors.placeholder} style={[styles.marketplaceCardInput, styles.flex1]} value={cardExpiry} /><TextInput accessibilityLabel="Código de segurança fictício" keyboardType="number-pad" maxLength={3} onChangeText={setCardCvv} placeholder="CVV" placeholderTextColor={colors.placeholder} secureTextEntry style={[styles.marketplaceCardInput, styles.flex1]} value={cardCvv} /></View><Button label="Preencher cartão seguro de treino" variant="soft" onPress={() => { setCardNumber('4242 4242 4242 4242'); setCardName('PESSOA DE TREINO'); setCardExpiry('12/30'); setCardCvv('123'); }} /></View> : null}</View>
     <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Finalizar encerra somente o treino. Nenhum pedido ou pagamento será criado.</AppText></View>
     <View style={styles.marketplaceOrderBar}><View><AppText variant="caption" color={colors.textMuted}>Total</AppText><AppText variant="subheading" weight="900" color="#E45A37">R$ 38,00</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Fazer pedido fictício, total de trinta e oito reais" disabled={busy || (payment === 'card' && !cardReady)} onPress={() => { if (!address.trim()) { setAddressError(true); return; } setCheckoutStage('review'); }} style={({ pressed }) => [styles.marketplacePlaceOrderButton, (busy || (payment === 'card' && !cardReady)) && styles.marketplaceContinueButtonDisabled, pressed && styles.bankActionRowPressed]}><AppText weight="900" color={colors.surface}>FAZER PEDIDO</AppText></Pressable></View>
@@ -1259,170 +1405,105 @@ function MarketplaceBottomNav({ active, cartCount = 0 }: { active: 'home' | 'car
   return <View style={styles.marketplaceBottomNav}>{items.map((item) => <View key={item.key} style={styles.marketplaceBottomNavItem}><View style={styles.marketplaceBottomIcon}><Ionicons name={item.icon} size={23} color={active === item.key ? '#E45A37' : colors.textMuted} />{item.key === 'cart' && cartCount > 0 ? <View style={styles.marketplaceBottomBadge}><AppText variant="caption" weight="900" color={colors.surface}>{cartCount}</AppText></View> : null}</View><AppText variant="caption" weight={active === item.key ? '900' : '500'} color={active === item.key ? '#E45A37' : colors.textMuted}>{item.label}</AppText></View>)}</View>;
 }
 
-function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
-  const [pickupReview, setPickupReview] = useState(false);
-  const [editingAddresses, setEditingAddresses] = useState(false);
-  const [originAddress, setOriginAddress] = useState('Rua das Flores, 120');
+function MobilityExperience({ step, busy, query, onQueryChange, onSubmit, onBack, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; onBack: () => Promise<void>; accent: string }) {
+  const [originAddress, setOriginAddress] = useState('Rua das Flores, 120 — Centro');
   const [mobilityApp, setMobilityApp] = useState<'uber' | '99'>('uber');
-  const [mobilityLoggedIn, setMobilityLoggedIn] = useState(false);
-  const [loginStage, setLoginStage] = useState<'welcome' | 'phone' | 'code' | 'profile' | 'password' | 'terms'>('welcome');
-  const [accountFlow, setAccountFlow] = useState<'login' | 'signup'>('signup');
-  const [trainingPhone, setTrainingPhone] = useState('(83) 90000-0000');
-  const [trainingCode, setTrainingCode] = useState('');
-  const [trainingFirstName, setTrainingFirstName] = useState('');
-  const [trainingLastName, setTrainingLastName] = useState('');
-  const [trainingEmail, setTrainingEmail] = useState('');
-  const [trainingPassword, setTrainingPassword] = useState('');
-  const [trainingLanguage, setTrainingLanguage] = useState<'Português' | 'English'>('Português');
-  const [trainingTermsAccepted, setTrainingTermsAccepted] = useState(false);
-  const [ridePhase, setRidePhase] = useState<'options' | 'pickup' | 'payment' | 'confirming'>('options');
-  const [selectedRide, setSelectedRide] = useState<'economy' | 'comfort' | 'moto' | 'delivery'>('economy');
+  const [selectedRide, setSelectedRide] = useState<'economy' | 'comfort' | 'moto'>('economy');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit' | 'cash'>('credit');
-  const [registeringCard, setRegisteringCard] = useState(false);
-  const [trainingCardRegistered, setTrainingCardRegistered] = useState(true);
   const hasDestination = query.trim().length >= 3;
-  const serviceAccent = mobilityApp === 'uber' ? accent : '#E8B600';
+  const serviceAccent = mobilityApp === 'uber' ? accent : '#C69200';
+  const destinationAddress = query.trim() || 'Biblioteca Municipal';
   const rideCatalog = mobilityApp === 'uber' ? {
-    economy: { label: 'UberX', price: 'R$ 8,50', description: 'Carro para até 4 pessoas, geralmente com menor preço.' },
-    comfort: { label: 'Comfort', price: 'R$ 12,90', description: 'Carro mais espaçoso e motoristas bem avaliados.' },
-    moto: { label: 'Uber Moto', price: 'R$ 5,90', description: 'Viagem de motocicleta para apenas 1 passageiro.' },
-    delivery: { label: 'Uber Envios', price: 'R$ 7,40', description: 'Envio de um item pequeno; não transporta passageiro.' },
+    economy: { label: 'UberX', price: 'R$ 8,50', description: 'Carro econômico para até 4 pessoas.', arrival: '5 min' },
+    comfort: { label: 'Comfort', price: 'R$ 12,90', description: 'Carro mais espaçoso e confortável.', arrival: '7 min' },
+    moto: { label: 'Uber Moto', price: 'R$ 5,90', description: 'Motocicleta para somente 1 passageiro.', arrival: '4 min' },
   } : {
-    economy: { label: '99Pop', price: 'R$ 8,20', description: 'Carro para até 4 pessoas, com opção econômica.' },
-    comfort: { label: '99Plus', price: 'R$ 12,40', description: 'Carro de categoria superior, com mais conforto.' },
-    moto: { label: '99Moto', price: 'R$ 5,60', description: 'Viagem de motocicleta para apenas 1 passageiro.' },
-    delivery: { label: '99Entrega', price: 'R$ 7,10', description: 'Envio de um item pequeno; não transporta passageiro.' },
+    economy: { label: '99Pop', price: 'R$ 8,20', description: 'Carro econômico para até 4 pessoas.', arrival: '5 min' },
+    comfort: { label: '99Plus', price: 'R$ 12,40', description: 'Carro mais espaçoso e confortável.', arrival: '7 min' },
+    moto: { label: '99Moto', price: 'R$ 5,60', description: 'Motocicleta para somente 1 passageiro.', arrival: '4 min' },
   };
   const rideDetails = rideCatalog[selectedRide];
   const paymentDetails = {
-    pix: { label: 'Pix', description: 'Pagamento digital confirmado somente dentro do aplicativo.' },
-    credit: { label: 'Cartão de crédito', description: trainingCardRegistered ? 'Cartão de treino terminado em 4242.' : 'Cadastre um cartão fictício para praticar.' },
-    cash: { label: 'Dinheiro', description: 'Pagamento diretamente ao condutor; combine se precisa de troco.' },
+    pix: { label: 'Pix pelo aplicativo', description: 'O pagamento deve aparecer e ser confirmado dentro do aplicativo.' },
+    credit: { label: 'Cartão de treino •••• 4242', description: 'A cobrança acontece automaticamente depois da viagem.' },
+    cash: { label: 'Dinheiro', description: 'O pagamento é entregue ao motorista ao final da viagem.' },
   }[paymentMethod];
-  const destinationAddress = query.trim() || 'Biblioteca Municipal';
 
-  if (step.position === 1 && !mobilityLoggedIn) return <View style={styles.mobilityLogin}>
+  const guide = <MobilityStepGuide step={step} onBack={onBack} />;
+
+  if (step.position === 1) return <View style={styles.mobilityLogin}>
+    {guide}
     <View style={[styles.mobilityLoginBrand, { backgroundColor: mobilityApp === 'uber' ? '#1E252B' : '#F3C623' }]}><Ionicons name="car-sport" size={42} color={mobilityApp === 'uber' ? colors.surface : colors.text} /><AppText variant="heading" weight="900" color={mobilityApp === 'uber' ? colors.surface : colors.text}>{mobilityApp === 'uber' ? 'Uber · treino' : '99 · treino'}</AppText></View>
     <View style={styles.mobilityAppChooser}>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === 'uber' }} onPress={() => { setMobilityApp('uber'); setLoginStage('welcome'); }} style={[styles.mobilityAppChoice, mobilityApp === 'uber' && styles.mobilityAppChoiceUber]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogramUber]}><AppText weight="900" color={colors.surface}>U</AppText></View><AppText weight="900">Treinar Uber</AppText></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === '99' }} onPress={() => { setMobilityApp('99'); setLoginStage('welcome'); }} style={[styles.mobilityAppChoice, mobilityApp === '99' && styles.mobilityAppChoice99]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogram99]}><AppText weight="900" color={colors.text}>99</AppText></View><AppText weight="900">Treinar 99</AppText></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === 'uber' }} onPress={() => setMobilityApp('uber')} style={[styles.mobilityAppChoice, mobilityApp === 'uber' && styles.mobilityAppChoiceUber]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogramUber]}><AppText weight="900" color={colors.surface}>U</AppText></View><AppText weight="900">Uber</AppText></Pressable>
+      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === '99' }} onPress={() => setMobilityApp('99')} style={[styles.mobilityAppChoice, mobilityApp === '99' && styles.mobilityAppChoice99]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogram99]}><AppText weight="900">99</AppText></View><AppText weight="900">99</AppText></Pressable>
     </View>
-    {loginStage === 'welcome' ? <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Bem-vindo!</AppText><AppText color={colors.textMuted}>Escolha se deseja praticar a entrada em uma conta ou criar uma conta pela primeira vez.</AppText></View>
-      <Button label="Entrar em uma conta de treino" icon="log-in-outline" onPress={() => { setAccountFlow('login'); setTrainingCode(''); setLoginStage('phone'); }} />
-      <Button label="Criar cadastro de treino" icon="person-add-outline" variant="secondary" onPress={() => { setAccountFlow('signup'); setTrainingCode(''); setLoginStage('phone'); }} />
-    </> : loginStage === 'phone' ? <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">{accountFlow === 'signup' ? 'Qual é o seu telefone?' : 'Entre para pedir uma viagem'}</AppText><AppText color={colors.textMuted}>{accountFlow === 'signup' ? 'O cadastro começa pela confirmação do número do celular.' : 'Digite o telefone vinculado à conta.'}</AppText></View>
-      <View style={styles.mobilityPhoneRow}><View style={styles.mobilityCountryCode}><AppText weight="900">+55</AppText></View><TextInput accessibilityLabel="Número de celular fictício" inputMode="tel" onChangeText={setTrainingPhone} placeholder="Número do celular" placeholderTextColor={colors.placeholder} style={styles.mobilityPhoneInput} value={trainingPhone} /></View>
-      <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Use somente o número fictício já preenchido. Nenhum SMS será enviado.</AppText></View>
-      <Button label="Continuar" icon="arrow-forward" disabled={trainingPhone.replace(/\D/g, '').length < 10} onPress={() => { setTrainingCode(''); setLoginStage('code'); }} />
-      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('welcome')} />
-    </> : loginStage === 'code' ? <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Digite o código</AppText><AppText color={colors.textMuted}>Em um acesso real, o código chegaria por SMS. Neste treino, use <AppText weight="900">1234</AppText>.</AppText></View>
-      <TextInput accessibilityLabel="Código de verificação fictício" inputMode="numeric" maxLength={4} onChangeText={(value) => setTrainingCode(value.replace(/\D/g, ''))} placeholder="Código de 4 números" placeholderTextColor={colors.placeholder} style={styles.mobilityCodeInput} value={trainingCode} />
-      {trainingCode.length === 4 && trainingCode !== '1234' ? <View accessibilityRole="alert" style={styles.mobilityLoginError}><Ionicons name="information-circle" size={22} color={colors.danger} /><AppText variant="small" color={colors.danger} style={styles.flex1}>Código incorreto. Digite 1234 para continuar o treinamento.</AppText></View> : null}
-      <Button label="Confirmar código" icon="checkmark-circle-outline" disabled={trainingCode !== '1234'} onPress={() => accountFlow === 'signup' ? setLoginStage('profile') : setMobilityLoggedIn(true)} />
-      <Button label="Voltar e corrigir o telefone" variant="secondary" onPress={() => { setTrainingCode(''); setLoginStage('phone'); }} />
-    </> : loginStage === 'profile' ? <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Como devemos chamar você?</AppText><AppText color={colors.textMuted}>Preencha todos os campos usando dados fictícios.</AppText></View>
-      <View style={styles.mobilityNameRow}><TextInput accessibilityLabel="Nome fictício" autoCapitalize="words" onChangeText={setTrainingFirstName} placeholder="Nome" placeholderTextColor={colors.placeholder} style={[styles.mobilityProfileInput, styles.flex1]} value={trainingFirstName} /><TextInput accessibilityLabel="Sobrenome fictício" autoCapitalize="words" onChangeText={setTrainingLastName} placeholder="Sobrenome" placeholderTextColor={colors.placeholder} style={[styles.mobilityProfileInput, styles.flex1]} value={trainingLastName} /></View>
-      <TextInput accessibilityLabel="E-mail fictício" autoCapitalize="none" inputMode="email" onChangeText={setTrainingEmail} placeholder="E-mail" placeholderTextColor={colors.placeholder} style={styles.mobilityProfileInput} value={trainingEmail} />
-      <AppText variant="small" weight="800">Idioma preferido</AppText><View style={styles.mobilityLanguageRow}>{(['Português', 'English'] as const).map((language) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: trainingLanguage === language }} key={language} onPress={() => setTrainingLanguage(language)} style={[styles.mobilityLanguageOption, trainingLanguage === language && styles.mobilityRideSelected]}><AppText weight="800">{language}</AppText></Pressable>)}</View>
-      <Button label="Continuar" icon="arrow-forward" disabled={!trainingFirstName.trim() || !trainingLastName.trim() || !trainingEmail.includes('@')} onPress={() => setLoginStage('password')} />
-      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('code')} />
-    </> : loginStage === 'password' ? <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Crie uma senha</AppText><AppText color={colors.textMuted}>Em uma conta real, use uma senha exclusiva e não compartilhe o código recebido por SMS.</AppText></View>
-      <TextInput accessibilityLabel="Senha fictícia" autoCapitalize="none" onChangeText={setTrainingPassword} placeholder="Senha" placeholderTextColor={colors.placeholder} secureTextEntry style={styles.mobilityProfileInput} value={trainingPassword} />
-      <View style={styles.mobilityPasswordRules}><AppText variant="small" color={trainingPassword.length >= 8 ? colors.successText : colors.textMuted}>✓ Pelo menos 8 caracteres</AppText><AppText variant="small" color={/[0-9]/.test(trainingPassword) ? colors.successText : colors.textMuted}>✓ Pelo menos um número</AppText></View>
-      <Button label="Continuar" icon="arrow-forward" disabled={trainingPassword.length < 8 || !/[0-9]/.test(trainingPassword)} onPress={() => setLoginStage('terms')} />
-      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('profile')} />
-    </> : <>
-      <View style={styles.mobilityLoginCopy}><AppText variant="heading" weight="900">Revise seu cadastro</AppText><AppText color={colors.textMuted}>Confira os dados de treinamento antes de concluir.</AppText></View>
-      <View style={styles.mobilitySignupSummary}><SignupSummaryRow label="Nome" value={`${trainingFirstName} ${trainingLastName}`} /><SignupSummaryRow label="Telefone" value={trainingPhone} /><SignupSummaryRow label="E-mail" value={trainingEmail} /><SignupSummaryRow label="Idioma" value={trainingLanguage} /></View>
-      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: trainingTermsAccepted }} onPress={() => setTrainingTermsAccepted((current) => !current)} style={styles.mobilityTermsRow}><Ionicons name={trainingTermsAccepted ? 'checkbox' : 'square-outline'} size={28} color={colors.primary} /><AppText variant="small" style={styles.flex1}>Li e aceito os termos e o aviso de privacidade <AppText variant="small" weight="900">fictícios deste treinamento</AppText>.</AppText></Pressable>
-      <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhuma conta real será criada e nenhum dado será enviado.</AppText></View>
-      <Button label="Criar conta de treinamento" icon="person-add-outline" disabled={!trainingTermsAccepted} onPress={() => setMobilityLoggedIn(true)} />
-      <Button label="Voltar" variant="secondary" onPress={() => setLoginStage('password')} />
-    </>}
-    <AppText variant="caption" color={colors.textMuted} style={styles.center}>Simulação educativa independente. Não cria conta no Uber ou na 99.</AppText>
-  </View>;
-
-  if (step.position === 1) return <View style={styles.mobilityExperience}>
-    <View style={styles.mobilityTopRow}><View><AppText variant="caption" color={colors.textMuted}>PONTO DE PARTIDA FICTÍCIO</AppText><AppText weight="900">Localização de treino</AppText></View><Ionicons name="notifications-outline" size={24} color={colors.text} /></View>
-    <View style={styles.mobilityAppChooser}>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === 'uber' }} onPress={() => setMobilityApp('uber')} style={[styles.mobilityAppChoice, mobilityApp === 'uber' && styles.mobilityAppChoiceUber]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogramUber]}><AppText weight="900" color={colors.surface}>U</AppText></View><View><AppText weight="900">Treinar Uber</AppText><AppText variant="caption" color={colors.textMuted}>Fluxo educativo</AppText></View></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: mobilityApp === '99' }} onPress={() => setMobilityApp('99')} style={[styles.mobilityAppChoice, mobilityApp === '99' && styles.mobilityAppChoice99]}><View style={[styles.mobilityAppMonogram, styles.mobilityAppMonogram99]}><AppText weight="900" color={colors.text}>99</AppText></View><View><AppText weight="900">Treinar 99</AppText><AppText variant="caption" color={colors.textMuted}>Fluxo educativo</AppText></View></Pressable>
-    </View>
-    <AppText variant="caption" color={colors.textMuted} style={styles.center}>Referência educativa sem afiliação. As telas não são oficiais.</AppText>
-    <View style={styles.mobilityTabs}><View style={styles.mobilityTabActive}><Ionicons name="car-sport" size={22} color={accent} /><AppText weight="900">Viagens</AppText></View><View style={styles.mobilityTab}><Ionicons name="cube-outline" size={21} color={colors.textMuted} /><AppText color={colors.textMuted}>Entregas</AppText></View></View>
-    <MobilityMapScene compact origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilitySearchBox}><Ionicons name="search" size={25} color={colors.text} /><TextInput accessibilityLabel="Digite o destino da viagem simulada" autoCorrect={false} onChangeText={onQueryChange} placeholder="Para onde?" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.mobilitySearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar destino" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={23} color={colors.textMuted} /></Pressable> : null}</View>
-    <View style={styles.mobilityCoach}><Ionicons name="information-circle-outline" size={26} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Digite um lugar conhecido</AppText><AppText variant="small" color={colors.textMuted}>Experimente “Biblioteca Municipal”. O aplicativo não acessa sua localização real.</AppText></View></View>
-    <Button label="Procurar destinos" icon="search" disabled={!hasDestination || busy} onPress={() => void onSubmit({ action: 'continue' })} />
-  </View>;
-
-  if (step.position === 2 && editingAddresses) return <View style={styles.mobilityExperience}>
-    <View style={styles.mobilityPlanningHeader}><Pressable accessibilityRole="button" accessibilityLabel="Voltar aos resultados" hitSlop={10} onPress={() => setEditingAddresses(false)}><Ionicons name="arrow-back" size={25} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="subheading" weight="900">Digite os endereços</AppText><AppText variant="caption" color={colors.textMuted}>Os dados ficam somente nesta simulação</AppText></View></View>
-    <View style={styles.mobilityRouteFields}><View style={styles.mobilityRouteDots}><View style={styles.mobilityOriginDot} /><View style={styles.mobilityDotsLine} /><View style={styles.mobilityEndSquare} /></View><View style={styles.flex1}><TextInput accessibilityLabel="Endereço de partida" autoCorrect={false} onChangeText={setOriginAddress} placeholder="De onde você vai sair?" placeholderTextColor={colors.placeholder} style={styles.mobilityAddressInput} value={originAddress} /><TextInput accessibilityLabel="Endereço de destino" autoCorrect={false} onChangeText={onQueryChange} placeholder="Para onde você vai?" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.mobilityAddressInput} value={query} /></View></View>
-    <View style={styles.mobilityPrivacyNote}><Ionicons name="lock-closed-outline" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Endereços usados apenas para praticar. Não fazemos busca real nem acessamos sua localização.</AppText></View>
-    <Button label="Ver destinos simulados" icon="search" disabled={!originAddress.trim() || !hasDestination} onPress={() => setEditingAddresses(false)} />
-  </View>;
-
-  if (step.position === 2 && !pickupReview) return <View style={styles.mobilityExperience}>
-    <View style={styles.mobilityPlanningHeader}><Pressable accessibilityRole="button" accessibilityLabel="Editar endereços" hitSlop={10} onPress={() => setEditingAddresses(true)}><Ionicons name="arrow-back" size={25} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="subheading" weight="900">Planeje sua viagem</AppText><AppText variant="caption" color={colors.textMuted}>Agora · Para mim</AppText></View></View>
-    <View style={styles.mobilityRouteFields}><View style={styles.mobilityRouteDots}><View style={styles.mobilityOriginDot} /><View style={styles.mobilityDotsLine} /><View style={styles.mobilityEndSquare} /></View><View style={styles.flex1}><View style={styles.mobilityField}><AppText variant="small">{originAddress}</AppText></View><View style={styles.mobilityField}><AppText variant="small" color={colors.textMuted}>{destinationAddress}</AppText></View></View><Pressable accessibilityRole="button" accessibilityLabel="Editar endereços" onPress={() => setEditingAddresses(true)} style={styles.mobilityEditButton}><Ionicons name="create-outline" size={22} color={colors.primary} /></Pressable></View>
-    <AppText variant="caption" weight="800" color={colors.textMuted}>DESTINOS DE TREINAMENTO</AppText>
-    <Pressable accessibilityRole="button" accessibilityLabel={`Escolher ${destinationAddress}`} disabled={busy} onPress={() => setPickupReview(true)} style={({ pressed }) => [styles.mobilityPlaceRow, pressed && styles.bankActionRowPressed]}><View style={styles.mobilityPlaceIcon}><Ionicons name="location-outline" size={24} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">{destinationAddress}</AppText><AppText variant="small" color={colors.textMuted}>Resultado fictício para o endereço digitado</AppText></View><Ionicons name="chevron-forward" size={22} color={colors.textMuted} /></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Escolher endereço desconhecido" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'unknown' })} style={({ pressed }) => [styles.mobilityPlaceRow, pressed && styles.bankActionRowPressed]}><View style={styles.mobilityPlaceIcon}><Ionicons name="help-outline" size={24} color={colors.textMuted} /></View><View style={styles.flex1}><AppText weight="800">Endereço desconhecido</AppText><AppText variant="small" color={colors.textMuted}>Confira antes de escolher</AppText></View></Pressable>
+    <View style={styles.mobilityRealWorldBox}><AppText weight="900">No mundo real, antes desta tela:</AppText><View style={styles.mobilityRealWorldRow}><Ionicons name="checkmark-circle" size={22} color={colors.success} /><AppText variant="small" style={styles.flex1}>Baixe o aplicativo somente pela loja oficial do celular.</AppText></View><View style={styles.mobilityRealWorldRow}><Ionicons name="checkmark-circle" size={22} color={colors.success} /><AppText variant="small" style={styles.flex1}>Crie a conta com seu próprio telefone ou entre em uma conta existente.</AppText></View><View style={styles.mobilityRealWorldRow}><Ionicons name="checkmark-circle" size={22} color={colors.success} /><AppText variant="small" style={styles.flex1}>Nunca entregue a outra pessoa o código que chegar por SMS.</AppText></View></View>
+    <Button label="Entrar com conta de treino" icon="log-in-outline" disabled={busy} onPress={() => void onSubmit({ action: 'continue' })} />
+    <AppText variant="caption" color={colors.textMuted} style={styles.center}>Treino independente: nenhuma conta real será criada.</AppText>
   </View>;
 
   if (step.position === 2) return <View style={styles.mobilityExperience}>
-    <MobilityMapScene origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><Tag label={`TREINO ${mobilityApp === 'uber' ? 'UBER' : '99'}`} tone="purple" /><AppText variant="subheading" weight="900">Confirme o destino</AppText><View style={styles.mobilityAddressRow}><Ionicons name="location" size={24} color={serviceAccent} /><View style={styles.flex1}><AppText weight="900">{destinationAddress}</AppText><AppText variant="small" color={colors.textMuted}>Local inserido por você · exibido apenas no treino</AppText></View></View><Button label="Usar este destino" icon="checkmark" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'library' })} /><Button label="Voltar aos resultados" variant="secondary" onPress={() => setPickupReview(false)} /></View>
+    {guide}
+    <View style={styles.mobilityTopRow}><View><AppText variant="caption" color={colors.textMuted}>CONTA DE TREINAMENTO</AppText><AppText weight="900">Olá, Pessoa de Treino</AppText></View><Ionicons name="notifications-outline" size={25} color={colors.text} /></View>
+    <MobilityMapScene compact origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilitySearchBox}><Ionicons name="search" size={25} color={colors.text} /><TextInput accessibilityLabel="Para onde você vai" autoCorrect={false} onChangeText={onQueryChange} placeholder="Para onde você vai?" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.mobilitySearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Apagar destino" onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={24} color={colors.textMuted} /></Pressable> : null}</View>
+    <Pressable accessibilityRole="button" accessibilityLabel="Usar Biblioteca Municipal como destino de treino" onPress={() => onQueryChange('Biblioteca Municipal')} style={styles.mobilityPlaceRow}><View style={styles.mobilityPlaceIcon}><Ionicons name="library-outline" size={25} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">Usar destino de treino</AppText><AppText variant="small" color={colors.textMuted}>Biblioteca Municipal</AppText></View><Ionicons name="arrow-up-outline" size={22} color={colors.primary} /></Pressable>
+    <View style={styles.mobilityPrivacyNote}><Ionicons name="information-circle" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>No mundo real, você pode digitar um endereço ou permitir a localização. Confira sempre se o ponto azul está no lugar certo.</AppText></View>
+    <Button label="Procurar este destino" icon="search" disabled={!hasDestination || busy} disabledReason="Digite um destino ou use Biblioteca Municipal." onPress={() => void onSubmit({ action: 'continue' })} />
   </View>;
 
-  if (ridePhase === 'pickup') return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Confirme o ponto de partida</AppText><View style={styles.mobilityAddressRow}><Ionicons name="navigate-circle" size={28} color={accent} /><View style={styles.flex1}><AppText weight="900">{originAddress}</AppText><AppText variant="small" color={colors.textMuted}>Endereço digitado · nenhum GPS utilizado</AppText></View></View><Button label="Confirmar partida" disabled={busy} onPress={() => setRidePhase('payment')} /><Button label="Voltar às opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+  if (step.position === 3) return <View style={styles.mobilityExperience}>
+    {guide}
+    <View style={styles.mobilityRouteFields}><View style={styles.mobilityRouteDots}><View style={styles.mobilityOriginDot} /><View style={styles.mobilityDotsLine} /><View style={styles.mobilityEndSquare} /></View><View style={styles.flex1}><View style={styles.mobilityField}><AppText variant="caption" color={colors.textMuted}>PARTIDA</AppText><AppText variant="small">{originAddress}</AppText></View><View style={styles.mobilityField}><AppText variant="caption" color={colors.textMuted}>DESTINO</AppText><AppText variant="small">{destinationAddress}</AppText></View></View></View>
+    <AppText variant="caption" weight="900" color={colors.textMuted}>CONFIRA RUA E BAIRRO ANTES DE TOCAR</AppText>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher Biblioteca Municipal no Centro" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'library' })} style={styles.mobilityPlaceRow}><View style={styles.mobilityPlaceIcon}><Ionicons name="location" size={25} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">Biblioteca Municipal</AppText><AppText variant="small" color={colors.textMuted}>Praça da Leitura, 10 — Centro</AppText></View><Ionicons name="chevron-forward" size={23} color={colors.primary} /></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Escolher endereço desconhecido" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'unknown' })} style={styles.mobilityPlaceRow}><View style={styles.mobilityPlaceIcon}><Ionicons name="help-outline" size={25} color={colors.warning} /></View><View style={styles.flex1}><AppText weight="900">Biblioteca — endereço desconhecido</AppText><AppText variant="small" color={colors.textMuted}>Outro bairro · local não reconhecido</AppText></View></Pressable>
   </View>;
 
-  if (ridePhase === 'payment' && registeringCard) return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityPlanningHeader}><Pressable accessibilityRole="button" accessibilityLabel="Voltar às formas de pagamento" hitSlop={10} onPress={() => setRegisteringCard(false)}><Ionicons name="arrow-back" size={25} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="subheading" weight="900">Cadastrar cartão de treino</AppText><AppText variant="caption" color={colors.textMuted}>Não digite dados de um cartão real</AppText></View></View>
-      <View style={styles.mobilityTrainingCard}><View style={styles.mobilityCardTop}><Ionicons name="card" size={28} color={colors.surface} /><AppText weight="900" color={colors.surface}>CARTÃO FICTÍCIO</AppText></View><AppText variant="subheading" weight="900" color={colors.surface}>•••• •••• •••• 4242</AppText><View style={styles.mobilityCardBottom}><AppText variant="caption" color={colors.surface}>PESSOA DE TREINO</AppText><AppText variant="caption" color={colors.surface}>12/30</AppText></View></View>
-      <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>O aplicativo usa somente este cartão inventado. Nenhum número digitado é necessário.</AppText></View>
-      <Button label="Cadastrar cartão fictício" icon="card-outline" onPress={() => { setTrainingCardRegistered(true); setPaymentMethod('credit'); setRegisteringCard(false); }} />
+  if (step.position === 4) return <View style={styles.mobilityExperience}>
+    {guide}<MobilityMapScene route compact origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="caption" weight="900" color={colors.success}>PREÇOS ESTIMADOS DE TREINO</AppText><AppText variant="subheading" weight="900">Qual viagem atende você?</AppText>
+      {(Object.keys(rideCatalog) as (keyof typeof rideCatalog)[]).map((key) => { const ride = rideCatalog[key]; return <Pressable key={key} accessibilityRole="radio" accessibilityState={{ checked: selectedRide === key }} onPress={() => setSelectedRide(key)} style={[styles.mobilityRideRow, selectedRide === key && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name={key === 'moto' ? 'bicycle' : key === 'comfort' ? 'car' : 'car-sport'} size={29} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">{ride.label}</AppText><AppText variant="small" color={colors.textMuted}>{ride.description}</AppText><AppText variant="caption" color={colors.textMuted}>Chegada estimada: {ride.arrival}</AppText></View><AppText weight="900">{ride.price}</AppText></Pressable>; })}
+      <View style={styles.mobilitySelectedExplanation}><Ionicons name="bulb-outline" size={24} color={colors.primary} /><AppText variant="small" style={styles.flex1}>No mundo real, o preço pode mudar com trânsito e procura. Leia a estimativa antes de escolher.</AppText></View>
+      <Button label={`Escolher ${rideDetails.label}`} icon={selectedRide === 'moto' ? 'bicycle-outline' : 'car-outline'} disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'ride-selected' })} />
     </View>
   </View>;
 
-  if (ridePhase === 'payment') return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="caption" weight="800" color={colors.primary}>PAGAMENTO DE TREINAMENTO</AppText><AppText variant="subheading" weight="900">Como você quer pagar?</AppText>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === 'pix' }} onPress={() => setPaymentMethod('pix')} style={[styles.mobilityPaymentRow, paymentMethod === 'pix' && styles.mobilityRideSelected]}><View style={styles.mobilityPaymentIcon}><Ionicons name="qr-code-outline" size={25} color={colors.primary} /></View><View style={styles.flex1}><AppText weight="900">Pix</AppText><AppText variant="small" color={colors.textMuted}>Confirme o Pix apenas dentro do aplicativo.</AppText></View><Ionicons name={paymentMethod === 'pix' ? 'radio-button-on' : 'radio-button-off'} size={24} color={colors.primary} /></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === 'credit' }} onPress={() => setPaymentMethod('credit')} style={[styles.mobilityPaymentRow, paymentMethod === 'credit' && styles.mobilityRideSelected]}><View style={styles.mobilityPaymentIcon}><Ionicons name="card-outline" size={26} color={colors.primary} /></View><View style={styles.flex1}><AppText weight="900">Cartão de crédito</AppText><AppText variant="small" color={colors.textMuted}>{trainingCardRegistered ? 'Cartão fictício •••• 4242' : 'Nenhum cartão de treino cadastrado'}</AppText></View><Ionicons name={paymentMethod === 'credit' ? 'radio-button-on' : 'radio-button-off'} size={24} color={colors.primary} /></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === 'cash' }} onPress={() => setPaymentMethod('cash')} style={[styles.mobilityPaymentRow, paymentMethod === 'cash' && styles.mobilityRideSelected]}><View style={styles.mobilityPaymentIcon}><Ionicons name="cash-outline" size={27} color={colors.primary} /></View><View style={styles.flex1}><AppText weight="900">Dinheiro</AppText><AppText variant="small" color={colors.textMuted}>Pague ao condutor e informe se precisa de troco.</AppText></View><Ionicons name={paymentMethod === 'cash' ? 'radio-button-on' : 'radio-button-off'} size={24} color={colors.primary} /></Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel="Cadastrar um cartão fictício" onPress={() => setRegisteringCard(true)} style={styles.mobilityAddPayment}><Ionicons name="add-circle-outline" size={25} color={colors.primary} /><View style={styles.flex1}><AppText weight="900" color={colors.primary}>Cadastrar cartão</AppText><AppText variant="small" color={colors.textMuted}>Pratique com dados fictícios já preenchidos</AppText></View><Ionicons name="chevron-forward" size={21} color={colors.textMuted} /></Pressable>
-      <Button label={`Continuar com ${paymentDetails.label}`} icon="arrow-forward" disabled={paymentMethod === 'credit' && !trainingCardRegistered} onPress={() => setRidePhase('confirming')} />
-      <Button label="Voltar ao ponto de partida" variant="secondary" onPress={() => setRidePhase('pickup')} />
+  if (step.position === 5) return <View style={styles.mobilityExperience}>
+    {guide}<MobilityMapScene route origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Onde o carro encontra você?</AppText><View style={styles.mobilityAddressRow}><Ionicons name="navigate-circle" size={29} color={accent} /><View style={styles.flex1}><AppText weight="900">{originAddress}</AppText><AppText variant="small" color={colors.textMuted}>Ponto azul no mapa · entrada principal</AppText></View></View><TextInput accessibilityLabel="Ponto de partida fictício" onChangeText={setOriginAddress} style={styles.mobilityAddressInput} value={originAddress} /><View style={styles.mobilitySafetyRow}><Ionicons name="sunny-outline" size={24} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Espere em local iluminado e movimentado. Não atravesse a rua quando o carro já estiver chegando.</AppText></View><Button label="Confirmar ponto de partida" icon="location-outline" disabled={!originAddress.trim() || busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-pickup' })} /></View>
+  </View>;
+
+  if (step.position === 6) return <View style={styles.mobilityExperience}>
+    {guide}<MobilityMapScene route compact origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900">Como você quer pagar?</AppText>
+      {([
+        { method: 'credit' as const, icon: 'card-outline' as const, label: 'Cartão de treino', description: 'Cobrança automática após a viagem.' },
+        { method: 'pix' as const, icon: 'qr-code-outline' as const, label: 'Pix pelo aplicativo', description: 'Nunca faça Pix para uma chave enviada no chat.' },
+        { method: 'cash' as const, icon: 'cash-outline' as const, label: 'Dinheiro', description: 'Avise no aplicativo se precisar de troco.' },
+      ]).map((item) => <Pressable key={item.method} accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === item.method }} onPress={() => setPaymentMethod(item.method)} style={[styles.mobilityPaymentRow, paymentMethod === item.method && styles.mobilityRideSelected]}><View style={styles.mobilityPaymentIcon}><Ionicons name={item.icon} size={26} color={colors.primary} /></View><View style={styles.flex1}><AppText weight="900">{item.label}</AppText><AppText variant="small" color={colors.textMuted}>{item.description}</AppText></View><Ionicons name={paymentMethod === item.method ? 'radio-button-on' : 'radio-button-off'} size={25} color={colors.primary} /></Pressable>)}
+      <View style={styles.mobilityPrivacyNote}><Ionicons name="shield-checkmark" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>O motorista nunca precisa saber sua senha, código do cartão ou código recebido por SMS.</AppText></View>
+      <Button label={`Continuar com ${paymentDetails.label}`} icon="arrow-forward" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'payment-selected' })} />
     </View>
   </View>;
 
-  if (ridePhase === 'confirming') return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><View style={styles.mobilityConfirmIcon}><Ionicons name={selectedRide === 'moto' || selectedRide === 'delivery' ? 'bicycle' : 'car-sport'} size={38} color={accent} /></View><AppText variant="subheading" weight="900" style={styles.center}>Confirmar solicitação simulada?</AppText><AppText color={colors.textMuted} style={styles.center}>{destinationAddress} · {rideDetails.label} · {rideDetails.price}</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>{rideDetails.description}</AppText><View style={styles.mobilityPaymentSummary}><Ionicons name={paymentMethod === 'pix' ? 'qr-code-outline' : paymentMethod === 'cash' ? 'cash-outline' : 'card-outline'} size={24} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">{paymentDetails.label}</AppText><AppText variant="small" color={colors.textMuted}>{paymentDetails.description}</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Alterar forma de pagamento" onPress={() => setRidePhase('payment')}><AppText weight="900" color={colors.primary}>Alterar</AppText></Pressable></View><View style={styles.mobilitySafetyRow}><Ionicons name="shield-checkmark" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum veículo será chamado, nenhum item será enviado e nenhuma cobrança será feita.</AppText></View><Button label="Confirmar somente o treino" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-training' })} /><Button label="Revisar opções" variant="secondary" onPress={() => setRidePhase('options')} /></View>
+  if (step.position === 7) return <View style={styles.mobilityExperience}>
+    {guide}<MobilityMapScene route compact origin={originAddress} destination={destinationAddress} />
+    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="subheading" weight="900" style={styles.center}>Revise antes de pedir</AppText><View style={styles.mobilitySignupSummary}><SignupSummaryRow label="Partida" value={originAddress} /><SignupSummaryRow label="Destino" value={destinationAddress} /><SignupSummaryRow label="Categoria" value={rideDetails.label} /><SignupSummaryRow label="Preço estimado" value={rideDetails.price} /><SignupSummaryRow label="Pagamento" value={paymentDetails.label} /></View><View style={styles.mobilitySafetyRow}><Ionicons name="information-circle" size={23} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>No mundo real, ao confirmar, o aplicativo começa a procurar um motorista e pode cobrar taxa se você cancelar depois.</AppText></View><Button label="Confirmar somente o treino" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'confirm-training' })} /><Button label="Voltar e corrigir" variant="secondary" disabled={busy} onPress={() => void onBack()} /></View>
   </View>;
 
   return <View style={styles.mobilityExperience}>
-    <MobilityMapScene route origin={originAddress} destination={destinationAddress} />
-    <View style={styles.mobilityBottomSheet}><View style={styles.mobilitySheetHandle} /><AppText variant="caption" weight="800" color={colors.success}>PREÇOS FICTÍCIOS</AppText><AppText variant="subheading" weight="900">Escolha uma opção</AppText>
-      <Pressable accessibilityRole="radio" accessibilityLabel={`${rideCatalog.economy.label}, carro econômico para até quatro pessoas`} accessibilityState={{ checked: selectedRide === 'economy' }} onPress={() => setSelectedRide('economy')} style={[styles.mobilityRideRow, selectedRide === 'economy' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="car-sport" size={29} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">{rideCatalog.economy.label}</AppText><AppText variant="small" color={colors.textMuted}>{rideCatalog.economy.description}</AppText><AppText variant="caption" color={colors.textMuted}>Chegada simulada em 5 min</AppText></View><AppText weight="900">{rideCatalog.economy.price}</AppText></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityLabel={`${rideCatalog.comfort.label}, carro mais confortável`} accessibilityState={{ checked: selectedRide === 'comfort' }} onPress={() => setSelectedRide('comfort')} style={[styles.mobilityRideRow, selectedRide === 'comfort' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="car" size={29} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">{rideCatalog.comfort.label}</AppText><AppText variant="small" color={colors.textMuted}>{rideCatalog.comfort.description}</AppText><AppText variant="caption" color={colors.textMuted}>Chegada simulada em 7 min</AppText></View><AppText weight="900">{rideCatalog.comfort.price}</AppText></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityLabel={`${rideCatalog.moto.label}, motocicleta para um passageiro`} accessibilityState={{ checked: selectedRide === 'moto' }} onPress={() => setSelectedRide('moto')} style={[styles.mobilityRideRow, selectedRide === 'moto' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="bicycle" size={29} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">{rideCatalog.moto.label}</AppText><AppText variant="small" color={colors.textMuted}>{rideCatalog.moto.description}</AppText><AppText variant="caption" color={colors.textMuted}>Use capacete e confira placa e condutor</AppText></View><AppText weight="900">{rideCatalog.moto.price}</AppText></Pressable>
-      <Pressable accessibilityRole="radio" accessibilityLabel={`${rideCatalog.delivery.label}, entrega de item pequeno sem passageiro`} accessibilityState={{ checked: selectedRide === 'delivery' }} onPress={() => setSelectedRide('delivery')} style={[styles.mobilityRideRow, selectedRide === 'delivery' && styles.mobilityRideSelected]}><View style={styles.mobilityVehicleIcon}><Ionicons name="cube" size={28} color={serviceAccent} /></View><View style={styles.flex1}><AppText weight="900">{rideCatalog.delivery.label}</AppText><AppText variant="small" color={colors.textMuted}>{rideCatalog.delivery.description}</AppText><AppText variant="caption" color={colors.textMuted}>Embale o item e não envie objetos proibidos</AppText></View><AppText weight="900">{rideCatalog.delivery.price}</AppText></Pressable>
-      <View style={styles.mobilitySelectedExplanation}><Ionicons name="information-circle" size={24} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">O que significa {rideDetails.label}?</AppText><AppText variant="small" color={colors.textMuted}>{rideDetails.description}</AppText></View></View>
-      <Button label={`Escolher ${rideDetails.label}`} icon={selectedRide === 'moto' || selectedRide === 'delivery' ? 'bicycle-outline' : 'car-outline'} disabled={busy} onPress={() => setRidePhase('pickup')} />
-    </View>
+    {guide}
+    <View style={styles.mobilityDriverCard}><View style={styles.mobilityDriverTop}><View style={styles.mobilityDriverAvatar}><Ionicons name="person" size={38} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Carlos · 4,9 ★</AppText><AppText variant="small" color={colors.textMuted}>Motorista de treinamento</AppText></View><View style={styles.mobilityPlate}><AppText variant="caption" weight="900">PLACA</AppText><AppText weight="900">ABC1D23</AppText></View></View><View style={styles.mobilityDriverVehicle}><Ionicons name="car-sport" size={45} color={serviceAccent} /><View style={styles.flex1}><AppText weight="900">Chevrolet Onix prata</AppText><AppText variant="small" color={colors.textMuted}>Chega em aproximadamente 5 minutos</AppText></View></View></View>
+    <View style={styles.mobilityRealWorldBox}><AppText variant="subheading" weight="900">Antes de entrar no carro</AppText><AppText variant="small">Compare estes quatro dados com o carro e a pessoa que chegaram:</AppText><View style={styles.mobilityChecklist}><AppText weight="900">✓ Placa ABC1D23</AppText><AppText weight="900">✓ Chevrolet Onix</AppText><AppText weight="900">✓ Cor prata</AppText><AppText weight="900">✓ Foto do motorista</AppText></View><AppText variant="small" color={colors.danger}>Se algum dado não conferir, não entre. Afaste-se e cancele pelo aplicativo.</AppText></View>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'check-driver' })} style={styles.mobilityPlaceRow}><View style={styles.mobilityPlaceIcon}><Ionicons name="shield-checkmark" size={26} color={colors.success} /></View><View style={styles.flex1}><AppText weight="900">Confiro placa, modelo, cor e foto</AppText><AppText variant="small" color={colors.textMuted}>Só entro quando todos os dados estão iguais</AppText></View><Ionicons name="chevron-forward" size={23} color={colors.primary} /></Pressable>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'enter-by-color' })} style={styles.mobilityPlaceRow}><View style={styles.mobilityPlaceIcon}><Ionicons name="warning-outline" size={26} color={colors.warning} /></View><View style={styles.flex1}><AppText weight="900">Entro no primeiro carro prata</AppText><AppText variant="small" color={colors.textMuted}>Sem conferir os outros dados</AppText></View></Pressable>
   </View>;
+}
+
+function MobilityStepGuide({ step, onBack }: { step: ParticipantMissionStep; onBack: () => Promise<void> }) {
+  return <View style={styles.mobilityWorldGuide}>{step.position > 1 ? <Pressable accessibilityRole="button" accessibilityLabel="Voltar ao passo anterior" disabled={false} onPress={() => void onBack()} style={styles.mobilityGuideBack}><Ionicons name="arrow-back" size={24} color={colors.surface} /></Pressable> : <View style={styles.mobilityGuideNumber}><AppText weight="900" color={colors.surface}>1</AppText></View>}<View style={styles.flex1}><AppText variant="caption" weight="900" color={colors.surface}>PASSO {step.position} DE 8 · NO MUNDO REAL</AppText><AppText variant="subheading" weight="900" color={colors.surface}>{step.title}</AppText><AppText variant="small" color={colors.surface}>{step.instruction}</AppText><View style={styles.mobilityTouchHint}><Ionicons name="hand-left-outline" size={19} color="#1E252B" /><AppText variant="caption" weight="900" style={styles.flex1}>ONDE TOCAR: {step.hints[0]}</AppText></View></View></View>;
 }
 
 function MobilityMapScene({ route = false, compact = false, origin = 'Entrada principal', destination = 'Biblioteca Municipal' }: { route?: boolean; compact?: boolean; origin?: string; destination?: string }) {
@@ -1497,7 +1578,7 @@ function EnvironmentScene({ presentation, step, accent, query, onQueryChange }: 
   return <View style={[styles.environmentScene, styles.fakeCallScene]}><View style={[styles.fakeCallerAvatar, { backgroundColor: accent }]}><Ionicons name="person" size={48} color={colors.surface} /></View><AppText variant="subheading" weight="900">Número não identificado</AppText><AppText color={colors.textMuted}>Chamada de treinamento em andamento</AppText><View style={styles.fakeCallControls}><View style={styles.fakeCallButton}><Ionicons name="mic-off" size={24} color={colors.text} /></View><View style={[styles.fakeCallButton, styles.fakeCallEnd]}><Ionicons name="call" size={24} color={colors.surface} /></View><View style={styles.fakeCallButton}><Ionicons name="volume-high" size={24} color={colors.text} /></View></View></View>;
 }
 
-function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
+function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, onBack, accent }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void>; onBack: () => Promise<void>; accent: string }) {
   const [installPhase, setInstallPhase] = useState<'details' | 'downloading' | 'installed' | 'opened'>('details');
   const [downloadProgress, setDownloadProgress] = useState(0);
   const searched = query.trim().length >= 3;
@@ -1517,14 +1598,24 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
   if (step.position === 1) return <View style={styles.storeExperience}>
     <View style={styles.storeSearchBox}><Ionicons name="search" size={22} color={colors.textMuted} /><TextInput accessibilityLabel="Digite o nome do aplicativo" autoCapitalize="none" autoCorrect={false} onChangeText={onQueryChange} placeholder="Digite: Conecta Fácil" placeholderTextColor={colors.placeholder} returnKeyType="search" style={styles.storeSearchInput} value={query} />{query ? <Pressable accessibilityRole="button" accessibilityLabel="Limpar busca" hitSlop={8} onPress={() => onQueryChange('')}><Ionicons name="close-circle" size={22} color={colors.textMuted} /></Pressable> : null}</View>
     {!searched ? <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>1</AppText></View><View style={styles.flex1}><AppText weight="900">Toque na lupa e escreva o nome</AppText><AppText variant="small" color={colors.textMuted}>Você pode digitar “Conecta Fácil”. Nada será pesquisado na loja real.</AppText></View></View> : <View style={styles.storeSearchSuccess}><Ionicons name="checkmark-circle" size={28} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Busca pronta</AppText><AppText variant="small" color={colors.textMuted}>Agora toque em “Mostrar resultados”.</AppText></View></View>}
-    <Button label="Mostrar resultados" icon="search" disabled={!searched || busy} onPress={() => void onSubmit({ action: 'continue' })} />
+    <Button label="Mostrar resultados" icon="search" disabled={!searched || busy} disabledReason={!searched ? 'Digite o nome do aplicativo para pesquisar.' : undefined} onPress={() => void onSubmit({ action: 'continue' })} />
   </View>;
 
   if (step.position === 2) return <View style={styles.storeExperience}>
+    <Button label="Voltar à busca" icon="arrow-back" variant="secondary" disabled={busy} onPress={() => void onBack()} />
     <View style={styles.storeSearchBox}><Ionicons name="search" size={22} color={colors.textMuted} /><AppText style={styles.flex1}>{query || 'Conecta Fácil'}</AppText><Ionicons name="options-outline" size={22} color={colors.textMuted} /></View>
     <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>2</AppText></View><View style={styles.flex1}><AppText weight="900">Compare antes de escolher</AppText><AppText variant="small" color={colors.textMuted}>Confira nome, desenvolvedor, avaliação e quantidade de avaliações.</AppText></View></View>
     <Pressable accessibilityRole="button" accessibilityLabel="Escolher Conecta Fácil da Empresa Exemplo" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'official' })} style={({ pressed }) => [styles.storeResultCard, styles.storeResultTrusted, pressed && styles.bankActionRowPressed]}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo</AppText><AppText variant="caption" color={colors.success}>4,8 ★ · muitas avaliações · verificado</AppText></View><Ionicons name="chevron-forward" size={24} color={colors.textMuted} /></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Escolher Conecta Grátis de desenvolvedor desconhecido" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'copy' })} style={({ pressed }) => [styles.storeResultCard, pressed && styles.bankActionRowPressed]}><View style={[styles.fakeAppIcon, styles.fakeAppIconUnknown]}><Ionicons name="help" size={28} color={colors.textMuted} /></View><View style={styles.flex1}><AppText weight="900">Conecta Grátis</AppText><AppText variant="small" color={colors.danger}>Desenvolvedor desconhecido</AppText><AppText variant="caption" color={colors.danger}>Sem avaliações suficientes</AppText></View><Ionicons name="chevron-forward" size={24} color={colors.textMuted} /></Pressable>
+  </View>;
+
+  if (step.position === 3) return <View style={styles.storeExperience}>
+    <Button label="Voltar aos resultados" icon="arrow-back" variant="secondary" disabled={busy} onPress={() => void onBack()} />
+    <View style={styles.storeAppDetail}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo · aplicativo verificado no treino</AppText></View></View>
+    <View style={styles.storePermissionAlert}><Ionicons name="people-outline" size={36} color={colors.warning} /><View style={styles.flex1}><AppText variant="subheading" weight="900">Este aplicativo precisa dos seus contatos?</AppText><AppText variant="small" color={colors.textMuted}>Alguns aplicativos usam contatos para funções específicas. Neste aplicativo fictício, essa permissão não tem uma necessidade clara.</AppText></View></View>
+    <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Entenda antes de permitir</AppText><AppText variant="small" color={colors.textMuted}>Uma permissão não é perigosa por si só. Ela deve combinar com o que o aplicativo faz. Na dúvida, negue agora; você pode permitir depois nas configurações.</AppText></View></View>
+    <Button label="Não permitir agora" icon="shield-checkmark-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'reject-permission' })} />
+    <Button label="Permitir porque o aplicativo pediu" variant="secondary" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'allow-permission' })} />
   </View>;
 
   if (installPhase === 'opened') return <View style={styles.storeOpenedScreen}>
@@ -1534,9 +1625,11 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
     <AppText color={colors.textMuted} style={styles.center}>Você abriu o aplicativo fictício com sucesso. Nenhum aplicativo real foi iniciado.</AppText>
     <View style={styles.storeOpenedWelcome}><Ionicons name="sparkles-outline" size={26} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Bem-vindo ao treino!</AppText><AppText variant="small" color={colors.textMuted}>Agora você já conhece as etapas para buscar, instalar e abrir um aplicativo.</AppText></View></View>
     <Button label="Concluir treinamento" icon="checkmark-circle-outline" disabled={busy} onPress={() => void onSubmit({ action: 'choose', optionId: 'install-training' })} />
+    <Button label="Voltar às permissões" icon="arrow-back" variant="secondary" disabled={busy} onPress={() => void onBack()} />
   </View>;
 
   return <View style={styles.storeExperience}>
+    <Button label="Voltar às permissões" icon="arrow-back" variant="secondary" disabled={busy || installPhase === 'downloading'} onPress={() => void onBack()} />
     <View style={styles.storeAppDetail}><View style={[styles.fakeAppIcon, { backgroundColor: accent }]}><Ionicons name="apps" size={28} color={colors.surface} /></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Conecta Fácil</AppText><AppText variant="small" color={colors.textMuted}>Empresa Exemplo · sem anúncios</AppText></View><Ionicons name="ellipsis-vertical" size={22} color={colors.textMuted} /></View>
     <View style={styles.storeStats}><View style={styles.storeStat}><AppText weight="900">4,8 ★</AppText><AppText variant="caption" color={colors.textMuted}>1 mil avaliações</AppText></View><View style={styles.storeStat}><AppText weight="900">Livre</AppText><AppText variant="caption" color={colors.textMuted}>Classificação</AppText></View><View style={styles.storeStat}><AppText weight="900">18 MB</AppText><AppText variant="caption" color={colors.textMuted}>Tamanho fictício</AppText></View></View>
     {installPhase === 'details' ? <>
@@ -1550,7 +1643,7 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
       <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.storeInstalled}><Ionicons name="checkmark-circle" size={34} color={colors.success} /><View style={styles.flex1}><AppText weight="900">Aplicativo instalado no treino</AppText><AppText variant="small" color={colors.textMuted}>Nenhum aplicativo foi instalado no seu aparelho.</AppText></View></View>
       <View style={styles.storeInstalledActions}><Button label="Desinstalar" variant="secondary" onPress={() => { setInstallPhase('details'); setDownloadProgress(0); }} /><Button label="Abrir" disabled={busy} onPress={() => setInstallPhase('opened')} /></View>
     </>}
-    <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Tudo acontece apenas na simulação</AppText><AppText variant="small" color={colors.textMuted}>Você pode acompanhar o progresso sem consumir internet, memória ou instalar arquivos.</AppText></View></View>
+    <View style={styles.storeCoach}><View style={styles.storeCoachNumber}><AppText weight="900" color={colors.surface}>4</AppText></View><View style={styles.flex1}><AppText weight="900">Tudo acontece apenas na simulação</AppText><AppText variant="small" color={colors.textMuted}>Você pode acompanhar o progresso sem consumir internet, memória ou instalar arquivos.</AppText></View></View>
   </View>;
 }
 
@@ -1563,8 +1656,7 @@ function EnvironmentActions({ step, busy, accent, onSubmit }: { step: Participan
   })}</View>;
 }
 
-function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playInstruction, router }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter> }) {
-  const { preferences } = useApp();
+function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playInstruction, router, publicDemo = false }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter>; publicDemo?: boolean }) {
   const step = engine.currentStep;
   const [showPixBalance, setShowPixBalance] = useState(false);
   const [pixEntryStage, setPixEntryStage] = useState<'home' | 'key' | 'amount' | 'review'>('home');
@@ -1573,14 +1665,6 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   const [bankTab, setBankTab] = useState<'pix' | 'cards' | 'menu'>('pix');
   const [trainingBankCardAdded, setTrainingBankCardAdded] = useState(false);
   const [correctingPixAmount, setCorrectingPixAmount] = useState(false);
-  const lastPixAutoPlayedStep = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!step || !preferences.autoAudio || lastPixAutoPlayedStep.current === step.id) return;
-    lastPixAutoPlayedStep.current = step.id;
-    playInstruction(pixAudioInstruction(step.position, trainingPixAmount, pixEntryStage));
-  }, [pixEntryStage, playInstruction, preferences.autoAudio, step, trainingPixAmount]);
-
   if (!step) return null;
 
   const screenIndex = Math.min(Math.max(step.position, 1), 4);
@@ -1588,7 +1672,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   const renderPixScreen = () => {
     if (bankTab === 'cards') return <BankCardsScreen cardAdded={trainingBankCardAdded} onAddCard={() => setTrainingBankCardAdded(true)} onBack={() => setBankTab('pix')} onMenu={() => setBankTab('menu')} />;
     if (bankTab === 'menu') return <BankMenuScreen onBack={() => setBankTab('pix')} onCards={() => setBankTab('cards')} />;
-    if (correctingPixAmount) return <View style={styles.phoneShell}><View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText></View><PixBankHeader compact /><View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para a revisão" onPress={() => setCorrectingPixAmount(false)}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Corrija o valor</AppText><AppText variant="small" color={colors.textMuted}>A missão continua em andamento</AppText></View></View><View style={styles.pixWrongChoice}><Ionicons name="information-circle" size={27} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Valor combinado: R$ 20,00</AppText><AppText variant="small">Apague o valor anterior e digite novamente.</AppText></View></View><View style={styles.pixAmountInput}><AppText variant="heading" weight="900">R$</AppText><TextInput accessibilityLabel="Corrigir valor fictício do Pix" autoFocus inputMode="decimal" onChangeText={setTrainingPixAmount} placeholder="0,00" placeholderTextColor={colors.placeholder} style={styles.pixAmountTextInput} value={trainingPixAmount} /></View><Button label="Revisar valor corrigido" icon="arrow-forward" disabled={!isPositivePixAmount(trainingPixAmount)} onPress={() => setCorrectingPixAmount(false)} /><View style={styles.pixSafetyRow}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum Pix será enviado. Você está apenas corrigindo o exercício.</AppText></View><PixBankNav onPixPress={() => setCorrectingPixAmount(false)} onCardsPress={() => setBankTab('cards')} onMenuPress={() => setBankTab('menu')} /></View>;
+    if (correctingPixAmount) return <View style={styles.phoneShell}><View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText></View><PixBankHeader compact /><View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para a revisão" onPress={() => setCorrectingPixAmount(false)}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Corrija o valor</AppText><AppText variant="small" color={colors.textMuted}>A missão continua em andamento</AppText></View></View><View style={styles.pixWrongChoice}><Ionicons name="information-circle" size={27} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Valor combinado: R$ 20,00</AppText><AppText variant="small">Apague o valor anterior e digite novamente.</AppText></View></View><View style={styles.pixAmountInput}><AppText variant="heading" weight="900">R$</AppText><TextInput accessibilityLabel="Corrigir valor fictício do Pix" autoFocus inputMode="decimal" onChangeText={setTrainingPixAmount} placeholder="0,00" placeholderTextColor={colors.placeholder} style={styles.pixAmountTextInput} value={trainingPixAmount} /></View><Button label="Revisar valor corrigido" icon="arrow-forward" disabled={!isPositivePixAmount(trainingPixAmount)} disabledReason="Digite um valor maior que zero para continuar." onPress={() => setCorrectingPixAmount(false)} /><View style={styles.pixSafetyRow}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum Pix será enviado. Você está apenas corrigindo o exercício.</AppText></View><PixBankNav onPixPress={() => setCorrectingPixAmount(false)} onCardsPress={() => setBankTab('cards')} onMenuPress={() => setBankTab('menu')} /></View>;
     switch (screenIndex) {
       case 1:
         return (
@@ -1609,12 +1693,12 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <View style={styles.pixCopyExample}><Ionicons name="copy-outline" size={24} color={colors.primary} /><View style={styles.flex1}><AppText variant="caption" weight="900" color={colors.primary}>CHAVE FICTÍCIA PARA DIGITAR</AppText><AppText weight="900" selectable>ana.treino@exemplo.com</AppText><AppText variant="caption" color={colors.textMuted}>Este exemplo continuará visível enquanto você digita.</AppText></View></View>
               <TextInput accessibilityLabel="Chave Pix fictícia" autoCapitalize="none" onChangeText={setTrainingPixKey} placeholder="Digite: ana.treino@exemplo.com" placeholderTextColor={colors.placeholder} style={styles.pixTrainingInput} value={trainingPixKey} />
               <Pressable accessibilityRole="button" onPress={() => setTrainingPixKey('ana.treino@exemplo.com')} style={styles.pixTrainingFill}><Ionicons name="sparkles-outline" size={20} color={colors.primary} /><AppText weight="800" color={colors.primary}>Preencher chave fictícia</AppText></Pressable>
-              <Button label="Continuar" icon="arrow-forward" disabled={trainingPixKey !== 'ana.treino@exemplo.com'} onPress={() => setPixEntryStage('amount')} />
+              <Button label="Continuar" icon="arrow-forward" disabled={trainingPixKey !== 'ana.treino@exemplo.com'} disabledReason="Digite a chave Pix fictícia mostrada acima: ana.treino@exemplo.com" onPress={() => setPixEntryStage('amount')} />
             </> : pixEntryStage === 'amount' ? <>
               <View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para a chave Pix" onPress={() => setPixEntryStage('key')}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Qual é o valor?</AppText><AppText variant="small" color={colors.textMuted}>Destinatária fictícia: Ana Treino</AppText></View></View>
               <View style={styles.pixCoachCard}><View style={styles.pixCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Digite o valor combinado</AppText><AppText variant="small" color={colors.textMuted}>Para este exercício, digite 20,00.</AppText></View></View>
               <View style={styles.pixAmountInput}><AppText variant="heading" weight="900">R$</AppText><TextInput accessibilityLabel="Valor fictício do Pix" inputMode="decimal" onChangeText={setTrainingPixAmount} placeholder="0,00" placeholderTextColor={colors.placeholder} style={styles.pixAmountTextInput} value={trainingPixAmount} /></View>
-              <Button label="Revisar Pix" icon="arrow-forward" disabled={!isPositivePixAmount(trainingPixAmount)} onPress={() => setPixEntryStage('review')} />
+              <Button label="Revisar Pix" icon="arrow-forward" disabled={!isPositivePixAmount(trainingPixAmount)} disabledReason="Digite um valor maior que zero para continuar." onPress={() => setPixEntryStage('review')} />
             </> : <>
               <View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para alterar o valor" onPress={() => setPixEntryStage('amount')}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Revise antes de enviar</AppText><AppText variant="small" color={colors.textMuted}>Esta é a etapa mais importante</AppText></View></View>
               <View style={styles.pixSummaryCard}><AppText variant="small" color={colors.textMuted}>Quem vai receber</AppText><AppText variant="heading" weight="900">Ana Treino</AppText><AppText variant="caption" color={colors.textMuted}>{trainingPixKey}</AppText><View style={styles.pixRecipientBank}><View style={styles.pixRecipientBankIcon}><Ionicons name="business-outline" size={23} color={colors.primary} /></View><View style={styles.flex1}><AppText variant="caption" color={colors.textMuted}>Instituição da pessoa que recebe</AppText><AppText weight="900">Banco Exemplo S.A.</AppText><AppText variant="caption" color={colors.textMuted}>Agência •••• · Conta ••123-4</AppText></View></View><View style={styles.pixDivider} /><AppText variant="small" color={colors.textMuted}>Valor digitado</AppText><AppText variant="heading" weight="900">{formatTrainingPixAmount(trainingPixAmount)}</AppText></View>
@@ -1671,8 +1755,8 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
   };
 
   return (
-    <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
-      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
+    <Screen footer={<ParticipantNav active="missions" publicDemo={publicDemo} />} contentStyle={styles.content}>
+      <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => publicDemo ? router.replace({ pathname: '/demo-mission-details', params: { mission: 'pix' } }) : router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
       <SimulationIdentityNotice reference="serviços Pix e aplicativos bancários" />
       <SyncStatusCard engine={engine} />
       <PixJourney current={step.position === 1 ? pixEntryStage : 'checking'} />
@@ -1687,6 +1771,7 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
         <ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
       <View style={styles.supportActions}>
+        {step.position > 1 ? <Button label="Voltar ao passo anterior" icon="arrow-back" variant="secondary" disabled={engine.busy} onPress={() => void engine.goBack()} /> : null}
         <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(pixAudioInstruction(step.position, trainingPixAmount, pixEntryStage)); void engine.registerSupport('audio'); }} />
         <Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} />
       </View>
@@ -1732,7 +1817,7 @@ function isExpectedPixAmount(value: string) { return Math.abs(parseTrainingPixAm
 function formatTrainingPixAmount(value: string) { const amount = parseTrainingPixAmount(value); return Number.isFinite(amount) ? amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'; }
 
 function BankCardsScreen({ cardAdded, onAddCard, onBack, onMenu }: { cardAdded: boolean; onAddCard: () => void; onBack: () => void; onMenu: () => void }) {
-  return <View style={styles.phoneShell}><View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText></View><PixBankHeader compact /><View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para Pix" onPress={onBack}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><AppText variant="heading" weight="900">Meus cartões</AppText></View>{cardAdded ? <View style={styles.mobilityTrainingCard}><AppText variant="caption" color={colors.surface}>CARTÃO FICTÍCIO</AppText><AppText variant="subheading" weight="900" color={colors.surface}>•••• •••• •••• 4242</AppText><AppText color={colors.surface}>Pessoa de Treino · 12/30</AppText></View> : <View style={styles.storeEmptyState}><Ionicons name="card-outline" size={52} color={colors.primary} /><AppText weight="900">Nenhum cartão cadastrado</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>Pratique adicionando um cartão totalmente fictício.</AppText></View>}<View style={styles.pixSafetyRow}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Não digite dados de um cartão verdadeiro.</AppText></View><Button label={cardAdded ? 'Cartão fictício adicionado' : 'Adicionar cartão fictício'} icon={cardAdded ? 'checkmark-circle' : 'add-circle-outline'} disabled={cardAdded} onPress={onAddCard} /><PixBankNav onPixPress={onBack} onCardsPress={() => {}} onMenuPress={onMenu} /></View>;
+  return <View style={styles.phoneShell}><View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText></View><PixBankHeader compact /><View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para Pix" onPress={onBack}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><AppText variant="heading" weight="900">Meus cartões</AppText></View>{cardAdded ? <View style={styles.mobilityTrainingCard}><AppText variant="caption" color={colors.surface}>Cartão fictício</AppText><AppText variant="subheading" weight="900" color={colors.surface}>•••• •••• •••• 4242</AppText><AppText color={colors.surface}>Pessoa de Treino · 12/30</AppText></View> : <View style={styles.storeEmptyState}><Ionicons name="card-outline" size={52} color={colors.primary} /><AppText weight="900">Nenhum cartão cadastrado</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>Pratique adicionando um cartão totalmente fictício.</AppText></View>}<View style={styles.pixSafetyRow}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Não digite dados de um cartão verdadeiro.</AppText></View><Button label={cardAdded ? 'Cartão fictício adicionado' : 'Adicionar cartão fictício'} icon={cardAdded ? 'checkmark-circle' : 'add-circle-outline'} disabled={cardAdded} disabledReason={cardAdded ? 'O cartão fictício já foi adicionado. Use Pix ou Menu para continuar explorando.' : undefined} onPress={onAddCard} /><PixBankNav onPixPress={onBack} onCardsPress={() => {}} onMenuPress={onMenu} /></View>;
 }
 
 function BankMenuScreen({ onBack, onCards }: { onBack: () => void; onCards: () => void }) {
@@ -1872,12 +1957,23 @@ function SyncStatusCard({ engine }: { engine: ReturnType<typeof useMissionEngine
     <Card style={styles.syncCard}>
       <Ionicons name={offline ? 'cloud-offline-outline' : failed ? 'alert-circle-outline' : 'cloud-upload-outline'} size={24} color={failed ? colors.danger : colors.primary} />
       <View style={styles.safeCopy}>
-        <AppText weight="800">{offline ? 'Praticando sem internet' : failed ? 'Sincronização pendente' : syncing ? 'Sincronizando…' : 'Alterações salvas no aparelho'}</AppText>
-        <AppText variant="small" color={colors.textMuted}>{engine.pendingCount} atividade(s) aguardando envio. Você pode continuar normalmente.</AppText>
+        <AppText weight="800">{offline ? 'Praticando sem internet' : failed ? 'Progresso aguardando envio' : syncing ? 'Enviando seu progresso…' : 'Progresso salvo no aparelho'}</AppText>
+        <AppText variant="small" color={colors.textMuted}>{engine.pendingCount} {engine.pendingCount === 1 ? 'atividade está' : 'atividades estão'} salva{engine.pendingCount === 1 ? '' : 's'} neste aparelho e aguarda{engine.pendingCount === 1 ? '' : 'm'} envio. Você pode continuar normalmente.</AppText>
       </View>
       {failed ? <Button label="Tentar novamente" variant="soft" onPress={() => void engine.retry()} /> : null}
     </Card>
   );
+}
+
+function MissionError({ message, onRetry }: { message: string; onRetry: () => Promise<void> | void }) {
+  return <Card style={styles.errorCard}>
+    <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.errorCopy}>
+      <Ionicons name="cloud-offline-outline" size={26} color={colors.danger} />
+      <AppText color={colors.danger} style={styles.safeCopy}>{message}</AppText>
+    </View>
+    <AudioButton label="Ouvir aviso" message={message} />
+    <Button label="Tentar novamente" variant="soft" onPress={() => void onRetry()} />
+  </Card>;
 }
 
 function asObject(value: ParticipantMissionStep['expectedAction']): { action?: string; target?: string } {
@@ -1888,6 +1984,18 @@ function asExpectedAction(value: ParticipantMissionStep['expectedAction']): { ac
 }
 function isOption(value: unknown): value is { id: string; label: string } {
   return Boolean(value && typeof value === 'object' && typeof (value as { id?: unknown }).id === 'string' && typeof (value as { label?: unknown }).label === 'string');
+}
+function publicDemoKey(missionId: string) {
+  if (missionId.endsWith('0001')) return 'photo';
+  if (missionId.endsWith('0003')) return 'location';
+  if (missionId.endsWith('0004')) return 'mobility';
+  if (missionId.endsWith('0005')) return 'download-app';
+  if (missionId.endsWith('0006')) return 'shopping';
+  if (missionId.endsWith('0007')) return 'scam-message';
+  if (missionId.endsWith('0008')) return 'fake-family';
+  if (missionId.endsWith('0009')) return 'fake-bank';
+  if (missionId.endsWith('000a')) return 'gov-br';
+  return 'pix';
 }
 function labelForTarget(target?: string) {
   const labels: Record<string, string> = { attachment_button: 'Tocar no clipe', location_option: 'Escolher localização' };
@@ -1919,25 +2027,43 @@ const styles = StyleSheet.create({
   hints: { backgroundColor: colors.primarySoft, gap: spacing.sm },
   supportActions: { gap: spacing.md },
   syncCard: { alignItems: 'center', backgroundColor: colors.warningSoft, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  whatsappFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: 28, borderWidth: 2, overflow: 'hidden', padding: 0 },
-  whatsappHeader: { alignItems: 'center', backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  headerLeft: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  errorCard: { backgroundColor: colors.dangerSoft, borderColor: colors.danger, gap: spacing.md },
+  errorCopy: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
+  whatsappFrame: { backgroundColor: '#EFEAE2', borderColor: '#075E54', borderRadius: 28, borderWidth: 2, overflow: 'hidden', padding: 0 },
+  whatsappHeader: { alignItems: 'center', backgroundColor: '#075E54', flexDirection: 'row', justifyContent: 'space-between', minHeight: 76, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  headerLeft: { alignItems: 'center', flexDirection: 'row', flexShrink: 1, gap: spacing.sm },
+  contactMeta: { flexShrink: 1 },
   headerRight: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
-  avatarMini: { backgroundColor: '#c4d6d5', borderRadius: 999, height: 24, width: 24 },
-  chatBody: { backgroundColor: '#F8F3FF', gap: spacing.sm, padding: spacing.md },
+  avatarMini: { alignItems: 'center', backgroundColor: '#D9FDD3', borderRadius: 999, height: 42, justifyContent: 'center', width: 42 },
+  chatBody: { backgroundColor: '#EFEAE2', gap: spacing.sm, minHeight: 390, padding: spacing.md },
+  chatDatePill: { alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: radius.round, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   chatBubbleRow: { flexDirection: 'row' },
   chatBubbleRowRight: { flexDirection: 'row', justifyContent: 'flex-end' },
-  chatBubble: { backgroundColor: colors.surface, borderRadius: 16, maxWidth: '78%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  chatBubbleGreen: { backgroundColor: colors.primarySoft, borderRadius: 16, maxWidth: '78%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  photoCard: { alignItems: 'center', backgroundColor: '#24394d', borderRadius: 18, height: 180, justifyContent: 'center', overflow: 'hidden' },
-  photoScene: { backgroundColor: '#2b9ac0', borderRadius: 18, height: '100%', width: '100%' },
+  chatBubble: { backgroundColor: '#FFFFFF', borderRadius: 12, gap: 2, maxWidth: '82%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, ...shadow },
+  chatBubbleGreen: { backgroundColor: '#D9FDD3', borderRadius: 12, gap: 2, maxWidth: '82%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  chatTime: { alignSelf: 'flex-end' },
+  chatSentMeta: { alignItems: 'center', alignSelf: 'flex-end', flexDirection: 'row', gap: 2 },
   attachmentScene: { alignItems: 'center', gap: spacing.md, justifyContent: 'center', minHeight: 220, paddingBottom: spacing.sm, paddingTop: spacing.md },
   cameraButton: { alignItems: 'center', backgroundColor: '#1b1e20', borderRadius: 999, height: 170, justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 18, width: 170 },
   actionSheet: { alignSelf: 'stretch', backgroundColor: '#f0f3f8', borderRadius: 22, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   optionRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.sm },
   optionRowSelected: { alignItems: 'center', backgroundColor: '#e6eefb', borderRadius: 14, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
-  chatInputRow: { alignItems: 'center', backgroundColor: colors.primary, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
-  inputBox: { backgroundColor: '#1d3747', borderRadius: 14, flex: 1, height: 36 },
+  chatInputRow: { alignItems: 'center', backgroundColor: '#EFEAE2', flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  whatsappComposer: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: radius.round, flex: 1, flexDirection: 'row', gap: spacing.sm, minHeight: 52, paddingHorizontal: spacing.md },
+  whatsappMic: { alignItems: 'center', backgroundColor: '#00A884', borderRadius: radius.round, height: 50, justifyContent: 'center', width: 50 },
+  chatClipButton: { alignItems: 'center', borderRadius: radius.round, height: 40, justifyContent: 'center', width: 40 },
+  chatClipButtonActive: { backgroundColor: '#D9FDD3', borderColor: '#00A884', borderWidth: 2 },
+  inputBox: { backgroundColor: '#FFFFFF', borderRadius: 14, flex: 1, height: 36 },
+  trainingGallery: { backgroundColor: colors.surface, borderRadius: radius.lg, gap: spacing.md, minHeight: 230, padding: spacing.md },
+  galleryHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  galleryGrid: { flexDirection: 'row', gap: spacing.md },
+  galleryTile: { flex: 1, gap: spacing.xs },
+  galleryArt: { alignItems: 'center', borderRadius: radius.md, height: 125, justifyContent: 'center' },
+  galleryFlowers: { backgroundColor: '#D85B81' },
+  galleryLandscape: { backgroundColor: '#438CB5' },
+  photoReview: { backgroundColor: colors.surface, borderRadius: radius.lg, gap: spacing.md, padding: spacing.md },
+  reviewRecipient: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.sm },
+  chatSafetyNote: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.sm },
   pixMockCard: { backgroundColor: '#e9e9e9', borderColor: '#d8d8d8', borderRadius: 28, overflow: 'hidden', padding: 0 },
   phoneShell: { backgroundColor: '#F4F1F7', gap: spacing.lg, minHeight: 620, padding: 18, width: '100%' },
   statusBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18, paddingHorizontal: 6 },
@@ -1989,7 +2115,7 @@ const styles = StyleSheet.create({
   pixCoachNumber: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 40, justifyContent: 'center', width: 40 },
   pixWrongChoice: { alignItems: 'flex-start', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   pixTouchHint: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.primarySoft, borderRadius: radius.round, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  pixEyeButton: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
+  pixEyeButton: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 48, justifyContent: 'center', width: 48 },
   pixShortcutGrid: { flexDirection: 'row', gap: spacing.sm },
   pixShortcut: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.lg, borderWidth: 2, flex: 1, gap: spacing.xs, minHeight: 118, justifyContent: 'center', padding: spacing.sm, ...shadow },
   pixShortcutIcon: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 54, justifyContent: 'center', width: 54 },
@@ -2025,7 +2151,7 @@ const styles = StyleSheet.create({
   bankBalanceCard: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
   bankSectionTitle: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   bankBottomNav: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-around', marginTop: 'auto', paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
-  bankNavItem: { alignItems: 'center', borderRadius: radius.md, gap: 2, minWidth: 58, paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
+  bankNavItem: { alignItems: 'center', borderRadius: radius.md, gap: 2, minHeight: 48, minWidth: 58, paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
   bankNavItemActive: { backgroundColor: colors.primarySoft },
   bankActionList: { gap: spacing.sm },
   bankActionRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 64, padding: spacing.md },
@@ -2047,7 +2173,7 @@ const styles = StyleSheet.create({
   marketplaceScreen: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   marketplaceTopBar: { alignItems: 'center', backgroundColor: '#E45A37', borderRadius: radius.lg, flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
   marketplaceTopIcons: { flexDirection: 'row', gap: spacing.lg },
-  marketplaceHeaderIcon: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 34, position: 'relative' },
+  marketplaceHeaderIcon: { alignItems: 'center', justifyContent: 'center', minHeight: 48, minWidth: 48, position: 'relative' },
   marketplaceNotificationBadge: { alignItems: 'center', backgroundColor: '#C93636', borderColor: colors.surface, borderRadius: radius.round, borderWidth: 2, height: 21, justifyContent: 'center', position: 'absolute', right: -7, top: -4, width: 21 },
   marketplaceCartIcon: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44, position: 'relative' },
   marketplaceCartBadge: { alignItems: 'center', backgroundColor: '#E45A37', borderColor: colors.surface, borderRadius: radius.round, borderWidth: 2, height: 23, justifyContent: 'center', position: 'absolute', right: -3, top: -2, width: 23 },
@@ -2123,6 +2249,7 @@ const styles = StyleSheet.create({
   marketplaceWarning: { alignItems: 'center', backgroundColor: colors.warningSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   marketplaceDeliveryOption: { alignItems: 'center', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 68, padding: spacing.md },
   marketplaceDeliverySelected: { backgroundColor: '#FFF1EC', borderColor: '#E45A37', borderWidth: 2 },
+  marketplaceDeliveryUnavailable: { backgroundColor: '#F1F0F3', opacity: 0.72 },
   marketplaceSellerInput: { backgroundColor: '#F7F7F8', borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 52, paddingHorizontal: spacing.md },
   marketplaceSuccessScreen: { alignItems: 'stretch', gap: spacing.lg, padding: spacing.xl },
   marketplaceSuccessCircle: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.success, borderRadius: radius.round, height: 92, justifyContent: 'center', width: 92 },
@@ -2137,6 +2264,18 @@ const styles = StyleSheet.create({
   fakeSearch: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   mobilityExperience: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   mobilityLogin: { backgroundColor: colors.surface, gap: spacing.lg, minHeight: 480, padding: spacing.lg },
+  mobilityWorldGuide: { alignItems: 'flex-start', backgroundColor: '#28323C', borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  mobilityGuideNumber: { alignItems: 'center', backgroundColor: '#5B6A75', borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
+  mobilityGuideBack: { alignItems: 'center', backgroundColor: '#5B6A75', borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
+  mobilityTouchHint: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, padding: spacing.sm },
+  mobilityRealWorldBox: { backgroundColor: '#F4F7F8', borderColor: '#B8C3CA', borderRadius: radius.lg, borderWidth: 1.5, gap: spacing.sm, padding: spacing.lg },
+  mobilityRealWorldRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  mobilityChecklist: { backgroundColor: colors.surface, borderRadius: radius.md, gap: spacing.sm, padding: spacing.md },
+  mobilityDriverCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1.5, gap: spacing.md, padding: spacing.lg, ...shadow },
+  mobilityDriverTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  mobilityDriverAvatar: { alignItems: 'center', backgroundColor: '#52616B', borderRadius: radius.round, height: 64, justifyContent: 'center', width: 64 },
+  mobilityPlate: { alignItems: 'center', backgroundColor: '#EEF0F2', borderColor: colors.text, borderRadius: radius.sm, borderWidth: 1.5, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  mobilityDriverVehicle: { alignItems: 'center', borderTopColor: colors.border, borderTopWidth: 1, flexDirection: 'row', gap: spacing.md, paddingTop: spacing.md },
   mobilityLoginBrand: { alignItems: 'center', borderRadius: radius.xl, flexDirection: 'row', gap: spacing.md, justifyContent: 'center', minHeight: 105, padding: spacing.lg },
   mobilityLoginCopy: { gap: spacing.sm, paddingVertical: spacing.sm },
   mobilityPhoneRow: { flexDirection: 'row', gap: spacing.sm },
@@ -2174,7 +2313,7 @@ const styles = StyleSheet.create({
   mobilityEndSquare: { backgroundColor: colors.text, borderRadius: 2, height: 12, width: 12 },
   mobilityField: { borderBottomColor: colors.border, borderBottomWidth: 1, minHeight: 42, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   mobilityAddressInput: { borderBottomColor: colors.border, borderBottomWidth: 1, color: colors.text, fontSize: 17, minHeight: 50, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
-  mobilityEditButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
+  mobilityEditButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 48, justifyContent: 'center', width: 48 },
   mobilityPrivacyNote: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
   mobilityPlaceRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 76, padding: spacing.md },
   mobilityPlaceIcon: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 46, justifyContent: 'center', width: 46 },
@@ -2208,7 +2347,7 @@ const styles = StyleSheet.create({
   mobilityCarMarker: { alignItems: 'center', backgroundColor: '#28323C', borderColor: colors.surface, borderRadius: radius.round, borderWidth: 2, height: 34, justifyContent: 'center', left: '49%', position: 'absolute', top: '44%', width: 34, ...shadow },
   mobilityDestinationPin: { alignItems: 'center', backgroundColor: '#28323C', borderRadius: radius.round, height: 42, justifyContent: 'center', position: 'absolute', right: '21%', top: '31%', width: 42, ...shadow },
   mobilityZoomControls: { gap: 2, position: 'absolute', right: spacing.sm, top: spacing.sm },
-  mobilityZoomButton: { alignItems: 'center', backgroundColor: colors.surface, height: 42, justifyContent: 'center', width: 42, ...shadow },
+  mobilityZoomButton: { alignItems: 'center', backgroundColor: colors.surface, height: 48, justifyContent: 'center', width: 48, ...shadow },
   mobilityZoomButtonDisabled: { opacity: 0.45 },
   mobilityMapCallout: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, bottom: spacing.sm, left: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, position: 'absolute', ...shadow },
   mobilityBottomSheet: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl, borderWidth: 1, gap: spacing.md, marginTop: -42, padding: spacing.lg, ...shadow },
@@ -2261,8 +2400,8 @@ const styles = StyleSheet.create({
   fakeCallButton: { alignItems: 'center', backgroundColor: '#E2E4E8', borderRadius: radius.round, height: 58, justifyContent: 'center', width: 58 },
   fakeCallEnd: { backgroundColor: '#C93636', transform: [{ rotate: '135deg' }] },
   callExperience: { gap: spacing.md, padding: spacing.lg },
-  callProgressRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 44 },
-  callBackButton: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs, minHeight: 44, paddingRight: spacing.md },
+  callProgressRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 48 },
+  callBackButton: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs, minHeight: 48, paddingRight: spacing.md },
   callScreen: { alignItems: 'center', borderRadius: radius.xl, gap: spacing.xs, overflow: 'hidden', padding: spacing.lg },
   callStatusPill: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'rgba(0,0,0,0.22)', borderRadius: radius.round, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   callLiveDot: { backgroundColor: '#7FE39A', borderRadius: radius.round, height: 9, width: 9 },
@@ -2320,7 +2459,7 @@ const styles = StyleSheet.create({
   locationAttachmentGrid: { flexDirection: 'row', justifyContent: 'space-around' },
   locationAttachmentItem: { alignItems: 'center', gap: spacing.xs, minWidth: 82, padding: spacing.xs },
   locationAttachmentCircle: { alignItems: 'center', borderRadius: radius.round, height: 56, justifyContent: 'center', width: 56 },
-  locationHighlightedClip: { alignItems: 'center', backgroundColor: '#D9FDD3', borderColor: '#075E54', borderRadius: radius.round, borderWidth: 2, height: 44, justifyContent: 'center', width: 44 },
+  locationHighlightedClip: { alignItems: 'center', backgroundColor: '#D9FDD3', borderColor: '#075E54', borderRadius: radius.round, borderWidth: 2, height: 48, justifyContent: 'center', width: 48 },
   locationCoach: { alignItems: 'flex-start', backgroundColor: '#E8F1FF', borderColor: '#8AB4F8', borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   locationWhereToTap: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, padding: spacing.sm },
   locationTip: { alignItems: 'flex-start', backgroundColor: '#FFF8E1', borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
@@ -2335,7 +2474,7 @@ const styles = StyleSheet.create({
   govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
   govStepGuide: { alignItems: 'flex-start', backgroundColor: '#E8F1FF', borderBottomColor: '#B8D2FA', borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   govStepGuideBadge: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
-  govBackButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: '#1351B4', borderRadius: radius.round, borderWidth: 1.5, height: 44, justifyContent: 'center', width: 44 },
+  govBackButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: '#1351B4', borderRadius: radius.round, borderWidth: 1.5, height: 48, justifyContent: 'center', width: 48 },
   govTouchTarget: { alignItems: 'center', backgroundColor: '#FFFFFF', borderColor: '#1351B4', borderRadius: radius.md, borderStyle: 'dashed', borderWidth: 1.5, flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, padding: spacing.sm },
   govStepSafety: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, padding: spacing.sm },
   govValidationAlert: { alignItems: 'center', backgroundColor: '#FFF0F1', borderBottomColor: colors.danger, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
@@ -2349,9 +2488,9 @@ const styles = StyleSheet.create({
   govTextInput: { backgroundColor: '#ffffff', borderColor: '#64748B', borderRadius: radius.md, borderWidth: 1.5, color: colors.text, fontSize: 17, minHeight: 52, paddingHorizontal: spacing.md },
   govTextInputGreen: { backgroundColor: '#ffffff', borderColor: colors.success, borderRadius: radius.md, borderWidth: 1.5, color: colors.text, fontSize: 17, minHeight: 52, paddingHorizontal: spacing.md },
   govTrainingFill: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: '#E8F1FF', borderRadius: radius.md, flexDirection: 'row', gap: spacing.xs, minHeight: 42, paddingHorizontal: spacing.md },
-  govPrimaryBtn: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, height: 50, justifyContent: 'center', marginTop: spacing.sm },
+  govPrimaryBtn: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, justifyContent: 'center', marginTop: spacing.sm, minHeight: 52, paddingVertical: spacing.sm },
   govButtonDisabled: { backgroundColor: '#A8B3C5', opacity: 0.75 },
-  govOutlineBtn: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.round, borderWidth: 1.5, height: 48, justifyContent: 'center', marginTop: spacing.sm },
+  govOutlineBtn: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.round, borderWidth: 1.5, justifyContent: 'center', marginTop: spacing.sm, minHeight: 52, paddingVertical: spacing.sm },
   govDividerLine: { backgroundColor: '#E2E8F0', height: 1, marginVertical: spacing.xs },
   govOptionList: { gap: spacing.sm },
   govOptionRow: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
@@ -2359,7 +2498,7 @@ const styles = StyleSheet.create({
   govCaptchaBox: { alignItems: 'center', backgroundColor: '#F1F5F9', borderColor: '#CBD5E1', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   govBankGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   govBankTile: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#E2E8F0', borderRadius: radius.md, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, width: '48%' },
-  govBackRow: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: spacing.xs, minHeight: 44 },
+  govBackRow: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', gap: spacing.xs, minHeight: 48 },
   govBankAuthIcon: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#E8F1FF', borderRadius: radius.round, height: 84, justifyContent: 'center', width: 84 },
   govAlternativeDivider: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   govAlternativeLine: { backgroundColor: colors.border, flex: 1, height: 1 },

@@ -48,7 +48,7 @@ export default function ParticipantsScreen() {
   return (
     <Screen footer={<AdminNav active="participants" />}>
       <Header
-        title="Alunos"
+        title="Participantes"
         subtitle={classQuery.data
           ? `${classQuery.data.class_name} • ${total} ${total === 1 ? 'pessoa' : 'pessoas'}`
           : 'Carregando turma…'}
@@ -57,7 +57,7 @@ export default function ParticipantsScreen() {
       <AdminClassSelector selectedId={classQuery.data?.class_id} />
 
       {classQuery.loading || (classQuery.data && participantsQuery.loading) ? (
-        <DataState kind="loading" title="Carregando alunos" message="Buscando os vínculos ativos da turma." />
+        <DataState kind="loading" title="Carregando participantes" message="Buscando os vínculos ativos da turma." />
       ) : classQuery.error || participantsQuery.error ? (
         <DataState
           kind="error"
@@ -66,17 +66,17 @@ export default function ParticipantsScreen() {
           onRetry={classQuery.error ? classQuery.retry : participantsQuery.retry}
         />
       ) : !classQuery.data ? (
-        <DataState kind="empty" title="Nenhuma turma ativa" message="Cadastre ou reative uma turma para acompanhar alunos." />
+        <DataState kind="empty" title="Nenhuma turma ativa" message="Cadastre ou reative uma turma para acompanhar participantes." />
       ) : (
         <>
 
       <View style={styles.searchShell}>
         <Ionicons name="search-outline" size={23} color={colors.iconMuted} />
         <TextInput
-          accessibilityLabel="Buscar aluno pelo nome"
+          accessibilityLabel="Buscar participante pelo nome"
           autoCapitalize="words"
           onChangeText={(value) => { setQuery(value); setPage(0); }}
-          placeholder="Buscar aluno"
+          placeholder="Buscar participante"
           placeholderTextColor={colors.placeholder}
           returnKeyType="search"
           style={styles.searchInput}
@@ -95,7 +95,7 @@ export default function ParticipantsScreen() {
         ) : null}
       </View>
 
-      <View accessibilityLabel="Filtrar alunos" style={styles.filters}>
+      <View accessibilityLabel="Filtrar participantes" style={styles.filters}>
         {filters.map((item) => {
           const selected = filter === item.key;
           return (
@@ -136,7 +136,7 @@ export default function ParticipantsScreen() {
 
       <View style={styles.resultHeading}>
         <AppText variant="subheading" weight="800">
-          {total === 1 ? '1 aluno' : `${total} alunos`}
+          {total === 1 ? '1 participante' : `${total} participantes`}
         </AppText>
         <AppText variant="small" color={colors.textMuted}>Página {page + 1} · Atualizado {formatUpdatedAt(participantsQuery.updatedAt)}</AppText>
       </View>
@@ -151,9 +151,9 @@ export default function ParticipantsScreen() {
             <View style={styles.emptyIcon}>
               <Ionicons name="search-outline" size={29} color={colors.primary} />
             </View>
-            <AppText weight="800" style={styles.center}>{query || filter !== 'all' ? 'Nenhum aluno encontrado' : 'Turma sem alunos'}</AppText>
+            <AppText weight="800" style={styles.center}>{query || filter !== 'all' ? 'Nenhum participante encontrado' : 'Turma sem participantes'}</AppText>
             <AppText variant="small" color={colors.textMuted} style={styles.center}>
-              {query || filter !== 'all' ? 'Tente outro nome ou selecione um filtro diferente.' : 'A turma ainda não possui alunos ativos.'}
+              {query || filter !== 'all' ? 'Tente outro nome ou selecione um filtro diferente.' : 'A turma ainda não possui participantes ativos.'}
             </AppText>
           </Card>
         ) : null}
@@ -188,7 +188,7 @@ function ParticipantCard({ participant, onPress }: { participant: ClassParticipa
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${participant.name}, ${participant.progress}% de progresso, ${participant.audio}% de uso de áudio`}
-      accessibilityHint="Abre os detalhes do aluno"
+      accessibilityHint="Abre os detalhes do participante"
       onPress={onPress}
       style={({ pressed }) => [pressed && styles.cardPressed]}
     >

@@ -56,8 +56,10 @@ export const type = {
   heading: 24,
   subheading: 20,
   body: 17,
-  small: 14,
-  caption: 12,
+  // Textos auxiliares também precisam permanecer legíveis sem depender
+  // da preferência de texto ampliado.
+  small: 16,
+  caption: 16,
 } as const;
 
 export const shadow = Platform.select({

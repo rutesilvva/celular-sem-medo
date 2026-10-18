@@ -18,7 +18,7 @@ export default function ParticipantProfileScreen() {
   const { preferences, preferencesSyncStatus, retryPreferencesSync, setPreference, showNotice } = useApp();
   const { currentUser, signOut } = useAuth();
   const classQuery = useMyClass('participant');
-  const displayName = currentUser?.name || 'Aluno';
+  const displayName = currentUser?.name || 'Participante';
   const [diagnosticsOptOut, setDiagnosticsOptOut] = useState(false);
   useEffect(() => { void initializeObservabilityPreference().then((value) => setDiagnosticsOptOut(value.optedOut)); }, []);
 
@@ -42,7 +42,7 @@ export default function ParticipantProfileScreen() {
           <AppText variant="subheading" weight="800">{displayName}</AppText>
           <AppText variant="small" color={colors.textMuted}>{currentUser?.email || 'E-mail não informado'}</AppText>
           <AppText variant="small" color={colors.textMuted}>
-            Aluno{classQuery.data ? ` · ${classQuery.data.class_name}` : ''}
+            Participante{classQuery.data ? ` · ${classQuery.data.class_name}` : ''}
           </AppText>
         </View>
       </Card>
@@ -67,14 +67,6 @@ export default function ParticipantProfileScreen() {
             icon="contrast-outline"
             value={preferences.highContrast}
             onValueChange={(value) => setPreference('highContrast', value)}
-          />
-          <View style={styles.divider} />
-          <SwitchRow
-            title="Preferência de áudio automático"
-            description="Reproduz automaticamente as instruções disponíveis."
-            icon="volume-high-outline"
-            value={preferences.autoAudio}
-            onValueChange={(value) => setPreference('autoAudio', value)}
           />
           <View style={styles.divider} />
           <SwitchRow

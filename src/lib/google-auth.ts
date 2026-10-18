@@ -128,7 +128,7 @@ export async function loadAuthenticatedAccount(): Promise<AuthenticatedAccount> 
     preferences: {
       largerText: preferences?.larger_text ?? true,
       highContrast: preferences?.high_contrast ?? false,
-      autoAudio: preferences?.auto_audio ?? true,
+      autoAudio: preferences?.auto_audio ?? false,
       voiceResponse: preferences?.voice_response ?? false,
       audioRate: Number(preferences?.audio_rate ?? 0.9),
       reduceMotion: preferences?.reduce_motion ?? false,

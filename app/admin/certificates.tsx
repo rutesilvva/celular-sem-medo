@@ -29,7 +29,7 @@ export default function AdminCertificatesScreen() {
     <Header title="Certificados" subtitle="Emissões e validações" />
     <Card style={styles.filters}>
       <AppText weight="800">Localizar certificado</AppText>
-      <TextInput accessibilityLabel="Pesquisar pelo nome do aluno" value={search} onChangeText={setSearch} placeholder="Nome do aluno" style={styles.input} returnKeyType="search" onSubmitEditing={load} />
+      <TextInput accessibilityLabel="Pesquisar pelo nome do participante" value={search} onChangeText={setSearch} placeholder="Nome do participante" style={styles.input} returnKeyType="search" onSubmitEditing={load} />
       <View style={styles.filterRow}>{filters.map((item) => <Pressable key={item.value} accessibilityRole="button" accessibilityState={{ selected: filter === item.value }} onPress={() => setFilter(item.value)} style={[styles.filterButton, filter === item.value && styles.filterSelected]}><AppText variant="small" weight="800" color={filter === item.value ? colors.surface : colors.textMuted}>{item.label}</AppText></Pressable>)}</View>
       <Button label="Aplicar filtros" icon="search-outline" onPress={load} />
     </Card>

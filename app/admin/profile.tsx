@@ -13,17 +13,17 @@ import { getCertificateSettings, updateCertificateSettings } from '@/lib/backend
 export default function AdminProfileScreen() {
   const router = useRouter();
   const { currentUser, signOut } = useAuth();
-  const displayName = currentUser?.name || 'Administrador';
+  const displayName = currentUser?.name || 'Educador';
   const [organization,setOrganization]=useState('Celular Sem Medo');const[signer,setSigner]=useState('Coordenação do projeto');const[signerTitle,setSignerTitle]=useState('Responsável institucional');const[saved,setSaved]=useState(false);const[settingsError,setSettingsError]=useState<string|null>(null);const[saving,setSaving]=useState(false);
   useEffect(()=>{void getCertificateSettings().then((value)=>{setOrganization(value.organization_name);setSigner(value.signer_name);setSignerTitle(value.signer_title);}).catch(()=>undefined);},[]);
   return (
     <Screen footer={<AdminNav active="profile" />}>
-      <Header title="Perfil" subtitle="Administrador global" />
+      <Header title="Perfil" subtitle="Educador ou responsável pela oficina" />
       <Card style={styles.card}>
         <UserAvatar name={displayName} avatarUrl={currentUser?.avatarUrl ?? null} />
         <AppText variant="heading" weight="800">{displayName}</AppText>
         <AppText color={colors.textMuted}>{currentUser?.email || 'E-mail não informado'}</AppText>
-        <Tag label="Admin global ativo" tone="red" />
+        <Tag label="Acesso de educador ativo" tone="red" />
       </Card>
       <Card style={styles.card}>
         <AppText weight="800">Segurança da conta</AppText>

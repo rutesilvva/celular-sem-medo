@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useState } from 'react';
 
 import { ParticipantNav } from '@/components/BottomNav';
@@ -20,12 +20,13 @@ const difficultyLabels = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 export default function ParticipantMissionDetailsScreen() {
   const router = useRouter();
   const { currentUser } = useAuth();
-  const { assignmentId } = useLocalSearchParams<{ assignmentId?: string }>();
+  const { assignmentId, restart } = useLocalSearchParams<{ assignmentId?: string; restart?: string }>();
   const query = useMissionContent(assignmentId ?? null);
   const [confidence, setConfidence] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadMessage, setDownloadMessage] = useState('');
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   if (query.loading) return <State kind="loading" onRetry={query.retry} />;
   if (query.error) return <State kind="error" onRetry={query.retry} />;
@@ -37,16 +38,16 @@ export default function ParticipantMissionDetailsScreen() {
     setStarting(true);
 
     if (!confidence) {
-      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId } });
+      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId, restart: restart === '1' ? '1' : '0' } });
       setStarting(false);
       return;
     }
 
     try {
       const assessmentId = await startAssessmentResilient(currentUser.id, details.assignmentId, confidence);
-      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId, assessmentId } });
+      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId, assessmentId, restart: restart === '1' ? '1' : '0' } });
     } catch {
-      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId } });
+      router.push({ pathname: '/participant/simulator', params: { assignmentId: details.assignmentId, restart: restart === '1' ? '1' : '0' } });
     } finally { setStarting(false); }
   };
 
@@ -56,6 +57,7 @@ export default function ParticipantMissionDetailsScreen() {
   const isScamMessageFlow = details.missionId === '10000000-0000-4000-8000-000000000007';
   const isFakeFamilyFlow = details.missionId === '10000000-0000-4000-8000-000000000008';
   const isLocationSharingFlow = details.missionId === '10000000-0000-4000-8000-000000000003';
+  const isMobilityFlow = details.missionId === '10000000-0000-4000-8000-000000000004';
   const learningGoals = isLocationSharingFlow ? [
     'Abrir os anexos e encontrar a opção Localização',
     'Diferenciar localização atual e em tempo real',
@@ -74,6 +76,12 @@ export default function ParticipantMissionDetailsScreen() {
     'Proteger senha, cartão e código recebido por SMS',
     'Confirmar pedidos de Pix de familiares por outro contato',
     'Usar o canal oficial, bloquear e denunciar o golpe',
+  ] : isMobilityFlow ? [
+    'Abrir o aplicativo e informar para onde você vai',
+    'Conferir o endereço e o ponto de partida no mapa',
+    'Comparar categoria, preço estimado e forma de pagamento',
+    'Revisar todos os dados antes de pedir o carro',
+    'Conferir placa, modelo, cor e foto antes de entrar',
   ] : isWhatsAppPhotoFlow ? [
     'Abrir o aplicativo de mensagens',
     'Localizar o botão de anexo',
@@ -82,64 +90,32 @@ export default function ParticipantMissionDetailsScreen() {
 
   if (isPixFlow) {
     return (
-      <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.pixContent}>
-        <Header title="05 — Detalhes da missão - Pix" onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/missions')} audio />
-
-        <Card style={styles.pixCard}>
-          <View style={styles.pixStatusBar}>
-            <View style={styles.pixStatusLeft}>
-              <Ionicons name="wifi" size={14} color={colors.text} />
-              <Ionicons name="cellular" size={14} color={colors.text} />
-            </View>
-            <AppText variant="caption" weight="700">100%</AppText>
+      <Screen footer={<ParticipantNav active="missions" />} contentStyle={styles.content}>
+        <Header title="Detalhes da missão" onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/missions')} />
+        <Card style={styles.simpleHero}>
+          <View style={styles.heroIcon}><Ionicons name="shield-checkmark" size={42} color={colors.surface} /></View>
+          <View style={styles.heroCopy}>
+            <AppText variant="heading" weight="800">Fazer um Pix seguro</AppText>
+            <AppText>Aprenda passo a passo a informar a chave, digitar o valor e conferir nome, banco e valor antes de enviar.</AppText>
           </View>
-
-          <View style={styles.pixHeaderRow}>
-            <Ionicons name="arrow-back" size={28} color={colors.text} />
-            <View style={styles.pixSpacer} />
-            <Ionicons name="heart-outline" size={28} color={colors.text} />
-          </View>
-
-          <View style={styles.pixLogoWrap}>
-            <View style={styles.pixLogo}>
-              <View style={styles.pixLogoInner} />
-            </View>
-          </View>
-
-          <AppText variant="heading" weight="800" style={styles.pixTitle}>Fazer um pix{"\n"}seguro</AppText>
-
-          <View style={styles.pixDifficultyPill}>
-            <AppText weight="800" color={colors.text}>Médio</AppText>
-          </View>
-
-          <View style={styles.pixInfoBoard}>
-            <AppText variant="subheading" weight="800" style={styles.pixSectionTitle}>O que vou aprender</AppText>
-            <View style={styles.pixBullets}>
-              <AppText variant="small" color={colors.textMuted}>• Acessar a área Pix</AppText>
-              <AppText variant="small" color={colors.textMuted}>• Informar uma chave Pix</AppText>
-              <AppText variant="small" color={colors.textMuted}>• Conferir os dados do destinatário</AppText>
-              <AppText variant="small" color={colors.textMuted}>• Informar o valor e confirmar o pagamento</AppText>
-            </View>
-
-            <View style={styles.pixMetaBlock}>
-              <AppText variant="subheading" weight="800">Tempo estimado</AppText>
-              <AppText variant="body" weight="800">8 minutos</AppText>
-            </View>
-
-            <View style={styles.pixMetaBlock}>
-              <AppText variant="subheading" weight="800">É uma simulação segura</AppText>
-              <AppText variant="body" color={colors.textMuted}>Você não usa dinheiro ou dados bancários reais.</AppText>
-            </View>
-          </View>
-
-          <Card>
-            <ConfidencePicker label="Antes de começar, quanta confiança você sente? (opcional)" value={confidence} onChange={setConfidence} />
-            <AppText variant="small" color={colors.textMuted}>Você pode começar o treino sem responder.</AppText>
-          </Card>
-          <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
-          {downloadMessage ? <AppText variant="small" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
-          <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={starting} accessibilityHint="Abre o simulador seguro; responder sobre sua confiança é opcional" onPress={() => void beginTraining()} style={styles.pixButton} />
         </Card>
+        <Card style={styles.reassurance}>
+          <Ionicons name="shield-checkmark" size={28} color={colors.success} />
+          <AppText style={styles.reassuranceCopy}>Esta é uma simulação. Nenhum dado ou dinheiro real será usado.</AppText>
+        </Card>
+        <Button label={starting ? 'Preparando o passo a passo…' : restart === '1' ? 'Começar novamente do passo 1' : 'Começar passo a passo'} icon="play" disabled={starting} disabledReason={starting ? 'Aguarde enquanto preparamos a missão.' : undefined} onPress={() => void beginTraining()} />
+        <Card style={styles.listCard}>
+          <AppText variant="subheading" weight="800">O que você vai aprender</AppText>
+          <View style={styles.bullets}>{learningGoals.map((goal) => <View key={goal} style={styles.learningGoal}><Ionicons name="checkmark-circle-outline" size={24} color={colors.success} /><AppText style={styles.learningGoalText}>{goal}</AppText></View>)}</View>
+        </Card>
+        <MoreOptions expanded={showMoreOptions} onPress={() => setShowMoreOptions((value) => !value)} />
+        {showMoreOptions ? <View style={styles.actions}>
+          <AppText>Tempo aproximado: {details.estimatedMinutes} minutos. Nível: {difficultyLabels[details.difficulty]}.</AppText>
+          <Card><ConfidencePicker label="Como você se sente antes de começar? (opcional)" value={confidence} onChange={setConfidence} /><AppText variant="small">Você pode deixar esta pergunta sem resposta.</AppText></Card>
+          <AudioButton label="Ouvir esta explicação" message={steps.map((step) => step.audioText).join(' ')} />
+          <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} disabledReason={downloading ? 'Aguarde o download terminar.' : !currentUser ? 'Entre na sua conta para baixar esta missão.' : undefined} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
+          {downloadMessage ? <AppText accessibilityLiveRegion="polite" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
+        </View> : null}
       </Screen>
     );
   }
@@ -149,27 +125,17 @@ export default function ParticipantMissionDetailsScreen() {
       <Header title="Detalhes da missão" subtitle={isWhatsAppPhotoFlow ? 'WhatsApp' : 'Missão'} onBack={() => router.canGoBack() ? router.back() : router.replace('/participant/missions')} audio />
       {query.offline ? <Tag label="Missão disponível offline" tone="yellow" /> : null}
 
-      <Card style={styles.hero}>
-        <View style={styles.heroTopBar}>
-          <View style={styles.signalWrap}>
-            <Ionicons name="wifi-outline" size={16} color={colors.text} />
-            <AppText variant="caption" weight="700">100%</AppText>
-          </View>
+      <Card style={styles.simpleHero}>
+        <View style={styles.heroIcon}><Ionicons name="shield-checkmark" size={42} color={colors.surface} /></View>
+        <View style={styles.heroCopy}>
+          <AppText variant="heading" weight="800">{isWhatsAppPhotoFlow ? 'Enviar uma foto pelo WhatsApp' : details.title}</AppText>
+          <AppText>{isWhatsAppPhotoFlow ? 'Aprenda a encontrar o botão de anexo, escolher uma foto e conferir o contato antes de enviar.' : isMobilityFlow ? 'Aprenda, em oito passos, a pedir uma viagem e conferir o carro com segurança — sem chamar um motorista de verdade.' : details.summary}</AppText>
         </View>
-
-        <View style={styles.heroIconWrap}>
-          <View style={styles.heroIcon}><Ionicons name="chatbubble-ellipses" size={42} color={colors.surface} /></View>
-        </View>
-
-        <AppText variant="heading" weight="800" style={styles.title}>{isWhatsAppPhotoFlow ? 'Enviar uma foto pelo WhatsApp' : details.title}</AppText>
-        <View style={styles.badgeRow}>
-          <Tag label={isWhatsAppPhotoFlow ? 'Fácil' : difficultyLabels[details.difficulty]} tone="green" />
-        </View>
-
-        <AppText color={colors.textMuted} style={styles.center}>
-          {isWhatsAppPhotoFlow ? 'Nesta missão você vai aprender a localizar o botão de anexo e escolher uma foto com segurança.' : details.summary}
-        </AppText>
       </Card>
+
+      <Card style={styles.reassurance}><Ionicons name="shield-checkmark" size={28} color={colors.success} /><AppText style={styles.reassuranceCopy}>Esta é uma simulação. Nenhum dado ou dinheiro real será usado.</AppText></Card>
+
+      <Button label={starting ? 'Preparando o passo a passo…' : restart === '1' ? 'Começar novamente do passo 1' : 'Começar passo a passo'} icon="play" disabled={starting} disabledReason={starting ? 'Aguarde enquanto preparamos a missão.' : undefined} accessibilityHint="Abre o simulador seguro" onPress={() => void beginTraining()} />
 
       <Card style={styles.listCard}>
         <AppText variant="subheading" weight="800">O que você vai aprender</AppText>
@@ -178,31 +144,23 @@ export default function ParticipantMissionDetailsScreen() {
         </View>
       </Card>
 
-      <Card style={styles.summaryCard}>
-        <SummaryItem icon="time-outline" value={`${details.estimatedMinutes} min`} label="Tempo estimado" />
-        <View style={styles.verticalDivider} />
-        <SummaryItem icon="leaf-outline" value={isWhatsAppPhotoFlow ? 'Fácil' : difficultyLabels[details.difficulty]} label="Nível" />
-        <View style={styles.verticalDivider} />
-        <SummaryItem icon="list-outline" value="Segura" label="Simulação" />
-      </Card>
-
-      <Card style={styles.reassurance}>
-        <Ionicons name="shield-checkmark" size={28} color={colors.success} />
-        <AppText style={styles.reassuranceCopy}>{isWhatsAppPhotoFlow ? 'É uma simulação segura. Você não envia dados reais.' : details.safetyNote}</AppText>
-      </Card>
-
-      <View style={styles.actions}>
+      <MoreOptions expanded={showMoreOptions} onPress={() => setShowMoreOptions((value) => !value)} />
+      {showMoreOptions ? <View style={styles.actions}>
+        <AppText>Tempo aproximado: {details.estimatedMinutes} minutos. Nível: {isWhatsAppPhotoFlow ? 'Fácil' : difficultyLabels[details.difficulty]}.</AppText>
         <Card>
-          <ConfidencePicker label="Antes de começar, quanta confiança você sente? (opcional)" value={confidence} onChange={setConfidence} />
-          <AppText variant="small" color={colors.textMuted}>Você pode começar o treino sem responder.</AppText>
+          <ConfidencePicker label="Como você se sente antes de começar? (opcional)" value={confidence} onChange={setConfidence} />
+          <AppText variant="small">Você pode deixar esta pergunta sem resposta.</AppText>
         </Card>
-        <AudioButton label="Ouvir explicação" message={steps.map((step) => step.audioText).join(' ')} />
-        <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
-        {downloadMessage ? <AppText variant="small" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
-        <Button label={starting ? 'Preparando…' : 'Começar treino'} icon="play" disabled={starting} accessibilityHint="Abre o simulador seguro; responder sobre sua confiança é opcional" onPress={() => void beginTraining()} />
-      </View>
+        <AudioButton label="Ouvir esta explicação" message={steps.map((step) => step.audioText).join(' ')} />
+        <Button label={downloading ? 'Baixando…' : 'Baixar para usar sem internet'} icon="download-outline" variant="secondary" disabled={downloading || !currentUser} disabledReason={downloading ? 'Aguarde o download terminar.' : !currentUser ? 'Entre na sua conta para baixar esta missão.' : undefined} onPress={() => { if (!currentUser) return; setDownloading(true); setDownloadMessage(''); void downloadMissionPackage(currentUser.id, details.assignmentId).then(() => setDownloadMessage('Missão salva neste aparelho.')).catch(() => setDownloadMessage('Não foi possível baixar agora.')).finally(() => setDownloading(false)); }} />
+        {downloadMessage ? <AppText accessibilityLiveRegion="polite" color={downloadMessage.startsWith('Missão salva') ? colors.success : colors.danger}>{downloadMessage}</AppText> : null}
+      </View> : null}
     </Screen>
   );
+}
+
+function MoreOptions({ expanded, onPress }: { expanded: boolean; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={onPress} style={styles.moreOptionsButton}><AppText weight="800">{expanded ? 'Esconder mais opções' : 'Mostrar mais opções'}</AppText><Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={24} color={colors.primary} /></Pressable>;
 }
 
 function State({ kind, onRetry }: { kind: 'loading' | 'error' | 'empty'; onRetry: () => void }) {
@@ -220,12 +178,10 @@ function State({ kind, onRetry }: { kind: 'loading' | 'error' | 'empty'; onRetry
   );
 }
 
-function SummaryItem({ icon, value, label }: { icon: 'time-outline' | 'leaf-outline' | 'list-outline'; value: string; label: string }) {
-  return <View style={styles.summaryItem}><Ionicons name={icon} size={23} color={colors.primary} /><AppText weight="800" style={styles.center}>{value}</AppText><AppText variant="caption" color={colors.textMuted} style={styles.center}>{label}</AppText></View>;
-}
-
 const styles = StyleSheet.create({
   content: { gap: spacing.xl },
+  simpleHero: { alignItems: 'flex-start', backgroundColor: '#F9F3FF', borderColor: colors.primaryMuted, flexDirection: 'row', gap: spacing.md },
+  heroCopy: { flex: 1, gap: spacing.sm },
   pixContent: { backgroundColor: '#dfe0df', gap: spacing.lg },
   hero: { alignItems: 'center', backgroundColor: '#F9F3FF', borderColor: colors.primaryMuted, borderRadius: radius.xl, gap: spacing.md, padding: spacing.lg },
   heroTopBar: { alignItems: 'center', justifyContent: 'flex-end', width: '100%' },
@@ -246,6 +202,7 @@ const styles = StyleSheet.create({
   reassurance: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   reassuranceCopy: { flex: 1 },
   actions: { gap: spacing.md },
+  moreOptionsButton: { alignItems: 'center', borderColor: colors.primary, borderRadius: radius.xl, borderWidth: 2, flexDirection: 'row', justifyContent: 'space-between', minHeight: 56, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   pixCard: { backgroundColor: '#f5f4f2', borderColor: '#e9e4df', borderRadius: 28, gap: spacing.lg, padding: spacing.lg },
   pixStatusBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   pixStatusLeft: { alignItems: 'center', flexDirection: 'row', gap: 6 },

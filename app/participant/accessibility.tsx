@@ -105,14 +105,6 @@ export default function ParticipantAccessibilityScreen() {
         </View>
         <View style={styles.divider} />
         <SwitchRow
-          title="Ouvir instruções em voz alta"
-          description="Ative para ouvir as instruções"
-          icon="volume-high-outline"
-          value={preferences.autoAudio}
-          onValueChange={(value) => setPreference('autoAudio', value)}
-        />
-        <View style={styles.divider} />
-        <SwitchRow
           title="Contraste"
           description="Padrão"
           icon="contrast-outline"

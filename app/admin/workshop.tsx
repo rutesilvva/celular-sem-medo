@@ -34,7 +34,7 @@ export default function WorkshopScreen() {
     <Screen footer={<AdminNav active="participants" />} contentStyle={styles.content}>
       <Header
         title="Modo oficina"
-        subtitle="Acompanhamento ao vivo dos alunos"
+        subtitle="Acompanhamento ao vivo dos participantes"
         onBack={() => router.back()}
         action={<Tag label="Realtime Ativo" tone="green" />}
       />
@@ -42,13 +42,13 @@ export default function WorkshopScreen() {
       <AdminClassSelector selectedId={selected.data?.class_id} />
 
       {selected.loading || query.loading ? (
-        <DataState kind="loading" title="Abrindo oficina" message="Buscando status dos alunos em tempo real." />
+        <DataState kind="loading" title="Abrindo oficina" message="Buscando status dos participantes em tempo real." />
       ) : query.error ? (
         <DataState kind="error" title="Oficina indisponível" message="Não foi possível conectar ao monitoramento." onRetry={query.retry} />
       ) : query.data.length === 0 ? (
         <Card style={styles.card}>
-          <AppText weight="800">Nenhum aluno praticando no momento.</AppText>
-          <AppText variant="small" color={colors.textMuted}>Os dados da turma serão atualizados automaticamente via Realtime assim que um aluno iniciar um treino.</AppText>
+          <AppText weight="800">Nenhum participante praticando no momento.</AppText>
+          <AppText variant="small" color={colors.textMuted}>Os dados da turma serão atualizados automaticamente assim que um participante iniciar um treino.</AppText>
           <Button label="Atualizar Painel" icon="refresh-outline" variant="secondary" onPress={query.retry} />
         </Card>
       ) : (

@@ -42,7 +42,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 export const defaultPreferences: AccessibilityPreferences = {
   largerText: true,
   highContrast: true,
-  autoAudio: true,
+  autoAudio: false,
   voiceResponse: false,
   audioRate: 0.9,
   reduceMotion: false,

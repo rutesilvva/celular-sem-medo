@@ -1,9 +1,10 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/ui';
+import { isDemoModeEnabled } from '@/lib/demo-mode';
 import { radius } from '@/theme/tokens';
 
 const dockIcons = [
@@ -20,11 +21,15 @@ const dockIcons = [
 
 export default function SplashScreen() {
   const router = useRouter();
+  const demoMode = isDemoModeEnabled();
 
   useEffect(() => {
+    if (demoMode) return;
     const timer = setTimeout(() => router.replace('/login'), 1800);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [demoMode, router]);
+
+  if (demoMode) return <Redirect href="/demo" />;
 
   return (
     <Screen scroll={false} contentStyle={styles.desktopPage}>

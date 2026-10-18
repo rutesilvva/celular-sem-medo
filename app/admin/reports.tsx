@@ -34,7 +34,7 @@ export default function ReportsScreen() {
     if (!data || !classQuery.data) return;
     const rows: ReportExportRow[] = [
       { label: 'Turma', value: classQuery.data.class_name },
-      { label: 'Alunos ativos', value: data.active_participants ?? 0 },
+      { label: 'Participantes ativos', value: data.active_participants ?? 0 },
       { label: 'Missões concluídas', value: data.completed_missions ?? 0 },
       { label: 'Conclusão da turma', value: `${data.completion_percent ?? 0}%` },
       { label: 'Autonomia', value: `${data.autonomy_percent ?? 0}%` },
@@ -127,7 +127,7 @@ export default function ReportsScreen() {
         </View>
         <View style={styles.flexCopy}>
           <AppText weight="800">Resumo calculado no backend</AppText>
-          <AppText variant="small" color={colors.textMuted}>{data?.active_participants ?? 0} alunos praticaram nos últimos {period} dias.</AppText>
+          <AppText variant="small" color={colors.textMuted}>{data?.active_participants ?? 0} participantes praticaram nos últimos {period} dias.</AppText>
         </View>
         <Tag label={`${period} dias`} tone="green" />
       </Card>
@@ -150,7 +150,7 @@ export default function ReportsScreen() {
       <SectionTitle>Conclusão por missão</SectionTitle>
       <Card style={styles.chartCard}>
         <AppText variant="small" color={colors.textMuted}>
-          Percentual de alunos que concluíram cada atividade.
+          Percentual de participantes que concluíram cada atividade.
         </AppText>
         {progress.missions.data.map((mission) => (
           <View

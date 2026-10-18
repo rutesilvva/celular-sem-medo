@@ -16,7 +16,7 @@ export default function AdminHomeScreen() {
   const users = useAdminUsers();
   const classes = useAdminClasses();
   const impact = useAdminImpact();
-  const firstName = currentUser?.name.split(/\s+/)[0] || 'Administrador';
+  const firstName = currentUser?.name.split(/\s+/)[0] || 'Educador';
   const activeClasses = classes.data.filter((item) => item.class_status === 'active').length;
   const administrators = users.data.filter((user) => user.is_administrator).length;
   const summary = impact.data;
@@ -26,32 +26,32 @@ export default function AdminHomeScreen() {
     { title: 'Confiança acompanhada', meta: `${summary?.confidence_responses ?? 0} avaliação(ões) antes e depois`, tone: 'purple' as const },
   ];
 
-  if (users.loading || classes.loading || impact.loading) return <Screen footer={<AdminNav active="home" />}><Header title="Administração" /><DataState kind="loading" title="Preparando visão geral" message="Calculando indicadores reais do ambiente." /></Screen>;
-  if (users.error || classes.error || impact.error) return <Screen footer={<AdminNav active="home" />}><Header title="Administração" /><DataState kind="error" title="Não foi possível carregar a visão geral" message="Verifique a conexão e tente novamente." onRetry={() => { users.retry(); classes.retry(); impact.retry(); }} /></Screen>;
+  if (users.loading || classes.loading || impact.loading) return <Screen footer={<AdminNav active="home" />}><Header title="Área do educador" /><DataState kind="loading" title="Preparando visão geral" message="Calculando indicadores reais do ambiente." /></Screen>;
+  if (users.error || classes.error || impact.error) return <Screen footer={<AdminNav active="home" />}><Header title="Área do educador" /><DataState kind="error" title="Não foi possível carregar a visão geral" message="Verifique a conexão e tente novamente." onRetry={() => { users.retry(); classes.retry(); impact.retry(); }} /></Screen>;
 
   return (
     <Screen footer={<AdminNav active="home" />}>
-      <Header title="Administração" subtitle="Acesso global ao aplicativo" />
+      <Header title="Área do educador" subtitle="Acompanhamento das oficinas e dos participantes" />
       <View style={styles.welcome}>
         <View style={styles.icon}><Ionicons name="shield-checkmark" size={28} color={colors.primary} /></View>
         <View style={styles.copy}>
           <AppText variant="heading" weight="800">Olá, {firstName}!</AppText>
-          <AppText color={colors.textMuted}>Acompanhe o uso, os alunos e os pedidos de apoio.</AppText>
+          <AppText color={colors.textMuted}>Acompanhe o uso, os participantes e os pedidos de apoio.</AppText>
         </View>
       </View>
       <View style={styles.grid}>
-        <MetricCard icon="person-outline" value={`${summary?.participants ?? 0}`} label="alunos" tone="purple" />
+        <MetricCard icon="person-outline" value={`${summary?.participants ?? 0}`} label="participantes" tone="purple" />
         <MetricCard icon="school-outline" value={`${activeClasses}`} label="turmas ativas" tone="green" />
       </View>
       <View style={styles.grid}>
-        <MetricCard icon="shield-outline" value={`${administrators}`} label="admins globais" tone="yellow" />
+        <MetricCard icon="shield-outline" value={`${administrators}`} label="educadores responsáveis" tone="yellow" />
         <MetricCard icon="bar-chart-outline" value={`${Number(summary?.average_confidence_gain ?? 0).toFixed(1)}`} label="ganho de confiança" tone="blue" />
       </View>
       <SectionTitle>Ações rápidas</SectionTitle>
       <Card style={styles.actions}>
         <Action icon="people-outline" label="Gerenciar pessoas" onPress={() => router.push('/admin/users')} />
         <Action icon="school-outline" label="Gerenciar turmas" onPress={() => router.push('/admin/classes')} />
-        <Action icon="people-outline" label="Acompanhar alunos" onPress={() => router.push('/admin/participants')} />
+        <Action icon="people-outline" label="Acompanhar participantes" onPress={() => router.push('/admin/participants')} />
         <Action icon="people-outline" label="Pedidos de ajuda" onPress={() => router.push('/admin/help-requests')} />
         <Action icon="pulse-outline" label="Modo oficina ao vivo" onPress={() => router.push('/admin/workshop')} />
         <Action icon="analytics-outline" label="Painel de impacto" onPress={() => router.push('/admin/impact')} />

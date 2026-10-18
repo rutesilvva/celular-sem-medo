@@ -34,7 +34,7 @@ describe('AppProvider preferences', () => {
   it('updates accessibility preferences without changing the other values', () => {
     const { result } = renderHook(() => useApp(), { wrapper: AppProvider });
     act(() => result.current.setPreference('highContrast', true));
-    expect(result.current.preferences).toEqual({ largerText: true, highContrast: true, autoAudio: true, voiceResponse: false, audioRate: 0.9, reduceMotion: false, hapticFeedback: true, repeatInstructions: false });
+    expect(result.current.preferences).toEqual({ largerText: true, highContrast: true, autoAudio: false, voiceResponse: false, audioRate: 0.9, reduceMotion: false, hapticFeedback: true, repeatInstructions: false });
   });
 
   it('shows and automatically clears feedback', () => {
@@ -61,7 +61,7 @@ describe('AppProvider preferences', () => {
     await waitFor(() => expect(result.current.preferencesReady).toBe(true));
     jest.mocked(useOptionalAuth).mockReturnValue(null);
     rerender(undefined);
-    await waitFor(() => expect(result.current.preferences).toEqual(expect.objectContaining({ autoAudio: true, voiceResponse: false })));
+    await waitFor(() => expect(result.current.preferences).toEqual(expect.objectContaining({ autoAudio: false, voiceResponse: false })));
   });
 
   it('synchronizes a changed preference with the authenticated account', async () => {

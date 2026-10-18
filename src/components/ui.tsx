@@ -66,6 +66,7 @@ type ButtonProps = {
   variant?: 'primary' | 'secondary' | 'soft' | 'danger';
   icon?: IconName;
   disabled?: boolean;
+  disabledReason?: string;
   accessibilityHint?: string;
   style?: StyleProp<ViewStyle>;
 };
@@ -76,6 +77,7 @@ export function Button({
   variant = 'primary',
   icon,
   disabled = false,
+  disabledReason,
   accessibilityHint,
   style,
 }: ButtonProps) {
@@ -83,11 +85,14 @@ export function Button({
   const foreground = disabled
     ? colors.textMuted
     : variant === 'primary' || variant === 'danger' ? colors.surface : colors.primary;
-  return (
+  const effectiveDisabledReason = disabled
+    ? disabledReason ?? 'Aguarde. Estamos concluindo a ação anterior.'
+    : undefined;
+  const control = (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
+      accessibilityHint={effectiveDisabledReason ?? accessibilityHint}
       accessibilityState={{ disabled }}
       disabled={disabled}
       hitSlop={10}
@@ -105,6 +110,15 @@ export function Button({
         {label}
       </AppText>
     </Pressable>
+  );
+  if (!effectiveDisabledReason) return control;
+  return (
+    <View style={styles.disabledButtonWrap}>
+      {control}
+      <AppText accessibilityLiveRegion="polite" variant="small" color={colors.text} style={styles.disabledReason}>
+        {effectiveDisabledReason}
+      </AppText>
+    </View>
   );
 }
 
@@ -272,15 +286,26 @@ export function Header({ title, subtitle, onBack, audio = false, action }: {
   action?: ReactNode;
 }) {
   return (
-    <View style={styles.header}>
-      <View style={styles.headerMain}>
-        {onBack ? <IconButton icon="arrow-back" label="Voltar" onPress={onBack} tone="muted" /> : null}
-        <View style={styles.headerCopy}>
-          <AppText accessibilityRole="header" variant="heading" weight="800" color={colors.primary}>{title}</AppText>
-          {subtitle ? <AppText variant="small" color={colors.textMuted}>{subtitle}</AppText> : null}
+    <View style={styles.headerBlock}>
+      <View style={styles.header}>
+        <View style={styles.headerMain}>
+          {onBack ? <IconButton icon="arrow-back" label="Voltar" onPress={onBack} tone="muted" /> : null}
+          <View style={styles.headerCopy}>
+            <AppText accessibilityRole="header" variant="heading" weight="800" color={colors.primary}>{title}</AppText>
+            {subtitle ? <AppText variant="small" color={colors.textMuted}>{subtitle}</AppText> : null}
+          </View>
         </View>
+        {!audio ? action : null}
       </View>
-      {audio ? <AudioButton compact label={`Ouvir: ${title}`} /> : action}
+      {audio ? (
+        <View accessibilityLabel="Quer ouvir esta tela? Toque no símbolo de som." style={styles.audioHelp}>
+          <View style={styles.audioHelpCopy}>
+            <AppText weight="800" color={colors.primary}>Quer ouvir esta tela?</AppText>
+            <AppText variant="small" color={colors.textMuted}>Toque no símbolo de som para alguém ler a instrução.</AppText>
+          </View>
+          <AudioButton compact label={`Ouvir: ${title}`} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -365,8 +390,8 @@ const styles = StyleSheet.create({
   text_heading: { fontSize: type.heading, lineHeight: 31 },
   text_subheading: { fontSize: type.subheading, lineHeight: 27 },
   text_body: { fontSize: type.body, lineHeight: 24 },
-  text_small: { fontSize: type.small, lineHeight: 20 },
-  text_caption: { fontSize: type.caption, lineHeight: 16 },
+  text_small: { fontSize: type.small, lineHeight: 23 },
+  text_caption: { fontSize: type.caption, lineHeight: 22 },
   card: {
     backgroundColor: '#FFFDFD',
     borderColor: colorAlpha(colors.primary, 0.18),
@@ -392,6 +417,8 @@ const styles = StyleSheet.create({
   buttonPressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
   buttonDisabled: { backgroundColor: '#E4E1E8', borderColor: '#E4E1E8', opacity: 0.75 },
   buttonLabel: { flexShrink: 1, textAlign: 'center' },
+  disabledButtonWrap: { gap: spacing.xs, width: '100%' },
+  disabledReason: { textAlign: 'left' },
   iconButton: {
     alignItems: 'center',
     backgroundColor: '#FFFDFD',
@@ -414,8 +441,11 @@ const styles = StyleSheet.create({
   metricIcon: { alignItems: 'center', borderRadius: radius.round, height: 46, justifyContent: 'center', marginBottom: spacing.xs, width: 46 },
   sectionTitleRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
   sectionTitle: { flexShrink: 1 },
-  header: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between', marginBottom: spacing.lg },
+  headerBlock: { gap: spacing.sm, marginBottom: spacing.lg },
+  header: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' },
   headerMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: spacing.sm },
   headerCopy: { flex: 1 },
+  audioHelp: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 72, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  audioHelpCopy: { flex: 1, gap: 2 },
   logoCrop: { alignSelf: 'center', overflow: 'hidden' },
 });

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Href, useRouter } from 'expo-router';
 import { ComponentProps } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui';
@@ -20,16 +20,23 @@ const participantItems: NavItem[] = [
   { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/participant/profile' },
 ];
 
+const publicDemoItems: NavItem[] = [
+  { key: 'home', label: 'Início', icon: 'home-outline', activeIcon: 'home', href: '/demo-app' },
+  { key: 'missions', label: 'Missões', icon: 'flag-outline', activeIcon: 'flag', href: '/demo-app?section=missions' },
+  { key: 'progress', label: 'Progresso', icon: 'bar-chart-outline', activeIcon: 'bar-chart', href: '/demo-app?section=progress' },
+  { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/demo-app?section=profile' },
+];
+
 const adminItems: NavItem[] = [
   { key: 'home', label: 'Visão geral', icon: 'grid-outline', activeIcon: 'grid', href: '/admin/home' },
-  { key: 'participants', label: 'Alunos', icon: 'people-outline', activeIcon: 'people', href: '/admin/participants' },
+  { key: 'participants', label: 'Participantes', icon: 'people-outline', activeIcon: 'people', href: '/admin/participants' },
   { key: 'missions', label: 'Missões', icon: 'flag-outline', activeIcon: 'flag', href: '/admin/missions' },
   { key: 'reports', label: 'Relatórios', icon: 'bar-chart-outline', activeIcon: 'bar-chart', href: '/admin/reports' },
   { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/admin/profile' },
 ];
 
-export function ParticipantNav({ active }: { active: ParticipantKey }) {
-  return <BottomNav items={participantItems} active={active} />;
+export function ParticipantNav({ active, publicDemo = false }: { active: ParticipantKey; publicDemo?: boolean }) {
+  return <BottomNav items={publicDemo ? publicDemoItems : participantItems} active={active} />;
 }
 
 export function AdminNav({ active }: { active: AdminKey }) {
@@ -39,6 +46,9 @@ export function AdminNav({ active }: { active: AdminKey }) {
 function BottomNav({ items, active, compact = false }: { items: NavItem[]; active: string; compact?: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const narrow = width < 430;
+  const iconSize = narrow ? 22 : compact ? 24 : 26;
 
   const openTab = (href: Href) => {
     if (router.canDismiss()) router.dismissAll();
@@ -63,13 +73,14 @@ function BottomNav({ items, active, compact = false }: { items: NavItem[]; activ
             style={({ pressed }) => [styles.item, selected && styles.itemSelected, pressed && styles.pressed]}
           >
             <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
-              <Ionicons name={selected ? item.activeIcon : item.icon} size={compact ? 24 : 26} color={selected ? colors.primary : colors.iconMuted} />
+              <Ionicons name={selected ? item.activeIcon : item.icon} size={iconSize} color={selected ? colors.primary : colors.iconMuted} />
             </View>
             <AppText
               variant="caption"
               weight={selected ? '800' : '500'}
               color={selected ? colors.primary : colors.iconMuted}
-              style={compact && styles.compactLabel}
+              numberOfLines={1}
+              style={[styles.navLabel, (compact || narrow) && styles.compactLabel]}
             >
               {item.label}
             </AppText>
@@ -89,10 +100,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.sm,
   },
-  item: { alignItems: 'center', borderRadius: 18, flex: 1, gap: 5, justifyContent: 'center', minHeight: 72, minWidth: 0 },
+  item: { alignItems: 'center', borderRadius: 18, flex: 1, gap: 4, justifyContent: 'center', minHeight: 72, minWidth: 0, overflow: 'hidden', paddingHorizontal: 2 },
   itemSelected: { backgroundColor: colors.primarySoft },
   iconWrap: { alignItems: 'center', borderRadius: 14, height: 36, justifyContent: 'center', width: 36 },
   iconWrapSelected: { backgroundColor: '#E9DFFF' },
   pressed: { opacity: 0.7 },
-  compactLabel: { textAlign: 'center' },
+  navLabel: { maxWidth: '100%', textAlign: 'center' },
+  compactLabel: { fontSize: 14, lineHeight: 18, textAlign: 'center' },
 });

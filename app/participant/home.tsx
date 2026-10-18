@@ -26,7 +26,7 @@ export default function ParticipantHomeScreen() {
   const learningPath = useLearningPath();
   const recommendedMission = missionQuery.data?.[0];
   const progress = progressQuery.data;
-  const displayName = currentUser?.name || 'Aluno';
+  const displayName = currentUser?.name || 'Participante';
   const firstName = displayName.split(/\s+/)[0];
   const milestones = getMilestones(progress);
   const weeklyMomentum = getWeeklyMomentum(progress);
@@ -74,7 +74,7 @@ export default function ParticipantHomeScreen() {
         </View>
         <View style={styles.insightChip}>
           <Ionicons name="shield-checkmark-outline" size={18} color={colors.success} />
-          <AppText variant="small" weight="700">{progress?.progress_percent ?? 0}% autonomia</AppText>
+          <AppText variant="small" weight="700">{progress?.autonomy_percent ?? 0}% sem pedir ajuda</AppText>
         </View>
         <View style={styles.insightChip}>
           <Ionicons name="flame-outline" size={18} color={colors.warning} />
@@ -298,13 +298,13 @@ function getWeeklyMomentum(progress: { completed_missions?: number; progress_per
   ];
 }
 
-function getBadges(progress: { completed_missions?: number; progress_percent?: number } | null | undefined) {
+function getBadges(progress: { completed_missions?: number; progress_percent?: number; autonomy_percent?: number } | null | undefined) {
   const completed = progress?.completed_missions ?? 0;
-  const percent = progress?.progress_percent ?? 0;
+  const autonomy = progress?.autonomy_percent ?? 0;
   const badges = [
     { label: 'Primeira missão', icon: 'checkmark-circle-outline' as const, active: completed >= 1 },
     { label: 'Foco', icon: 'sparkles-outline' as const, active: completed >= 3 },
-    { label: 'Autonomia', icon: 'shield-checkmark-outline' as const, active: percent >= 70 },
+    { label: 'Prática sem ajuda', icon: 'shield-checkmark-outline' as const, active: autonomy >= 70 },
   ];
   return badges;
 }

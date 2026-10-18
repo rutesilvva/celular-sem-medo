@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
@@ -39,6 +39,7 @@ export default function LoginScreen() {
   const [loginErrorCode, setLoginErrorCode] = useState<GoogleAuthErrorCode | null>(null);
   const errorCode = loginErrorCode ?? sessionErrorCode;
   const authLock = useRef(false);
+  const demoMode = isDemoModeEnabled();
 
   useEffect(() => {
     if (sessionRole === 'participant') {
@@ -62,6 +63,8 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
+
+  if (demoMode) return <Redirect href="/demo" />;
 
   return (
     <Screen contentStyle={styles.content}>
@@ -92,7 +95,6 @@ export default function LoginScreen() {
             accessibilityHint="Abre a seleção segura de conta do Google"
           />
         )}
-        {isDemoModeEnabled() ? <View style={styles.demoAccess}><View style={styles.demoHeading}><Ionicons name="cloud-offline-outline" size={22} color={colors.primary} /><View style={styles.flex}><AppText weight="800">Apresentação sem internet</AppText><AppText variant="small" color={colors.textMuted}>Usa somente dados fictícios e não cria uma conta ou sessão real.</AppText></View></View><Button label="Ver demonstração offline" icon="play-outline" variant="soft" onPress={() => router.push('/demo')} /></View> : null}
         {errorCode ? (
           <View accessibilityLiveRegion="polite" style={styles.error}>
             <Ionicons name="alert-circle-outline" size={22} color={colors.danger} />
@@ -144,7 +146,10 @@ function UserIdentity() {
 }
 
 function RoleCard({ role, onPress }: { role: Role; onPress: () => void }) {
-  const labels: Record<Role, string> = { participant: 'Aluno', admin: 'Administrador' };
+  const labels: Record<Role, string> = {
+    participant: 'Participante',
+    admin: 'Educador ou responsável pela oficina',
+  };
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.roleCard, pressed && styles.pressed]}>
       <AppText weight="800" style={styles.flex}>{labels[role]}</AppText>

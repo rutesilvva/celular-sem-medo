@@ -65,7 +65,7 @@ export default function AdminMissionsScreen() {
       </View>
 
       <SectionTitle>Rascunhos criados com IA</SectionTitle>
-      <AppText variant="small" color={colors.textMuted}>Revise cada instrução antes de publicar. Nenhum conteúdo gerado aparece para alunos sem aprovação humana.</AppText>
+      <AppText variant="small" color={colors.textMuted}>Revise cada instrução antes de publicar. Nenhum conteúdo gerado aparece para participantes sem aprovação humana.</AppText>
       {draftsQuery.loading ? <DataState kind="loading" title="Carregando rascunhos" message="Consultando a fila editorial." /> : draftsQuery.data.filter((draft) => draft.review_status === 'pending').length ? draftsQuery.data.filter((draft) => draft.review_status === 'pending').map((draft) => <AiDraftCard key={draft.draft_id} draft={draft} retry={draftsQuery.retry} />) : <DataState kind="empty" title="Nenhum rascunho pendente" message="Pedidos gerados com IA aparecerão aqui para revisão." />}
 
       <Card style={styles.highlight}>
@@ -122,9 +122,9 @@ export default function AdminMissionsScreen() {
           <Ionicons name="information-circle-outline" size={23} color={colors.blue} />
           <AppText weight="800">Como interpretar</AppText>
         </View>
-        <LegendRow color={colors.success} label="Conclusão" description="Alunos que concluíram a missão" />
-        <LegendRow color={colors.warning} label="Dificuldade" description="Alunos que solicitaram ajuda" />
-        <LegendRow color={colors.blue} label="Áudio" description="Alunos que ouviram instruções" />
+        <LegendRow color={colors.success} label="Conclusão" description="Participantes que concluíram a missão" />
+        <LegendRow color={colors.warning} label="Dificuldade" description="Participantes que solicitaram ajuda" />
+        <LegendRow color={colors.blue} label="Áudio" description="Participantes que ouviram instruções" />
       </Card>
     </Screen>
   );

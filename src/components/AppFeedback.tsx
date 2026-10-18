@@ -34,7 +34,7 @@ export function AppFeedback() {
           <AppText variant="caption" weight="800" color={isAudio ? colors.primary : colors.success}>
             {feedbackLabel}
           </AppText>
-          <AppText variant="small" weight="700" numberOfLines={2}>{message}</AppText>
+          <AppText variant="small" weight="700">{message}</AppText>
         </View>
         {isAudio ? (
           <View style={styles.controls}>
@@ -44,7 +44,7 @@ export function AppFeedback() {
               <AudioControl label="Pausar áudio" icon="pause" onPress={pauseInstruction} disabled={audioStatus !== 'speaking'} />
             )}
             <AudioControl label="Repetir áudio" icon="refresh" onPress={repeatInstruction} />
-            <AudioControl label="Parar áudio" icon="stop" onPress={stopInstruction} />
+            <AudioControl label="Fechar áudio" icon="close" onPress={stopInstruction} />
           </View>
         ) : null}
       </View>
@@ -54,12 +54,13 @@ export function AppFeedback() {
 
 function AudioControl({ label, icon, onPress, disabled = false }: {
   label: string;
-  icon: 'pause' | 'play' | 'refresh' | 'stop';
+  icon: 'pause' | 'play' | 'refresh' | 'close';
   onPress: () => void;
   disabled?: boolean;
 }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} style={styles.control}>
-    <Ionicons name={icon} size={19} color={disabled ? colors.iconMuted : colors.primary} />
+    <Ionicons name={icon} size={21} color={disabled ? colors.iconMuted : colors.primary} />
+    <AppText variant="caption" weight="700" color={disabled ? colors.textMuted : colors.primary}>{label.replace(' áudio', '')}</AppText>
   </Pressable>;
 }
 
@@ -69,11 +70,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
     borderColor: colors.primary,
-    borderRadius: radius.round,
+    borderRadius: radius.xl,
     borderWidth: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
-    maxWidth: 420,
+    maxWidth: 620,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
@@ -87,7 +89,7 @@ const styles = StyleSheet.create({
     width: 34,
   },
   iconAudio: { backgroundColor: '#E9F2FF' },
-  copy: { flex: 1, flexShrink: 1, gap: 2 },
-  controls: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
-  control: { alignItems: 'center', justifyContent: 'center', minHeight: 40, minWidth: 36 },
+  copy: { flex: 1, flexShrink: 1, gap: 2, minWidth: 180 },
+  controls: { alignItems: 'stretch', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center', width: '100%' },
+  control: { alignItems: 'center', borderRadius: radius.md, justifyContent: 'center', minHeight: 48, minWidth: 88, paddingHorizontal: spacing.xs },
 });
