@@ -40,7 +40,7 @@ export default function DemoScreen() {
     return missions.find((mission) => mission.id === selectedId) ?? missions[0]!;
   }, [selectedId]);
   return (
-    <Screen footer={<ParticipantNav active="home" publicDemo />} contentStyle={styles.content}>
+    <Screen footer={<ParticipantNav active="profile" publicDemo />} contentStyle={styles.content}>
       <Header title="Celular Sem Medo" subtitle="Apresentação pública · nenhum dado real é usado" />
       <Tag label="Modo seguro de teste" tone="green" />
 

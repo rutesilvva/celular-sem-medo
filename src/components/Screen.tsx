@@ -21,6 +21,7 @@ export function Screen({
       contentContainerStyle={[styles.content, contentStyle]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      style={styles.fill}
     >
       {children}
     </ScrollView>

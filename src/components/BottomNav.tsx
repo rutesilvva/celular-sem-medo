@@ -24,7 +24,7 @@ const publicDemoItems: NavItem[] = [
   { key: 'home', label: 'Início', icon: 'home-outline', activeIcon: 'home', href: '/demo-app' },
   { key: 'missions', label: 'Missões', icon: 'flag-outline', activeIcon: 'flag', href: '/demo-app?section=missions' },
   { key: 'progress', label: 'Progresso', icon: 'bar-chart-outline', activeIcon: 'bar-chart', href: '/demo-app?section=progress' },
-  { key: 'profile', label: 'Perfil', icon: 'person-outline', activeIcon: 'person', href: '/demo-app?section=profile' },
+  { key: 'profile', label: 'Sobre', icon: 'information-circle-outline', activeIcon: 'information-circle', href: '/demo' },
 ];
 
 const adminItems: NavItem[] = [
