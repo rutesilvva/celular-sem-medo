@@ -31,21 +31,27 @@ async function runSynchronization(ownerId: string, assignmentId: string, onProgr
 
   for (const operation of [...working.pending]) {
     const sequence = working.remoteNextSequence ?? 1;
+    const persistedStepId = isRuntimeOnlyStep(operation.stepId) ? undefined : operation.stepId;
+    const persistedProgressStepId = isRuntimeOnlyStep(operation.progressStepId) ? undefined : operation.progressStepId;
     await appendAttemptEvent({
       eventId: eventUuid(working.remoteAttemptId!, sequence),
       attemptId: working.remoteAttemptId!,
       sequenceNumber: sequence,
       eventType: operation.eventType,
-      stepId: operation.stepId,
+      stepId: persistedStepId,
       occurredAt: operation.occurredAt,
     });
-    if (operation.progressStepId) {
-      await setMissionAttemptProgress({ attemptId: working.remoteAttemptId!, stepId: operation.progressStepId, completed: operation.completed });
+    if (persistedProgressStepId) {
+      await setMissionAttemptProgress({ attemptId: working.remoteAttemptId!, stepId: persistedProgressStepId, completed: operation.completed });
     }
     working = markOfflineEventSynced(working, operation.operationId, working.remoteAttemptId!, sequence + 1);
     await persist(working, onProgress);
   }
   return working;
+}
+
+function isRuntimeOnlyStep(stepId?: string) {
+  return Boolean(stepId?.startsWith('30000000-0000-4000-8000-00000000003') || stepId?.startsWith('31000000-0000-4000-8000-00000000003') || stepId?.startsWith('32000000-0000-4000-8000-00000000003'));
 }
 
 async function persist(attempt: OfflineAttempt, onProgress?: (attempt: OfflineAttempt) => void) {

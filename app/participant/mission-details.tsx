@@ -53,6 +53,32 @@ export default function ParticipantMissionDetailsScreen() {
   const presentation = resolveMissionPresentation(details.missionId);
   const isWhatsAppPhotoFlow = presentation === 'whatsapp-photo';
   const isPixFlow = presentation === 'pix';
+  const isScamMessageFlow = details.missionId === '10000000-0000-4000-8000-000000000007';
+  const isFakeFamilyFlow = details.missionId === '10000000-0000-4000-8000-000000000008';
+  const isLocationSharingFlow = details.missionId === '10000000-0000-4000-8000-000000000003';
+  const learningGoals = isLocationSharingFlow ? [
+    'Abrir os anexos e encontrar a opção Localização',
+    'Diferenciar localização atual e em tempo real',
+    'Conferir quem receberá sua posição',
+    'Escolher o menor tempo necessário',
+    'Revisar, enviar e parar o compartilhamento',
+  ] : isFakeFamilyFlow ? [
+    'Desconfiar de familiar falando por um número novo',
+    'Não dar nomes ou informações que ajudem o golpista',
+    'Confirmar a identidade pelo número antigo',
+    'Reconhecer urgência, segredo e pedido de Pix',
+    'Conferir o nome do recebedor, bloquear e denunciar',
+  ] : isScamMessageFlow ? [
+    'Reconhecer pressa, ameaça e prêmio inesperado',
+    'Conferir remetente, número e link suspeito',
+    'Proteger senha, cartão e código recebido por SMS',
+    'Confirmar pedidos de Pix de familiares por outro contato',
+    'Usar o canal oficial, bloquear e denunciar o golpe',
+  ] : isWhatsAppPhotoFlow ? [
+    'Abrir o aplicativo de mensagens',
+    'Localizar o botão de anexo',
+    'Escolher uma foto e conferir o contato antes de enviar',
+  ] : steps.slice(0, 5).map((step) => step.title);
 
   if (isPixFlow) {
     return (
@@ -148,9 +174,7 @@ export default function ParticipantMissionDetailsScreen() {
       <Card style={styles.listCard}>
         <AppText variant="subheading" weight="800">O que você vai aprender</AppText>
         <View style={styles.bullets}>
-          <AppText variant="small" color={colors.textMuted}>• Abrir o WhatsApp</AppText>
-          <AppText variant="small" color={colors.textMuted}>• Anexar uma foto</AppText>
-          <AppText variant="small" color={colors.textMuted}>• Enviar para um contato</AppText>
+          {learningGoals.map((goal) => <View key={goal} style={styles.learningGoal}><Ionicons name="checkmark-circle-outline" size={22} color={colors.success} /><AppText variant="small" color={colors.textMuted} style={styles.learningGoalText}>{goal}</AppText></View>)}
         </View>
       </Card>
 
@@ -214,6 +238,8 @@ const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   listCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.lg, gap: spacing.md, padding: spacing.md },
   bullets: { gap: spacing.sm },
+  learningGoal: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  learningGoalText: { flex: 1 },
   summaryCard: { alignItems: 'stretch', backgroundColor: '#FFFDFC', borderColor: colors.primaryMuted, borderRadius: radius.lg, flexDirection: 'row', paddingHorizontal: spacing.sm },
   summaryItem: { alignItems: 'center', flex: 1, gap: spacing.xs, paddingHorizontal: spacing.xs },
   verticalDivider: { backgroundColor: colors.border, width: 1 },

@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ParticipantNav } from '@/components/BottomNav';
 import { DataState } from '@/components/DataState';
@@ -33,30 +33,172 @@ export default function ParticipantSimulatorScreen() {
   return <MissionExecutor assignmentId={query.data.details.assignmentId} assessmentId={assessmentId} details={query.data.details} steps={query.data.steps} />;
 }
 
+function buildScamAwarenessSteps(steps: ParticipantMissionStep[]): ParticipantMissionStep[] {
+  const template = steps[0];
+  if (!template) return steps;
+  const lessons = [
+    {
+      title: 'Encontre os sinais de golpe',
+      instruction: 'Observe a mensagem inteira: veja a pressa, o prêmio inesperado e o endereço do link.',
+      audioText: 'Leia a mensagem com calma. Procure a pressão para agir rápido, o prêmio que você não esperava e o link desconhecido.',
+      correct: 'all-signals',
+      options: [{ id: 'all-signals', label: 'A pressa, o prêmio inesperado e o link desconhecido' }, { id: 'spelling-only', label: 'Somente os erros de português da mensagem' }],
+      hint: 'Golpes costumam reunir vários sinais, não apenas erros de escrita.',
+    },
+    {
+      title: 'Confira quem enviou',
+      instruction: 'Antes de tocar em qualquer coisa, observe o número e o endereço do link.',
+      audioText: 'Confira quem enviou a mensagem e leia o endereço do link. Um logotipo não prova que a mensagem é verdadeira.',
+      correct: 'unknown-sender',
+      options: [{ id: 'unknown-sender', label: 'O número e o endereço não são oficiais nem conhecidos' }, { id: 'logo-safe', label: 'Tem logotipo, então posso confiar e abrir' }],
+      hint: 'Qualquer pessoa pode copiar o nome, a foto e o logotipo de uma empresa.',
+    },
+    {
+      title: 'Escolha como conferir',
+      instruction: 'Decida como verificar a informação sem usar o link recebido.',
+      audioText: 'Não abra o link da mensagem. Abra você mesmo o aplicativo oficial ou digite o endereço oficial no navegador.',
+      correct: 'official-channel',
+      options: [{ id: 'open-message-link', label: 'Abro o link da mensagem para conferir o prêmio' }, { id: 'official-channel', label: 'Não abro o link; procuro o aplicativo ou site oficial' }],
+      hint: 'Saia da mensagem e procure o canal oficial por conta própria.',
+    },
+    {
+      title: 'Proteja seus dados bancários',
+      instruction: 'A mensagem agora pede senha, número do cartão e código de segurança. Escolha a atitude segura.',
+      audioText: 'Nunca envie senha, número completo do cartão ou código de segurança por mensagem. Empresas sérias não pedem esses dados no chat.',
+      correct: 'protect-bank-data',
+      options: [{ id: 'send-bank-data', label: 'Envio os dados porque a mensagem diz que é urgente' }, { id: 'protect-bank-data', label: 'Não envio nenhum dado e encerro a conversa' }],
+      hint: 'Senha e código de segurança são secretos, mesmo quando alguém sabe seu nome.',
+    },
+    {
+      title: 'Proteja o código recebido por SMS',
+      instruction: 'Leia o aviso do próprio SMS e escolha o que fazer com o código.',
+      audioText: 'O código recebido por SMS é pessoal. Não compartilhe com ninguém, nem com quem diz trabalhar em banco ou loja.',
+      correct: 'never-share-code',
+      options: [{ id: 'share-code', label: 'Envio o código para a pessoa liberar o prêmio' }, { id: 'never-share-code', label: 'Não compartilho o código com ninguém' }],
+      hint: 'Quem recebe seu código pode tentar entrar na sua conta.',
+    },
+    {
+      title: 'Confirme quando alguém pedir dinheiro',
+      instruction: 'Um número novo diz ser um familiar e pede um Pix urgente. Escolha como confirmar.',
+      audioText: 'Quando alguém pedir dinheiro por um número novo, não faça o Pix. Ligue para o familiar no número que você já conhece.',
+      correct: 'call-known-number',
+      options: [{ id: 'send-family-pix', label: 'Faço o Pix porque a pessoa me chamou de mãe' }, { id: 'call-known-number', label: 'Ligo para meu familiar no número que já conheço' }],
+      hint: 'Saber nomes da família não prova quem está do outro lado da conversa.',
+    },
+    {
+      title: 'Faça a revisão de segurança',
+      instruction: 'Escolha a sequência completa para encerrar uma mensagem suspeita com segurança.',
+      audioText: 'Para encerrar com segurança: pare, não toque, não responda, confirme no canal oficial, bloqueie e denuncie a mensagem.',
+      correct: 'safe-checklist',
+      options: [{ id: 'reply-forward', label: 'Respondo, encaminho para amigos e depois apago' }, { id: 'safe-checklist', label: 'Não respondo; confirmo no canal oficial, bloqueio e denuncio' }],
+      hint: 'Não interaja com o golpista. Guarde a regra: pare, confira, bloqueie e denuncie.',
+    },
+  ];
+  return lessons.map((lesson, index) => ({
+    ...template,
+    id: `30000000-0000-4000-8000-00000000003${index}`,
+    position: index + 1,
+    type: 'multiple_choice',
+    title: lesson.title,
+    instruction: lesson.instruction,
+    audioText: lesson.audioText,
+    safetyNote: 'Tudo nesta tela é fictício. Nenhum dado, código ou dinheiro será enviado.',
+    expectedAction: { action: 'choose', option_id: lesson.correct },
+    options: lesson.options,
+    hints: [lesson.hint],
+    optional: false,
+  }));
+}
+
+function buildFakeFamilySteps(steps: ParticipantMissionStep[]): ParticipantMissionStep[] {
+  const template = steps[0];
+  if (!template) return steps;
+  const lessons = [
+    ['Observe o contato', 'Um número não salvo diz ser seu filho. Qual é o primeiro sinal de alerta?', 'new-number', [{ id: 'new-number', label: 'A pessoa diz que trocou de número e pede para salvar o contato' }, { id: 'family-name', label: 'A pessoa me chamou de mãe, então só pode ser meu filho' }]],
+    ['Não dê pistas ao golpista', 'Como você deve responder sem revelar informações da família?', 'no-clues', [{ id: 'give-name', label: 'Pergunto: “É você, Paulo?”' }, { id: 'no-clues', label: 'Não digo nomes nem informações pessoais' }]],
+    ['Confirme por outro caminho', 'Como descobrir se é realmente seu familiar?', 'call-old', [{ id: 'call-old', label: 'Ligo para o número antigo que já está salvo' }, { id: 'trust-photo', label: 'Confio porque a foto parece ser do meu familiar' }]],
+    ['Reconheça a pressão', 'A pessoa pede segredo e diz que o Pix é urgente. O que isso indica?', 'pressure-signal', [{ id: 'normal-request', label: 'É normal; familiares sempre pedem dinheiro com urgência' }, { id: 'pressure-signal', label: 'Pressa e pedido de segredo são sinais de golpe' }]],
+    ['Confira o destinatário do Pix', 'O nome que aparece no banco é diferente do nome do familiar. O que fazer?', 'cancel-pix', [{ id: 'send-anyway', label: 'Envio mesmo assim porque recebi uma explicação' }, { id: 'cancel-pix', label: 'Cancelo o Pix e não envio dinheiro' }]],
+    ['Encerre com segurança', 'Depois de confirmar que era um golpista, qual é a atitude segura?', 'block-report-family', [{ id: 'argue', label: 'Continuo conversando para descobrir quem é' }, { id: 'block-report-family', label: 'Não respondo mais, bloqueio e denuncio o número' }]],
+  ] as const;
+  return lessons.map(([title, instruction, correct, options], index) => ({
+    ...template,
+    id: `31000000-0000-4000-8000-00000000003${index}`,
+    position: index + 1,
+    type: 'multiple_choice',
+    title,
+    instruction,
+    audioText: `${instruction} Leia as duas opções e escolha a atitude que protege você.`,
+    safetyNote: 'A conversa e o pedido de dinheiro são apenas um treinamento.',
+    expectedAction: { action: 'choose', option_id: correct },
+    options: [...options],
+    hints: ['Pare, não envie dinheiro e confirme usando um contato que você já conhecia.'],
+    optional: false,
+  }));
+}
+
+function buildLocationSharingSteps(steps: ParticipantMissionStep[]): ParticipantMissionStep[] {
+  const template = steps[0];
+  if (!template) return steps;
+  const definitions = [
+    { title: 'Abra as opções da conversa', instruction: 'Confira o nome no alto da conversa e toque no clipe ao lado de “Mensagem”.', expectedAction: { action: 'tap', target: 'attachment_button' }, options: [] },
+    { title: 'Escolha Localização', instruction: 'No menu de anexos, toque no botão verde com o desenho de um pino.', expectedAction: { action: 'tap', target: 'location_option' }, options: [] },
+    { title: 'Entenda as duas opções', instruction: 'Escolha compartilhar a localização em tempo real para aprender a selecionar uma duração.', expectedAction: { action: 'choose', option_id: 'live-location' }, options: [{ id: 'current-location', label: 'Enviar minha localização atual uma única vez' }, { id: 'live-location', label: 'Compartilhar localização em tempo real' }] },
+    { title: 'Confira quem vai receber', instruction: 'Antes de continuar, confirme que a conversa é com Ana, sua familiar de confiança.', expectedAction: { action: 'choose', option_id: 'ana-training' }, options: [{ id: 'ana-training', label: 'Ana — familiar de confiança' }, { id: 'unknown-person', label: 'Contato desconhecido' }] },
+    { title: 'Escolha por quanto tempo', instruction: 'Use o menor tempo necessário. Neste treino, selecione 15 minutos.', expectedAction: { action: 'choose', option_id: '15-minutes' }, options: [{ id: '15-minutes', label: '15 minutos' }, { id: '1-hour', label: '1 hora' }, { id: '8-hours', label: '8 horas' }] },
+    { title: 'Revise antes de enviar', instruction: 'Confira destinatário e duração. Depois escolha a confirmação segura.', expectedAction: { action: 'choose', option_id: 'confirm-location' }, options: [{ id: 'confirm-location', label: 'Ana está correta e a duração é 15 minutos' }, { id: 'send-without-checking', label: 'Enviar sem conferir porque posso apagar depois' }] },
+    { title: 'Quiz final de segurança', instruction: 'Se não precisar mais compartilhar sua posição, o que você deve fazer?', expectedAction: { action: 'choose', option_id: 'stop-sharing' }, options: [{ id: 'leave-active', label: 'Deixar ativo até o tempo acabar, mesmo sem precisar' }, { id: 'stop-sharing', label: 'Abrir a conversa e tocar em “Parar de compartilhar”' }] },
+  ];
+  return definitions.map((definition, index) => ({ ...template, ...definition, id: `32000000-0000-4000-8000-00000000003${index}`, position: index + 1, type: index < 2 ? 'tap_target' : 'multiple_choice', audioText: definition.instruction, safetyNote: 'O GPS não será acessado e nenhuma localização real será compartilhada.', hints: [index === 0 ? 'O clipe fica ao lado do campo de mensagem.' : index === 1 ? 'Procure o ícone verde de um pino.' : 'Leia as opções com calma antes de tocar.'], optional: false }));
+}
+
 function MissionExecutor({ assignmentId, assessmentId, details, steps, presentation: requestedPresentation }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; presentation?: MissionPresentation }) {
   const router = useRouter();
   const { playInstruction, preferences, stopInstruction } = useApp();
-  const engine = useMissionEngine(assignmentId, steps);
+  const presentation = resolveMissionPresentation(details.missionId, requestedPresentation);
+  const runtimeSteps = useMemo(() => {
+    if (details.missionId === '10000000-0000-4000-8000-000000000003') return buildLocationSharingSteps(steps);
+    if (details.missionId === '10000000-0000-4000-8000-000000000007') return buildScamAwarenessSteps(steps);
+    if (details.missionId === '10000000-0000-4000-8000-000000000008') return buildFakeFamilySteps(steps);
+    return details.missionId === '10000000-0000-4000-8000-000000000002'
+      ? steps.map((item) => item.position === 3 ? {
+      ...item,
+      title: 'Confira o valor',
+      instruction: 'Compare o valor digitado com o valor mostrado no resumo.',
+      audioText: 'Você digitou vinte reais e o resumo mostra vinte reais. Escolha a opção que informa que o valor confere.',
+      expectedAction: { action: 'choose', option_id: 'same-value' },
+      options: [{ id: 'same-value', label: 'O valor continua R$ 20,00 e está correto' }, { id: 'different-value', label: 'O valor mudou e está diferente' }],
+      hints: ['Compare os números: R$ 20,00 e R$ 20,00 são iguais.'],
+    } : item.position === 4 ? {
+      ...item,
+      title: 'Confirme somente depois de revisar',
+      instruction: 'Nome, banco e valor estão corretos. Escolha confirmar o Pix simulado.',
+      audioText: 'Os dados conferem. Agora escolha confirmar o Pix simulado.',
+      expectedAction: { action: 'choose', option_id: 'confirm' },
+      options: [{ id: 'confirm', label: 'Confirmar o Pix simulado' }, { id: 'cancel', label: 'Voltar e revisar novamente' }],
+      hints: ['Confirme somente quando nome, banco e valor estiverem corretos.'],
+      } : item)
+      : steps;
+  }, [details.missionId, steps]);
+  const engine = useMissionEngine(assignmentId, runtimeSteps);
   const step = engine.currentStep;
   const lastAutoPlayedStep = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!step || !preferences.autoAudio || lastAutoPlayedStep.current === step.id) return;
+    if (!step || presentation === 'pix' || !preferences.autoAudio || lastAutoPlayedStep.current === step.id) return;
     lastAutoPlayedStep.current = step.id;
     playInstruction(step.audioText);
-  }, [playInstruction, preferences.autoAudio, step]);
+  }, [playInstruction, preferences.autoAudio, presentation, step]);
 
   useEffect(() => () => stopInstruction(), [stopInstruction]);
 
   useEffect(() => {
-    if (!engine.run.completed) return;
+    if (!engine.completedThisSession || !engine.run.completed) return;
     router.replace({ pathname: '/participant/result', params: { assignmentId, assessmentId: assessmentId ?? '', completion: engine.completion, attemptId: engine.localAttemptId ?? '' } });
-  }, [assessmentId, assignmentId, engine.completion, engine.localAttemptId, engine.run.completed, router]);
+  }, [assessmentId, assignmentId, engine.completedThisSession, engine.completion, engine.localAttemptId, engine.run.completed, router]);
 
   if (engine.loading) return <SimulatorState kind="loading" retry={engine.retry} />;
   if (!step) return <SimulatorState kind="empty" retry={engine.retry} />;
-
-  const presentation = resolveMissionPresentation(details.missionId, requestedPresentation);
 
   if (presentation === 'gov-br') {
     return <GovFlowMock assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} />;
@@ -172,7 +314,7 @@ function MissionExecutor({ assignmentId, assessmentId, details, steps, presentat
   }
 
   if (presentation === 'messaging' || presentation === 'mobility' || presentation === 'app-store' || presentation === 'marketplace' || presentation === 'phone-call') {
-    return <AppEnvironmentFlow assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={steps} engine={engine} playInstruction={playInstruction} router={router} presentation={presentation} />;
+    return <AppEnvironmentFlow assignmentId={assignmentId} assessmentId={assessmentId} details={details} steps={runtimeSteps} engine={engine} playInstruction={playInstruction} router={router} presentation={presentation} />;
   }
 
   if (presentation === 'pix') {
@@ -686,7 +828,7 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
   const [environmentQuery, setEnvironmentQuery] = useState('');
   if (!step) return null;
   const config = {
-    messaging: { app: 'Mensagens de treino', icon: 'chatbubble-ellipses-outline' as const, accent: '#176B5B', label: 'Conversa fictícia' },
+    messaging: { app: 'Mensagens de treino', icon: 'chatbubble-ellipses-outline' as const, accent: '#176B5B', label: 'Mensagens' },
     mobility: { app: 'Mobilidade de treino', icon: 'car-outline' as const, accent: '#28323C', label: 'Mapa fictício' },
     'app-store': { app: 'Loja de treino', icon: 'apps-outline' as const, accent: '#1769AA', label: 'Aplicativos fictícios' },
     marketplace: { app: 'Loja virtual de treino', icon: 'bag-handle-outline' as const, accent: '#A63A2B', label: 'Compra fictícia' },
@@ -711,6 +853,14 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
           <MobilityExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} accent={config.accent} />
         ) : presentation === 'marketplace' ? (
           <MarketplaceExperience step={step} busy={engine.busy} query={environmentQuery} onQueryChange={setEnvironmentQuery} onSubmit={engine.submit} />
+        ) : presentation === 'phone-call' ? (
+          <PhoneCallExperience key={step.id} step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} onBack={engine.goBack} onSubmit={engine.submit} accent={config.accent} />
+        ) : presentation === 'messaging' && details.missionId === '10000000-0000-4000-8000-000000000003' ? (
+          <LocationSharingExperience key={step.id} step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} onBack={engine.goBack} onSubmit={engine.submit} />
+        ) : presentation === 'messaging' && details.missionId === '10000000-0000-4000-8000-000000000007' ? (
+          <ScamMessageExperience key={step.id} step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} onBack={engine.goBack} onSubmit={engine.submit} />
+        ) : presentation === 'messaging' && details.missionId === '10000000-0000-4000-8000-000000000008' ? (
+          <FakeFamilyExperience key={step.id} step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} onBack={engine.goBack} onSubmit={engine.submit} />
         ) : (
           <><EnvironmentScene presentation={presentation} step={step} accent={config.accent} query={environmentQuery} onQueryChange={setEnvironmentQuery} /><EnvironmentActions step={step} busy={engine.busy} accent={config.accent} onSubmit={engine.submit} /></>
         )}
@@ -720,10 +870,277 @@ function AppEnvironmentFlow({ assignmentId, assessmentId, details, steps, engine
         <View style={styles.instructionTop}><AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText><Tag label="Simulação segura" tone="green" /></View>
         <AppText variant="subheading" weight="800">{step.title}</AppText><AppText color={colors.textMuted}>{step.instruction}</AppText><ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
-      {engine.run.lastAnswerCorrect === false ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText style={styles.safeCopy}>Essa ação não é a mais segura. Nada aconteceu de verdade; tente outra opção.</AppText></Card> : null}
+      {engine.run.lastAnswerCorrect === false && details.missionId !== '10000000-0000-4000-8000-000000000007' ? <Card style={styles.feedback}><Ionicons name="information-circle" size={24} color={colors.warning} /><AppText accessibilityRole="alert" style={styles.safeCopy}>{presentation === 'phone-call' ? phoneCallFeedback(step.position) : 'Essa ação não é a mais segura. Nada aconteceu de verdade; tente outra opção.'}</AppText></Card> : null}
       <View style={styles.supportActions}><Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} /><Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} /></View>
     </Screen>
   );
+}
+
+function ScamMessageExperience({ step, busy, lastAnswerCorrect, onBack, onSubmit }: { step: ParticipantMissionStep; busy: boolean; lastAnswerCorrect: boolean | null; onBack: () => Promise<void>; onSubmit: (action: MissionAction) => Promise<void> }) {
+  const expected = asExpectedAction(step.expectedAction);
+  const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+  const isBankDataStep = step.position === 4;
+  const isCodeStep = step.position === 5;
+  const isFamilyStep = step.position === 6;
+  const isReviewStep = step.position === 7;
+  const questions = ['Quais sinais deixam a mensagem suspeita?', 'O que você deve conferir primeiro?', 'Como você verifica sem correr risco?', 'O que você faz com seus dados bancários?', 'Como você protege o código recebido?', 'Como confirmar se é mesmo seu familiar?', 'Qual é a sequência mais segura?'];
+  const lessons = [
+    'Pressa, prêmio inesperado e link desconhecido são sinais comuns de golpe.',
+    'Nome, foto e logotipo podem ser copiados. Confira número e endereço.',
+    'Saia da mensagem e procure o aplicativo, site ou telefone oficial por conta própria.',
+    'Nunca envie senha, cartão ou código de segurança por mensagem.',
+    'O código por SMS é uma chave de acesso: nunca compartilhe com ninguém.',
+    'Golpistas podem saber nomes da família. Ligue para o número que você já conhece.',
+    'Não responda: confirme no canal oficial, bloqueie e denuncie.',
+  ];
+  const contactName = isFamilyStep ? 'Filho(a) · número novo' : isBankDataStep ? 'Central de segurança' : 'Número desconhecido';
+  const contactIcon = isFamilyStep ? 'person' : isBankDataStep ? 'business' : 'gift';
+  const signs = scamWarningSigns(step.position);
+  return <View style={styles.scamExperience}>
+    <View style={styles.scamPhoneHeader}><Ionicons name="arrow-back" size={26} color={colors.surface} /><View style={styles.scamAvatar}><Ionicons name={contactIcon} size={25} color={colors.surface} /></View><View style={styles.flex1}><AppText weight="900" color={colors.surface}>{contactName}</AppText><AppText variant="caption" color={colors.surface}>online</AppText></View><Ionicons name="videocam" size={23} color={colors.surface} /><Ionicons name="call" size={22} color={colors.surface} /><Ionicons name="ellipsis-vertical" size={22} color={colors.surface} /></View>
+    <View style={styles.scamChannelNotice}><Ionicons name="information-circle" size={25} color="#075E54" /><View style={styles.flex1}><AppText weight="900" color="#075E54">Este tipo de golpe pode chegar por vários lugares</AppText><AppText variant="small" color={colors.text}>WhatsApp, SMS, e-mail, Messenger e qualquer rede social. Os sinais e os cuidados são os mesmos.</AppText></View></View>
+    <View style={styles.scamChatArea}>
+      {isCodeStep ? <><View style={styles.scamSmsSystem}><Ionicons name="chatbox-ellipses-outline" size={23} color={colors.primary} /><View style={styles.flex1}><AppText variant="caption" color={colors.textMuted}>SMS DO SERVIÇO DE TREINO</AppText><AppText weight="900">Seu código de confirmação é 482913</AppText><AppText variant="caption" color={colors.danger}>Não compartilhe este código com ninguém.</AppText></View></View><View style={styles.scamBubble}><AppText weight="800">“Para liberar seu prêmio, envie aqui o código que chegou por SMS.”</AppText><AppText variant="caption" color={colors.textMuted} style={styles.scamMessageTime}>10:42</AppText></View></> : isBankDataStep ? <View style={styles.scamBubble}><AppText variant="caption" weight="900" color={colors.danger}>⚠ SUPOSTA CENTRAL DO BANCO</AppText><AppText weight="900">“Detectamos uma compra suspeita. É urgente!”</AppText><AppText>“Envie sua senha, o número do cartão e os três números do verso para cancelar.”</AppText><AppText variant="caption" color={colors.textMuted} style={styles.scamMessageTime}>10:39</AppText></View> : isFamilyStep ? <View style={styles.scamBubble}><AppText weight="900">“Oi, mãe. Troquei de número.”</AppText><AppText>“Preciso pagar uma conta agora. Faça um Pix de R$ 780,00 para esta chave. Depois eu explico.”</AppText><AppText variant="caption" color={colors.textMuted} style={styles.scamMessageTime}>10:41</AppText></View> : isReviewStep ? <View style={styles.scamReviewList}><AppText variant="subheading" weight="900">Você aprendeu a reconhecer:</AppText><AppText>✓ Pressa e ameaça para agir sem pensar</AppText><AppText>✓ Prêmio ou benefício inesperado</AppText><AppText>✓ Link, número ou chave desconhecida</AppText><AppText>✓ Pedido de senha, cartão ou código</AppText><AppText>✓ Familiar usando um número novo</AppText></View> : <View style={styles.scamBubble}><AppText variant="caption" weight="900" color={colors.danger}>⚠ MENSAGEM NÃO SOLICITADA</AppText><AppText weight="900">“PARABÉNS! Você ganhou R$ 5.000,00!”</AppText><AppText>“Resgate nos próximos 5 minutos ou perderá o prêmio.”</AppText><View style={styles.scamFakeLink}><Ionicons name="link-outline" size={20} color={colors.danger} /><AppText weight="800" color={colors.danger}>premio-agora.exemplo</AppText></View><AppText variant="caption" color={colors.textMuted} style={styles.scamMessageTime}>10:38</AppText></View>}
+      {!isCodeStep && !isReviewStep ? <View style={styles.scamSignals}><AppText variant="caption" weight="900" color={colors.danger}>PARE E OBSERVE ANTES DE TOCAR</AppText>{isBankDataStep ? <><View style={styles.scamSignalRow}><Tag label="URGÊNCIA" tone="red" /><AppText variant="small" style={styles.flex1}>O medo é usado para apressar sua decisão.</AppText></View><View style={styles.scamSignalRow}><Tag label="SEGREDOS" tone="red" /><AppText variant="small" style={styles.flex1}>Banco não pede senha completa nem código do cartão.</AppText></View></> : isFamilyStep ? <><View style={styles.scamSignalRow}><Tag label="NÚMERO NOVO" tone="yellow" /><AppText variant="small" style={styles.flex1}>Confirme pelo contato antigo que já está salvo.</AppText></View><View style={styles.scamSignalRow}><Tag label="PIX URGENTE" tone="red" /><AppText variant="small" style={styles.flex1}>Não envie dinheiro antes de falar com a pessoa.</AppText></View></> : <><View style={styles.scamSignalRow}><Tag label="PRESSA" tone="red" /><AppText variant="small" style={styles.flex1}>“Próximos 5 minutos” tenta impedir você de pensar.</AppText></View><View style={styles.scamSignalRow}><Tag label="PRÊMIO" tone="yellow" /><AppText variant="small" style={styles.flex1}>Você não participou de nenhuma promoção.</AppText></View><View style={styles.scamSignalRow}><Tag label="LINK" tone="red" /><AppText variant="small" style={styles.flex1}>O endereço não pertence a um serviço conhecido.</AppText></View></>}</View> : null}
+      <View style={styles.scamComposer}><Ionicons name="happy-outline" size={25} color={colors.textMuted} /><View style={styles.scamComposerInput}><AppText variant="small" color={colors.textMuted}>Mensagem</AppText></View><Ionicons name="attach-outline" size={25} color={colors.textMuted} /><View style={styles.scamMic}><Ionicons name="mic" size={21} color={colors.surface} /></View></View>
+    </View>
+    <View style={styles.scamWhyCard}>
+      <View style={styles.scamWhyHeading}><Ionicons name="search-circle" size={30} color={colors.primary} /><View style={styles.flex1}><AppText variant="subheading" weight="900">Por que isso pode ser golpe?</AppText><AppText variant="small" color={colors.textMuted}>Um único sinal já é motivo para parar e conferir.</AppText></View></View>
+      {signs.map((sign) => <View key={sign.title} style={styles.scamWhyRow}><View style={styles.scamWhyIcon}><Ionicons name={sign.icon} size={21} color={colors.danger} /></View><View style={styles.flex1}><AppText weight="900">{sign.title}</AppText><AppText variant="small" color={colors.textMuted}>{sign.explanation}</AppText></View></View>)}
+      <View style={styles.scamDoNow}><Ionicons name="hand-left-outline" size={23} color={colors.success} /><View style={styles.flex1}><AppText weight="900" color={colors.successText}>O que fazer agora</AppText><AppText variant="small" color={colors.successText}>{scamSafeAction(step.position)}</AppText></View></View>
+    </View>
+    <View style={styles.scamCoach}><View style={styles.scamCoachNumber}><AppText weight="900" color={colors.surface}>{step.position}</AppText></View><View style={styles.flex1}><AppText variant="subheading" weight="900">{questions[step.position - 1]}</AppText><AppText variant="small" color={colors.textMuted}>{isReviewStep ? 'Faça a revisão final e escolha todos os cuidados juntos.' : 'Leia as duas opções completas. Toque na atitude que protege você.'}</AppText></View><Ionicons name="arrow-down" size={28} color={colors.primary} /></View>
+    {lastAnswerCorrect === false ? <View accessibilityRole="alert" style={styles.scamWrongAlert}><Ionicons name="warning" size={29} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>Atenção: essa atitude não é segura</AppText><AppText variant="small">{lessons[step.position - 1]}</AppText><AppText variant="small" weight="900" color={colors.primary}>Este é um treino. Nada aconteceu. Leia de novo e tente a outra opção.</AppText></View></View> : null}
+    <View accessibilityRole="radiogroup" style={styles.scamChoices}>{options.map((option, index) => <Pressable accessibilityRole="radio" accessibilityLabel={option.label} disabled={busy} key={option.id} onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })} style={({ pressed }) => [styles.scamChoice, pressed && styles.bankActionRowPressed]}><View style={styles.scamChoiceLetter}><AppText weight="900" color={colors.primary}>{index === 0 ? 'A' : 'B'}</AppText></View><AppText weight="800" style={styles.flex1}>{option.label}</AppText><Ionicons name="chevron-forward-circle-outline" size={26} color={colors.primary} /></Pressable>)}</View>
+    <View style={styles.scamRule}><Ionicons name="shield-checkmark" size={27} color={colors.success} /><View style={styles.flex1}><AppText weight="900" color={colors.successText}>{isReviewStep ? 'Regra completa para levar com você' : 'Regra desta etapa'}</AppText><AppText variant="small" color={colors.successText}>{lessons[step.position - 1]}</AppText></View></View>
+    {step.position > 1 ? <Button label="Voltar ao passo anterior" icon="arrow-back" variant="secondary" disabled={busy} onPress={() => void onBack()} /> : null}
+  </View>;
+}
+
+function LocationSharingExperience({ step, busy, lastAnswerCorrect, onBack, onSubmit }: { step: ParticipantMissionStep; busy: boolean; lastAnswerCorrect: boolean | null; onBack: () => Promise<void>; onSubmit: (action: MissionAction) => Promise<void> }) {
+  const expected = asExpectedAction(step.expectedAction);
+  const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+  const submitOption = (optionId: string) => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId });
+  return <View style={styles.locationExperience}>
+    <View style={styles.scamPhoneHeader}><Ionicons name="arrow-back" size={26} color={colors.surface} /><View style={[styles.scamAvatar, styles.locationAvatar]}><AppText weight="900" color={colors.surface}>A</AppText></View><View style={styles.flex1}><AppText weight="900" color={colors.surface}>Ana</AppText><AppText variant="caption" color={colors.surface}>online</AppText></View><Ionicons name="videocam" size={23} color={colors.surface} /><Ionicons name="call" size={22} color={colors.surface} /><Ionicons name="ellipsis-vertical" size={22} color={colors.surface} /></View>
+    <View style={styles.locationSafetyNotice}><Ionicons name="shield-checkmark-outline" size={24} color="#075E54" /><View style={styles.flex1}><AppText weight="900" color="#075E54">Pratique com segurança</AppText><AppText variant="small">Compartilhe sua localização somente com alguém de confiança e apenas pelo tempo necessário.</AppText></View></View>
+    <View style={styles.locationChatArea}>
+      <View style={styles.locationDatePill}><AppText variant="caption" weight="800">HOJE</AppText></View>
+      <View style={styles.locationOutgoingBubble}><AppText>Oi, Ana! Vou compartilhar minha localização para você acompanhar meu caminho.</AppText><AppText variant="caption" color={colors.textMuted} style={styles.scamMessageTime}>15:20 ✓✓</AppText></View>
+      {step.position >= 3 ? <View style={styles.locationMapCard}><View style={styles.locationMapGraphic}><Ionicons name="location" size={40} color="#E53935" /><View style={styles.locationRoute} /></View><View style={styles.flex1}><AppText weight="900">Localização em tempo real</AppText><AppText variant="small" color={colors.textMuted}>{step.position >= 5 ? 'Duração escolhida: 15 minutos' : 'Escolha por quanto tempo compartilhar'}</AppText></View></View> : null}
+      {step.position === 2 ? <View style={styles.locationAttachmentSheet}><AppText weight="900">Escolha o que deseja enviar</AppText><View style={styles.locationAttachmentGrid}><View style={styles.locationAttachmentItem}><View style={[styles.locationAttachmentCircle, { backgroundColor: '#7E57C2' }]}><Ionicons name="document" size={25} color={colors.surface} /></View><AppText variant="caption">Documento</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Localização" disabled={busy} onPress={() => void onSubmit({ action: 'tap', target: 'location_option' })} style={styles.locationAttachmentItem}><View style={[styles.locationAttachmentCircle, { backgroundColor: '#25A65A' }]}><Ionicons name="location" size={27} color={colors.surface} /></View><AppText variant="caption" weight="900">Localização</AppText></Pressable><View style={styles.locationAttachmentItem}><View style={[styles.locationAttachmentCircle, { backgroundColor: '#E85D75' }]}><Ionicons name="image" size={25} color={colors.surface} /></View><AppText variant="caption">Galeria</AppText></View></View></View> : null}
+      {step.position === 1 ? <View style={styles.scamComposer}><Ionicons name="happy-outline" size={25} color={colors.textMuted} /><View style={styles.scamComposerInput}><AppText variant="small" color={colors.textMuted}>Mensagem</AppText></View><Pressable accessibilityRole="button" accessibilityLabel="Abrir opções de anexo" disabled={busy} onPress={() => void onSubmit({ action: 'tap', target: 'attachment_button' })} style={styles.locationHighlightedClip}><Ionicons name="attach" size={28} color="#075E54" /></Pressable><Ionicons name="camera" size={24} color={colors.textMuted} /><View style={styles.scamMic}><Ionicons name="mic" size={21} color={colors.surface} /></View></View> : null}
+    </View>
+    <View style={styles.locationCoach}><View style={styles.scamCoachNumber}><AppText weight="900" color={colors.surface}>{step.position}</AppText></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Passo {step.position}: {step.title}</AppText><AppText variant="small">{step.instruction}</AppText><View style={styles.locationWhereToTap}><Ionicons name="hand-left-outline" size={20} color={colors.primary} /><AppText variant="small" weight="900" color={colors.primary} style={styles.flex1}>{step.position === 1 ? 'Toque no clipe destacado.' : step.position === 2 ? 'Toque no botão verde “Localização”.' : 'Leia e toque na resposta correta abaixo.'}</AppText></View></View></View>
+    {lastAnswerCorrect === false ? <View accessibilityRole="alert" style={styles.scamWrongAlert}><Ionicons name="warning" size={28} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>Revise antes de continuar</AppText><AppText variant="small">{locationFeedback(step.position)}</AppText><AppText variant="small" weight="900" color={colors.primary}>Nada foi compartilhado. Tente novamente.</AppText></View></View> : null}
+    {options.length ? <View accessibilityRole="radiogroup" style={styles.scamChoices}>{options.map((option, index) => <Pressable accessibilityRole="radio" accessibilityLabel={option.label} disabled={busy} key={option.id} onPress={() => submitOption(option.id)} style={({ pressed }) => [styles.scamChoice, pressed && styles.bankActionRowPressed]}><View style={styles.scamChoiceLetter}><AppText weight="900" color={colors.primary}>{String.fromCharCode(65 + index)}</AppText></View><AppText weight="800" style={styles.flex1}>{option.label}</AppText><Ionicons name="chevron-forward-circle-outline" size={26} color={colors.primary} /></Pressable>)}</View> : null}
+    {step.position >= 3 ? <View style={styles.locationTip}><Ionicons name="bulb-outline" size={25} color={colors.warning} /><View style={styles.flex1}><AppText weight="900">Lembrete de privacidade</AppText><AppText variant="small">{locationFeedback(step.position)}</AppText></View></View> : null}
+    {step.position > 1 ? <Button label="Voltar ao passo anterior" icon="arrow-back" variant="secondary" disabled={busy} onPress={() => void onBack()} /> : null}
+  </View>;
+}
+
+function locationFeedback(position: number) {
+  if (position === 3) return '“Atual” envia um ponto uma vez. “Tempo real” atualiza seu deslocamento até você parar ou o tempo terminar.';
+  if (position === 4) return 'Confira sempre o nome e a foto no alto da conversa. Não envie sua posição para desconhecidos.';
+  if (position === 5) return 'Prefira a menor duração suficiente. Quanto maior o tempo, mais tempo sua posição ficará visível.';
+  if (position === 6) return 'Antes de enviar, revise quem receberá, o tipo de localização e a duração.';
+  return 'Você pode interromper antes do fim tocando em “Parar de compartilhar” dentro da conversa.';
+}
+
+function FakeFamilyExperience({ step, busy, lastAnswerCorrect, onBack, onSubmit }: { step: ParticipantMissionStep; busy: boolean; lastAnswerCorrect: boolean | null; onBack: () => Promise<void>; onSubmit: (action: MissionAction) => Promise<void> }) {
+  const expected = asExpectedAction(step.expectedAction);
+  const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+  const chatLines = [
+    ['Oi, mãe! Sou eu, seu filho. Troquei de número. Salva esse aqui, tá?', 'Meu celular antigo quebrou e não consigo atender nele.'],
+    ['Oi, mãe! Sou eu. Você sabe quem é, né?', 'Não posso falar agora. Me diz meu nome para eu saber que viu a mensagem.'],
+    ['Preciso de uma ajuda, mas meu telefone antigo não funciona.', 'Não liga agora. Estou em uma reunião. Fala comigo somente por aqui.'],
+    ['Preciso pagar uma conta hoje. É urgente!', 'Não conte para ninguém porque é surpresa. Depois eu explico tudo.'],
+    ['Faça um Pix de R$ 780,00 para esta chave: 11999990000.', 'Vai aparecer o nome Carlos Souza. É a conta de um amigo meu. Pode confiar.'],
+    ['Você já fez o Pix? Responde rápido!', 'Se não fizer agora, vou ter um problema muito sério.'],
+  ][step.position - 1] ?? [];
+  const lessons = [
+    'Número novo e pedido para salvar o contato são sinais para confirmar a identidade antes de continuar.',
+    'Não diga nomes. O golpista usa a informação que você fornece para parecer convincente.',
+    'Foto, nome e jeito de escrever podem ser copiados. Ligue para o número antigo ou fale pessoalmente.',
+    'Urgência, segredo e tentativa de impedir uma ligação são sinais fortes de golpe.',
+    'Se o nome do recebedor for diferente, cancele. Nunca aceite uma explicação apressada para essa diferença.',
+    'Depois de confirmar o golpe, não discuta. Bloqueie, denuncie e avise sua família.',
+  ];
+  return <View style={styles.scamExperience}>
+    <View style={styles.scamPhoneHeader}><Ionicons name="arrow-back" size={26} color={colors.surface} /><View style={[styles.scamAvatar, styles.familyAvatar]}><Ionicons name="person" size={26} color={colors.surface} /></View><View style={styles.flex1}><AppText weight="900" color={colors.surface}>+55 (00) 90000-0000</AppText><AppText variant="caption" color={colors.surface}>online</AppText></View><Ionicons name="videocam" size={23} color={colors.surface} /><Ionicons name="call" size={22} color={colors.surface} /><Ionicons name="ellipsis-vertical" size={22} color={colors.surface} /></View>
+    <View style={styles.familyTrainingNotice}><Ionicons name="shield-checkmark-outline" size={24} color="#075E54" /><AppText variant="small" style={styles.flex1}><AppText weight="900">Treino importante:</AppText> o golpista pode usar foto, nome e informações verdadeiras da família encontradas nas redes sociais.</AppText></View>
+    <View style={styles.familyChatArea}>{chatLines.map((line, index) => <View key={line} style={styles.scamBubble}><AppText>{line}</AppText><AppText variant="caption" color={colors.textMuted} style={styles.scamMessageTime}>{`14:${32 + index}`}</AppText></View>)}<View style={styles.scamComposer}><Ionicons name="happy-outline" size={25} color={colors.textMuted} /><View style={styles.scamComposerInput}><AppText variant="small" color={colors.textMuted}>Mensagem</AppText></View><Ionicons name="attach-outline" size={25} color={colors.textMuted} /><View style={styles.scamMic}><Ionicons name="mic" size={21} color={colors.surface} /></View></View></View>
+    <View style={styles.familySignalCard}><AppText variant="caption" weight="900" color={colors.danger}>SINAIS DE FALSO FAMILIAR NESTA CONVERSA</AppText><View style={styles.scamSignalRow}><Tag label={step.position < 3 ? 'NÚMERO NOVO' : step.position < 5 ? 'PRESSA' : 'PIX'} tone="red" /><AppText variant="small" style={styles.flex1}>{lessons[step.position - 1]}</AppText></View></View>
+    <View style={styles.scamCoach}><View style={styles.scamCoachNumber}><AppText weight="900" color={colors.surface}>{step.position}</AppText></View><View style={styles.flex1}><AppText variant="subheading" weight="900">Agora faça isto</AppText><AppText variant="small" color={colors.textMuted}>{step.instruction}</AppText></View><Ionicons name="arrow-down" size={28} color={colors.primary} /></View>
+    {lastAnswerCorrect === false ? <View accessibilityRole="alert" style={styles.scamWrongAlert}><Ionicons name="warning" size={29} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>Essa atitude ajuda o golpista</AppText><AppText variant="small">{lessons[step.position - 1]}</AppText><AppText variant="small" weight="900" color={colors.primary}>Nada aconteceu de verdade. Tente a outra opção.</AppText></View></View> : null}
+    <View accessibilityRole="radiogroup" style={styles.scamChoices}>{options.map((option, index) => <Pressable accessibilityRole="radio" accessibilityLabel={option.label} disabled={busy} key={option.id} onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })} style={({ pressed }) => [styles.scamChoice, pressed && styles.bankActionRowPressed]}><View style={styles.scamChoiceLetter}><AppText weight="900" color={colors.primary}>{index === 0 ? 'A' : 'B'}</AppText></View><AppText weight="800" style={styles.flex1}>{option.label}</AppText><Ionicons name="chevron-forward-circle-outline" size={26} color={colors.primary} /></Pressable>)}</View>
+    <View style={styles.scamRule}><Ionicons name="call" size={27} color={colors.success} /><View style={styles.flex1}><AppText weight="900" color={colors.successText}>Regra para lembrar</AppText><AppText variant="small" color={colors.successText}>Pare. Não dê pistas. Não faça o Pix. Ligue para o número antigo do familiar.</AppText></View></View>
+    {step.position > 1 ? <Button label="Voltar ao passo anterior" icon="arrow-back" variant="secondary" disabled={busy} onPress={() => void onBack()} /> : null}
+  </View>;
+}
+
+type ScamSignIcon = 'timer-outline' | 'gift-outline' | 'link-outline' | 'person-circle-outline' | 'card-outline' | 'key-outline' | 'cash-outline' | 'shield-outline';
+
+function scamWarningSigns(position: number): { title: string; explanation: string; icon: ScamSignIcon }[] {
+  if (position === 4) return [
+    { title: 'Cria medo e urgência', explanation: 'Dizer que existe uma compra ou conta bloqueada serve para fazer você agir sem pensar.', icon: 'timer-outline' },
+    { title: 'Pede informações secretas', explanation: 'Banco verdadeiro não solicita senha completa, código do cartão ou código recebido por SMS no chat.', icon: 'card-outline' },
+    { title: 'O contato foi inesperado', explanation: 'O nome e a foto do banco podem ser copiados por qualquer pessoa.', icon: 'shield-outline' },
+  ];
+  if (position === 5) return [
+    { title: 'Pede um código de uso único', explanation: 'Esse código pode autorizar entrada na conta, troca de senha ou uma compra.', icon: 'key-outline' },
+    { title: 'Promete liberar um benefício', explanation: 'Prêmio verdadeiro não depende de enviar código secreto para uma pessoa.', icon: 'gift-outline' },
+    { title: 'Ignora o aviso do próprio SMS', explanation: 'A mensagem oficial normalmente diz claramente para não compartilhar o código.', icon: 'shield-outline' },
+  ];
+  if (position === 6) return [
+    { title: 'Usa um número novo', explanation: 'Golpistas fingem ser filhos, netos ou amigos e explicam que trocaram de telefone.', icon: 'person-circle-outline' },
+    { title: 'Pede Pix com urgência', explanation: 'A pressa tenta impedir que você ligue e confirme a identidade da pessoa.', icon: 'cash-outline' },
+    { title: 'A chave pertence a outra pessoa', explanation: 'Nome ou banco diferente do familiar é um alerta forte. Não confirme a transferência.', icon: 'shield-outline' },
+  ];
+  if (position === 7) return [
+    { title: 'Golpes misturam vários sinais', explanation: 'Pressa, segredo, ameaça, prêmio e pedido de dinheiro podem aparecer juntos ou separados.', icon: 'shield-outline' },
+    { title: 'Responder confirma que seu número está ativo', explanation: 'Evite conversar, discutir ou clicar para “cancelar” o recebimento.', icon: 'person-circle-outline' },
+    { title: 'O canal oficial é sua proteção', explanation: 'Abra você mesmo o aplicativo ou use um telefone que já conhece.', icon: 'key-outline' },
+  ];
+  return [
+    { title: 'Promessa inesperada', explanation: 'Desconfie de prêmio, desconto ou benefício que você não pediu e para o qual não se inscreveu.', icon: 'gift-outline' },
+    { title: 'Pressão para agir rápido', explanation: 'Frases como “agora”, “última chance” e “sua conta será bloqueada” tentam impedir a conferência.', icon: 'timer-outline' },
+    { title: 'Link ou remetente desconhecido', explanation: 'O endereço pode imitar uma empresa, trocar uma letra ou usar palavras como “seguro” e “oficial”.', icon: 'link-outline' },
+  ];
+}
+
+function scamSafeAction(position: number) {
+  if (position === 4) return 'Não informe dado algum. Encerre a conversa e abra o aplicativo oficial do banco.';
+  if (position === 5) return 'Guarde o código em segredo. Não digite nem encaminhe em conversas ou ligações.';
+  if (position === 6) return 'Não faça o Pix. Ligue para o número antigo do familiar ou fale pessoalmente com ele.';
+  if (position === 7) return 'Não responda. Confirme no canal oficial, bloqueie o contato e use a opção “Denunciar”.';
+  return 'Não toque no link. Feche a mensagem e procure o aplicativo, site ou telefone oficial por conta própria.';
+}
+
+function phoneCallFeedback(position: number) {
+  if (position === 1) return 'Mesmo que a pessoa saiba seu nome, nunca informe sua senha. Desligue a chamada e procure o banco por um canal oficial.';
+  if (position === 2) return 'Não instale aplicativos indicados durante uma ligação inesperada. Eles podem permitir que outra pessoa controle seu celular.';
+  return 'Não retorne para o número que ligou. Procure você mesmo o telefone no verso do cartão ou abra o aplicativo oficial do banco.';
+}
+
+function phoneCallLesson(position: number) {
+  if (position === 1) return {
+    title: 'Senha é sempre secreta',
+    explanation: 'Saber seu nome, CPF ou endereço não prova que a pessoa trabalha no banco. Funcionários não precisam da sua senha para cancelar uma compra.',
+    action: 'Não diga a senha. Encerre a chamada.',
+  };
+  if (position === 2) return {
+    title: 'Não instale aplicativos durante a ligação',
+    explanation: 'O aplicativo pode permitir que o golpista veja sua tela, use seu celular ou acesse sua conta bancária.',
+    action: 'Recuse, desligue e não toque em links enviados.',
+  };
+  return {
+    title: 'Você deve iniciar o contato',
+    explanation: 'O número exibido na chamada pode ser falso. Retornar para ele pode colocar você novamente em contato com o golpista.',
+    action: 'Use o aplicativo oficial ou o telefone impresso no verso do cartão.',
+  };
+}
+
+function phoneCallOptionLabel(position: number, optionId: string, fallback: string) {
+  const labels: Record<number, Record<string, string>> = {
+    1: {
+      safe: 'Dou minha senha se a pessoa souber meu nome',
+      unsafe: 'Não informo minha senha por telefone',
+    },
+    2: {
+      install: 'Instalo o aplicativo enquanto a pessoa me orienta',
+      refuse: 'Não instalo e encerro a ligação',
+    },
+    3: {
+      callback: 'Ligo de volta para o número que apareceu na chamada',
+      official: 'Procuro o banco no aplicativo oficial ou no verso do cartão',
+    },
+  };
+  return labels[position]?.[optionId] ?? fallback;
+}
+
+function PhoneCallExperience({ step, busy, lastAnswerCorrect, onBack, onSubmit, accent }: { step: ParticipantMissionStep; busy: boolean; lastAnswerCorrect: boolean | null; onBack: () => Promise<void>; onSubmit: (action: MissionAction) => Promise<void>; accent: string }) {
+  const expected = asExpectedAction(step.expectedAction);
+  const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+  const [decision, setDecision] = useState<{ optionId: string; correct: boolean } | null>(null);
+  const scenes = [
+    {
+      badge: 'PEDIDO DE SENHA',
+      speech: '“Olá, sou da central do seu banco. Detectamos uma compra suspeita. Confirme agora a sua senha para eu cancelar.”',
+      warning: 'Banco de verdade não pede senha completa por telefone.',
+      question: 'O que você faria nesta situação?',
+      icon: 'key-outline' as const,
+    },
+    {
+      badge: 'PEDIDO PARA INSTALAR APP',
+      speech: '“Para proteger sua conta, instale este aplicativo de segurança enquanto eu explico.”',
+      warning: 'Um aplicativo indicado por desconhecidos pode dar acesso ao seu celular.',
+      question: 'Escolha a resposta mais segura.',
+      icon: 'download-outline' as const,
+    },
+    {
+      badge: 'DEPOIS DE DESLIGAR',
+      speech: 'Você encerrou a ligação. Agora precisa confirmar com o banco se existe algum problema de verdade.',
+      warning: 'Não use o número que apareceu na chamada nem um número enviado pelo suposto atendente.',
+      question: 'Onde você deve procurar o banco?',
+      icon: 'shield-checkmark-outline' as const,
+    },
+  ];
+  const scene = scenes[Math.min(Math.max(step.position - 1, 0), scenes.length - 1)] ?? scenes[0]!;
+  const lesson = phoneCallLesson(step.position);
+  const expectedOptionId = typeof expected.option_id === 'string' ? expected.option_id : '';
+
+  const choosePhoneResponse = async (optionId: string) => {
+    if (busy) return;
+    const correct = optionId === expectedOptionId;
+    if (!correct) await onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId });
+    setDecision({ optionId, correct });
+  };
+
+  const continueAfterCorrect = async () => {
+    if (!decision?.correct) return;
+    const optionId = decision.optionId;
+    setDecision(null);
+    await onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId });
+  };
+
+  return <View style={styles.callExperience}>
+    <View style={styles.callProgressRow}>
+      {step.position > 1 ? <Pressable accessibilityRole="button" accessibilityLabel="Voltar ao passo anterior" disabled={busy} onPress={() => void onBack()} style={styles.callBackButton}><Ionicons name="arrow-back" size={23} color={accent} /><AppText weight="800" color={accent}>Voltar</AppText></Pressable> : <View />}
+      <AppText variant="caption" weight="900" color={colors.textMuted}>SITUAÇÃO {step.position} DE 3</AppText>
+    </View>
+    <View style={[styles.callScreen, { backgroundColor: accent }]}>
+      <View style={styles.callStatusPill}><View style={styles.callLiveDot} /><AppText variant="caption" weight="900" color={colors.surface}>LIGAÇÃO FICTÍCIA</AppText></View>
+      <View style={[styles.fakeCallerAvatar, styles.callCallerAvatar]}><Ionicons name="person" size={48} color={accent} /></View>
+      <AppText variant="subheading" weight="900" color={colors.surface}>Número não identificado</AppText>
+      <AppText variant="small" color={colors.surface}>00:18 · chamada de treinamento</AppText>
+      <View style={styles.callSpeechBubble}><Ionicons name={scene.icon} size={28} color={colors.danger} /><AppText weight="800" style={styles.flex1}>{scene.speech}</AppText></View>
+      <View style={styles.fakeCallControls}><View style={styles.callControl}><Ionicons name="mic-off" size={23} color={colors.surface} /><AppText variant="caption" color={colors.surface}>Mudo</AppText></View><View style={styles.callControl}><View style={[styles.fakeCallButton, styles.fakeCallEnd]}><Ionicons name="call" size={24} color={colors.surface} /></View><AppText variant="caption" color={colors.surface}>Desligar</AppText></View><View style={styles.callControl}><Ionicons name="volume-high" size={23} color={colors.surface} /><AppText variant="caption" color={colors.surface}>Som</AppText></View></View>
+    </View>
+    <View style={styles.callWarningCard}><Ionicons name="warning" size={28} color={colors.warning} /><View style={styles.flex1}><AppText variant="caption" weight="900" color={colors.warning}>SINAL DE GOLPE</AppText><AppText weight="800">{scene.warning}</AppText></View></View>
+    <View style={styles.callCoachCard}><View style={styles.callCoachNumber}><AppText weight="900" color={colors.surface}>{step.position}</AppText></View><View style={styles.flex1}><AppText variant="subheading" weight="900">{scene.question}</AppText><AppText variant="small" color={colors.textMuted}>Toque em uma das respostas abaixo. Pode tentar novamente se errar.</AppText></View><Ionicons name="arrow-down" size={28} color={colors.primary} /></View>
+    <View accessibilityRole="radiogroup" style={[styles.callChoices, lastAnswerCorrect === false && styles.callChoicesRetry]}>
+      {options.map((option, index) => {
+        const label = phoneCallOptionLabel(step.position, option.id, option.label);
+        return <Pressable accessibilityRole="radio" accessibilityLabel={label} disabled={busy} key={option.id} onPress={() => void choosePhoneResponse(option.id)} style={({ pressed }) => [styles.callChoice, pressed && styles.bankActionRowPressed]}><View style={styles.callChoiceLetter}><AppText weight="900" color={accent}>{index === 0 ? 'A' : 'B'}</AppText></View><AppText weight="800" style={styles.flex1}>{label}</AppText><Ionicons name="chevron-forward-circle-outline" size={26} color={accent} /></Pressable>;
+      })}
+    </View>
+    <View style={styles.callRemember}><Ionicons name="shield-checkmark" size={25} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}><AppText weight="900" color={colors.successText}>Regra para lembrar: </AppText>pare, desligue e procure o banco por conta própria.</AppText></View>
+    <Modal animationType="fade" onRequestClose={() => { if (decision?.correct) return; setDecision(null); }} transparent visible={decision !== null}>
+      <View style={styles.callModalBackdrop}>
+        <View accessibilityRole="alert" accessibilityViewIsModal style={styles.callModalCard}>
+          <View style={[styles.callModalIcon, decision?.correct ? styles.callModalIconSafe : styles.callModalIconDanger]}><Ionicons name={decision?.correct ? 'shield-checkmark' : 'warning'} size={42} color={colors.surface} /></View>
+          <Tag label={decision?.correct ? 'ESCOLHA SEGURA' : 'ATENÇÃO: ESCOLHA PERIGOSA'} tone={decision?.correct ? 'green' : 'red'} />
+          <AppText variant="heading" weight="900" style={styles.center}>{decision?.correct ? 'Muito bem!' : 'Pare: não faça isso'}</AppText>
+          <AppText color={colors.textMuted} style={styles.center}>{decision?.correct ? lesson.explanation : phoneCallFeedback(step.position)}</AppText>
+          <View style={styles.callModalLesson}><Ionicons name="bulb-outline" size={27} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">O que fazer</AppText><AppText variant="small">{lesson.action}</AppText></View></View>
+          {!decision?.correct ? <View style={styles.callModalConsequence}><Ionicons name="alert-circle-outline" size={25} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>Por que existe risco?</AppText><AppText variant="small">{lesson.explanation}</AppText></View></View> : null}
+          <Button label={decision?.correct ? (step.position === 3 ? 'Concluir missão' : 'Ir para o próximo passo') : 'Entendi, tentar novamente'} icon={decision?.correct ? 'arrow-forward' : 'refresh'} onPress={() => decision?.correct ? void continueAfterCorrect() : setDecision(null)} />
+          <AppText variant="caption" color={colors.textMuted} style={styles.center}>Isto é apenas um treino. Nenhuma ligação, senha ou conta real foi usada.</AppText>
+        </View>
+      </View>
+    </Modal>
+  </View>;
 }
 
 function MarketplaceExperience({ step, busy, query, onQueryChange, onSubmit }: { step: ParticipantMissionStep; busy: boolean; query: string; onQueryChange: (value: string) => void; onSubmit: (action: MissionAction) => Promise<void> }) {
@@ -1140,16 +1557,38 @@ function AppStoreExperience({ step, busy, query, onQueryChange, onSubmit, accent
 function EnvironmentActions({ step, busy, accent, onSubmit }: { step: ParticipantMissionStep; busy: boolean; accent: string; onSubmit: (action: MissionAction) => Promise<void> }) {
   const expected = asObject(step.expectedAction); const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
   if (!options.length) return <Pressable accessibilityRole="button" disabled={busy} onPress={() => void onSubmit({ action: 'continue' })} style={[styles.environmentPrimaryAction, { backgroundColor: accent }]}><AppText weight="900" color={colors.surface}>Continuar no ambiente de treino</AppText></Pressable>;
-  return <View style={styles.environmentActionList}>{options.map(option => <Pressable accessibilityRole="button" accessibilityLabel={option.label} disabled={busy} key={option.id} onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })} style={({ pressed }) => [styles.environmentOption, pressed && styles.bankActionRowPressed]}><View style={[styles.environmentOptionIcon, { backgroundColor: `${accent}18` }]}><Ionicons name={option.id.includes('cancel') || option.id.includes('refuse') || option.id.includes('ignore') || option.id.includes('do-not') ? 'shield-checkmark-outline' : 'chevron-forward-circle-outline'} size={24} color={accent} /></View><AppText weight="800" style={styles.flex1}>{option.label}</AppText><Ionicons name="chevron-forward" size={21} color={colors.textMuted} /></Pressable>)}</View>;
+  return <View style={styles.environmentActionList}>{options.map(option => {
+    const label = option.id === 'urgency-link' ? 'A mensagem exige pressa e manda abrir um link desconhecido' : option.id === 'logo' ? 'A mensagem possui uma imagem ou logotipo' : option.label;
+    return <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={busy} key={option.id} onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })} style={({ pressed }) => [styles.environmentOption, pressed && styles.bankActionRowPressed]}><View style={[styles.environmentOptionIcon, { backgroundColor: `${accent}18` }]}><Ionicons name={option.id.includes('cancel') || option.id.includes('refuse') || option.id.includes('ignore') || option.id.includes('do-not') ? 'shield-checkmark-outline' : 'chevron-forward-circle-outline'} size={24} color={accent} /></View><AppText weight="800" style={styles.flex1}>{label}</AppText><Ionicons name="chevron-forward" size={21} color={colors.textMuted} /></Pressable>;
+  })}</View>;
 }
 
 function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playInstruction, router }: { assignmentId: string; assessmentId?: string; details: ParticipantMissionDetails; steps: ParticipantMissionStep[]; engine: ReturnType<typeof useMissionEngine>; playInstruction: (text: string) => void; router: ReturnType<typeof useRouter> }) {
+  const { preferences } = useApp();
   const step = engine.currentStep;
+  const [showPixBalance, setShowPixBalance] = useState(false);
+  const [pixEntryStage, setPixEntryStage] = useState<'home' | 'key' | 'amount' | 'review'>('home');
+  const [trainingPixKey, setTrainingPixKey] = useState('');
+  const [trainingPixAmount, setTrainingPixAmount] = useState('');
+  const [bankTab, setBankTab] = useState<'pix' | 'cards' | 'menu'>('pix');
+  const [trainingBankCardAdded, setTrainingBankCardAdded] = useState(false);
+  const [correctingPixAmount, setCorrectingPixAmount] = useState(false);
+  const lastPixAutoPlayedStep = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!step || !preferences.autoAudio || lastPixAutoPlayedStep.current === step.id) return;
+    lastPixAutoPlayedStep.current = step.id;
+    playInstruction(pixAudioInstruction(step.position, trainingPixAmount, pixEntryStage));
+  }, [pixEntryStage, playInstruction, preferences.autoAudio, step, trainingPixAmount]);
+
   if (!step) return null;
 
   const screenIndex = Math.min(Math.max(step.position, 1), 4);
 
   const renderPixScreen = () => {
+    if (bankTab === 'cards') return <BankCardsScreen cardAdded={trainingBankCardAdded} onAddCard={() => setTrainingBankCardAdded(true)} onBack={() => setBankTab('pix')} onMenu={() => setBankTab('menu')} />;
+    if (bankTab === 'menu') return <BankMenuScreen onBack={() => setBankTab('pix')} onCards={() => setBankTab('cards')} />;
+    if (correctingPixAmount) return <View style={styles.phoneShell}><View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText></View><PixBankHeader compact /><View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para a revisão" onPress={() => setCorrectingPixAmount(false)}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Corrija o valor</AppText><AppText variant="small" color={colors.textMuted}>A missão continua em andamento</AppText></View></View><View style={styles.pixWrongChoice}><Ionicons name="information-circle" size={27} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Valor combinado: R$ 20,00</AppText><AppText variant="small">Apague o valor anterior e digite novamente.</AppText></View></View><View style={styles.pixAmountInput}><AppText variant="heading" weight="900">R$</AppText><TextInput accessibilityLabel="Corrigir valor fictício do Pix" autoFocus inputMode="decimal" onChangeText={setTrainingPixAmount} placeholder="0,00" placeholderTextColor={colors.placeholder} style={styles.pixAmountTextInput} value={trainingPixAmount} /></View><Button label="Revisar valor corrigido" icon="arrow-forward" disabled={!isPositivePixAmount(trainingPixAmount)} onPress={() => setCorrectingPixAmount(false)} /><View style={styles.pixSafetyRow}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Nenhum Pix será enviado. Você está apenas corrigindo o exercício.</AppText></View><PixBankNav onPixPress={() => setCorrectingPixAmount(false)} onCardsPress={() => setBankTab('cards')} onMenuPress={() => setBankTab('menu')} /></View>;
     switch (screenIndex) {
       case 1:
         return (
@@ -1159,18 +1598,31 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
               <View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View>
             </View>
             <PixBankHeader />
-            <View style={styles.bankBalanceCard}><View><AppText variant="small" color={colors.textMuted}>Saldo disponível</AppText><AppText variant="subheading" weight="900">R$ ••••••</AppText></View><Ionicons name="eye-off-outline" size={22} color={colors.textMuted} /></View>
-            <View style={styles.bankSectionTitle}><AppText variant="subheading" weight="900">Resumo do Pix</AppText><Tag label="SIMULAÇÃO" tone="purple" /></View>
-            <View style={styles.pixSummaryCard}>
-              <AppText variant="small" color={colors.textMuted}>Destinatária fictícia</AppText>
-              <AppText variant="heading" weight="900">Ana Treino</AppText>
-              <View style={styles.pixDivider} />
-              <AppText variant="small" color={colors.textMuted}>Valor exibido no treino</AppText>
-              <AppText variant="heading" weight="900">R$ 25,00</AppText>
-            </View>
-            <View style={styles.pixSafetyRow}><Ionicons name="lock-closed-outline" size={20} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Dados inventados. Nenhuma transferência será realizada.</AppText></View>
-            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
-            <PixBankNav />
+            <Pressable accessibilityRole="button" accessibilityLabel={showPixBalance ? 'Ocultar saldo fictício' : 'Mostrar saldo fictício'} onPress={() => setShowPixBalance(value => !value)} style={styles.bankBalanceCard}><View><AppText variant="small" color={colors.textMuted}>Saldo disponível</AppText><AppText variant="subheading" weight="900">{showPixBalance ? 'R$ 850,00' : 'R$ ••••••'}</AppText></View><View style={styles.pixEyeButton}><Ionicons name={showPixBalance ? 'eye-outline' : 'eye-off-outline'} size={25} color={colors.primary} /></View></Pressable>
+            {pixEntryStage === 'home' ? <>
+              <View style={styles.pixCoachCard}><View style={styles.pixCoachNumber}><AppText weight="900" color={colors.surface}>1</AppText></View><View style={styles.flex1}><AppText weight="900">Primeiro, conheça a tela</AppText><AppText variant="small" color={colors.textMuted}>Toque no olhinho para mostrar ou esconder o saldo. Depois toque no botão Pix.</AppText></View><Ionicons name="arrow-down" size={28} color={colors.primary} /></View>
+              <View style={styles.pixShortcutGrid}><Pressable accessibilityRole="button" accessibilityLabel="Abrir área Pix de treinamento" onPress={() => setPixEntryStage('key')} style={styles.pixShortcut}><View style={styles.pixShortcutIcon}><Ionicons name="diamond-outline" size={31} color={colors.surface} /></View><AppText weight="900">Pix</AppText><AppText variant="caption" color={colors.textMuted}>Transferir</AppText></Pressable><View style={styles.pixShortcutDisabled}><Ionicons name="barcode-outline" size={29} color={colors.textMuted} /><AppText variant="small" color={colors.textMuted}>Pagar</AppText></View><View style={styles.pixShortcutDisabled}><Ionicons name="receipt-outline" size={29} color={colors.textMuted} /><AppText variant="small" color={colors.textMuted}>Extrato</AppText></View></View>
+              <Button label="Entrar na área Pix" icon="diamond-outline" onPress={() => setPixEntryStage('key')} />
+            </> : pixEntryStage === 'key' ? <>
+              <View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar ao início do banco" onPress={() => setPixEntryStage('home')}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Para quem?</AppText><AppText variant="small" color={colors.textMuted}>Digite uma chave Pix fictícia</AppText></View></View>
+              <View style={styles.pixCoachCard}><View style={styles.pixCoachNumber}><AppText weight="900" color={colors.surface}>2</AppText></View><View style={styles.flex1}><AppText weight="900">Use somente o dado de treino</AppText><AppText variant="small" color={colors.textMuted}>Não coloque CPF, telefone ou chave Pix de verdade.</AppText></View></View>
+              <View style={styles.pixCopyExample}><Ionicons name="copy-outline" size={24} color={colors.primary} /><View style={styles.flex1}><AppText variant="caption" weight="900" color={colors.primary}>CHAVE FICTÍCIA PARA DIGITAR</AppText><AppText weight="900" selectable>ana.treino@exemplo.com</AppText><AppText variant="caption" color={colors.textMuted}>Este exemplo continuará visível enquanto você digita.</AppText></View></View>
+              <TextInput accessibilityLabel="Chave Pix fictícia" autoCapitalize="none" onChangeText={setTrainingPixKey} placeholder="Digite: ana.treino@exemplo.com" placeholderTextColor={colors.placeholder} style={styles.pixTrainingInput} value={trainingPixKey} />
+              <Pressable accessibilityRole="button" onPress={() => setTrainingPixKey('ana.treino@exemplo.com')} style={styles.pixTrainingFill}><Ionicons name="sparkles-outline" size={20} color={colors.primary} /><AppText weight="800" color={colors.primary}>Preencher chave fictícia</AppText></Pressable>
+              <Button label="Continuar" icon="arrow-forward" disabled={trainingPixKey !== 'ana.treino@exemplo.com'} onPress={() => setPixEntryStage('amount')} />
+            </> : pixEntryStage === 'amount' ? <>
+              <View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para a chave Pix" onPress={() => setPixEntryStage('key')}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Qual é o valor?</AppText><AppText variant="small" color={colors.textMuted}>Destinatária fictícia: Ana Treino</AppText></View></View>
+              <View style={styles.pixCoachCard}><View style={styles.pixCoachNumber}><AppText weight="900" color={colors.surface}>3</AppText></View><View style={styles.flex1}><AppText weight="900">Digite o valor combinado</AppText><AppText variant="small" color={colors.textMuted}>Para este exercício, digite 20,00.</AppText></View></View>
+              <View style={styles.pixAmountInput}><AppText variant="heading" weight="900">R$</AppText><TextInput accessibilityLabel="Valor fictício do Pix" inputMode="decimal" onChangeText={setTrainingPixAmount} placeholder="0,00" placeholderTextColor={colors.placeholder} style={styles.pixAmountTextInput} value={trainingPixAmount} /></View>
+              <Button label="Revisar Pix" icon="arrow-forward" disabled={!isPositivePixAmount(trainingPixAmount)} onPress={() => setPixEntryStage('review')} />
+            </> : <>
+              <View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para alterar o valor" onPress={() => setPixEntryStage('amount')}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View style={styles.flex1}><AppText variant="heading" weight="900">Revise antes de enviar</AppText><AppText variant="small" color={colors.textMuted}>Esta é a etapa mais importante</AppText></View></View>
+              <View style={styles.pixSummaryCard}><AppText variant="small" color={colors.textMuted}>Quem vai receber</AppText><AppText variant="heading" weight="900">Ana Treino</AppText><AppText variant="caption" color={colors.textMuted}>{trainingPixKey}</AppText><View style={styles.pixRecipientBank}><View style={styles.pixRecipientBankIcon}><Ionicons name="business-outline" size={23} color={colors.primary} /></View><View style={styles.flex1}><AppText variant="caption" color={colors.textMuted}>Instituição da pessoa que recebe</AppText><AppText weight="900">Banco Exemplo S.A.</AppText><AppText variant="caption" color={colors.textMuted}>Agência •••• · Conta ••123-4</AppText></View></View><View style={styles.pixDivider} /><AppText variant="small" color={colors.textMuted}>Valor digitado</AppText><AppText variant="heading" weight="900">{formatTrainingPixAmount(trainingPixAmount)}</AppText></View>
+              {!isExpectedPixAmount(trainingPixAmount) ? <View accessibilityRole="alert" style={styles.pixWrongChoice}><Ionicons name="warning" size={27} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>O valor está diferente do combinado</AppText><AppText variant="small">Você digitou {formatTrainingPixAmount(trainingPixAmount)}, mas o exercício combinou R$ 20,00. Em um Pix real, volte e corrija antes de enviar.</AppText></View></View> : <View style={styles.pixSafetyRow}><Ionicons name="checkmark-circle" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>O valor digitado confere com os R$ 20,00 combinados.</AppText></View>}
+              <View style={styles.pixSafetyRow}><Ionicons name="lock-closed-outline" size={20} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Treino seguro: nenhum dinheiro será enviado.</AppText></View>
+              <Button label={isExpectedPixAmount(trainingPixAmount) ? 'Continuar para a conferência' : 'Continuar e aprender a identificar o erro'} icon="shield-checkmark-outline" disabled={engine.busy} onPress={() => void engine.submit({ action: 'continue' })} />
+            </>}
+            <PixBankNav onPixPress={() => setPixEntryStage('key')} onCardsPress={() => setBankTab('cards')} onMenuPress={() => setBankTab('menu')} />
           </View>
         );
       case 2:
@@ -1180,9 +1632,10 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
             <PixBankHeader compact />
             <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>CONFERÊNCIA DO PIX</AppText><Tag label="PASSO 2" tone="purple" /></View>
             <View style={styles.textStack}><AppText variant="heading" weight="900">Quem aparece no resumo?</AppText><AppText color={colors.textMuted}>Compare o nome antes de continuar.</AppText></View>
-            <View style={styles.pixSummaryCompact}><Ionicons name="person-circle-outline" size={42} color={colors.primary} /><View style={styles.flex1}><AppText variant="small" color={colors.textMuted}>Destinatária</AppText><AppText weight="900">Ana Treino</AppText></View></View>
-            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
-            <PixBankNav />
+            <View style={styles.pixSummaryCompact}><Ionicons name="person-circle-outline" size={42} color={colors.primary} /><View style={styles.flex1}><AppText variant="small" color={colors.textMuted}>Destinatária</AppText><AppText weight="900">Ana Treino</AppText><AppText variant="caption" color={colors.textMuted}>Banco Exemplo S.A. · chave fictícia</AppText></View></View>
+            <PixStepCoach position={step.position} amount={trainingPixAmount} />
+            <PixBankActions step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} onSubmit={engine.submit} />
+            <PixBankNav onCardsPress={() => setBankTab('cards')} onMenuPress={() => setBankTab('menu')} />
           </View>
         );
       case 3:
@@ -1193,12 +1646,13 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
             <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>CONFERÊNCIA DO PIX</AppText><Tag label="PASSO 3" tone="purple" /></View>
             <View style={styles.textStack}><AppText variant="heading" weight="900">Confira o valor</AppText><AppText color={colors.textMuted}>Compare o valor combinado com o valor exibido.</AppText></View>
             <View style={styles.pixComparisonRow}>
-              <View style={styles.pixComparisonCard}><AppText variant="small" color={colors.textMuted}>Pedido</AppText><AppText variant="subheading" weight="900">R$ 20,00</AppText></View>
+              <View style={styles.pixComparisonCard}><AppText variant="small" color={colors.textMuted}>Valor combinado</AppText><AppText variant="subheading" weight="900">R$ 20,00</AppText></View>
               <Ionicons name="arrow-forward" size={24} color={colors.primary} />
-              <View style={[styles.pixComparisonCard, styles.pixComparisonWarning]}><AppText variant="small" color={colors.textMuted}>Na tela</AppText><AppText variant="subheading" weight="900">R$ 25,00</AppText></View>
+              <View style={[styles.pixComparisonCard, isExpectedPixAmount(trainingPixAmount) ? styles.pixComparisonSafe : styles.pixComparisonWarning]}><AppText variant="small" color={colors.textMuted}>Valor digitado</AppText><AppText variant="subheading" weight="900">{formatTrainingPixAmount(trainingPixAmount)}</AppText><AppText variant="caption" weight="900" color={isExpectedPixAmount(trainingPixAmount) ? colors.success : colors.danger}>{isExpectedPixAmount(trainingPixAmount) ? '✓ CONFERE' : '⚠ DIFERENTE'}</AppText></View>
             </View>
-            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
-            <PixBankNav />
+            <PixStepCoach position={step.position} amount={trainingPixAmount} />
+            <PixBankActions step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} amountMatches={isExpectedPixAmount(trainingPixAmount)} onCorrectAmount={() => setCorrectingPixAmount(true)} onSubmit={engine.submit} />
+            <PixBankNav onCardsPress={() => setBankTab('cards')} onMenuPress={() => setBankTab('menu')} />
           </View>
         );
       case 4:
@@ -1206,10 +1660,11 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
           <View style={styles.phoneShell}>
             <View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText><View style={styles.signalGroup}><View style={styles.signal} /><View style={styles.signal} /><View style={styles.signal} /></View></View>
             <PixBankHeader compact />
-            <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>REVISÃO FINAL</AppText><Tag label="DECISÃO SEGURA" tone="green" /></View>
-            <View style={styles.pixWarningCard}><Ionicons name="warning-outline" size={34} color={colors.warning} /><AppText variant="subheading" weight="900" style={styles.center}>O valor está diferente</AppText><AppText color={colors.textMuted} style={styles.center}>Quando os dados não conferem, não prossiga com a transferência.</AppText></View>
-            <PixBankActions step={step} busy={engine.busy} onSubmit={engine.submit} />
-            <PixBankNav />
+            <View style={styles.modalTop}><AppText variant="small" weight="800" color={colors.primary}>REVISÃO FINAL</AppText><Tag label="DADOS CONFERIDOS" tone="green" /></View>
+            <View style={isExpectedPixAmount(trainingPixAmount) ? styles.pixCheckedCard : styles.pixWarningCard}><Ionicons name={isExpectedPixAmount(trainingPixAmount) ? 'shield-checkmark' : 'warning'} size={38} color={isExpectedPixAmount(trainingPixAmount) ? colors.success : colors.warning} /><AppText variant="subheading" weight="900" style={styles.center}>{isExpectedPixAmount(trainingPixAmount) ? 'Tudo confere' : 'O valor não confere'}</AppText><View style={styles.pixCheckedList}><AppText>✓ Nome: Ana Treino</AppText><AppText>✓ Banco: Banco Exemplo S.A.</AppText><AppText>{isExpectedPixAmount(trainingPixAmount) ? '✓' : '⚠'} Valor digitado: {formatTrainingPixAmount(trainingPixAmount)}</AppText><AppText>Valor combinado: R$ 20,00</AppText></View><AppText color={colors.textMuted} style={styles.center}>{isExpectedPixAmount(trainingPixAmount) ? 'Em um Pix real, confirme somente depois de revisar estes dados.' : 'Em um Pix real, volte e corrija o valor antes de enviar.'}</AppText></View>
+            <PixStepCoach position={step.position} amount={trainingPixAmount} />
+            <PixBankActions step={step} busy={engine.busy} lastAnswerCorrect={engine.run.lastAnswerCorrect ?? null} amountMatches={isExpectedPixAmount(trainingPixAmount)} onCorrectAmount={() => setCorrectingPixAmount(true)} onSubmit={engine.submit} />
+            <PixBankNav onCardsPress={() => setBankTab('cards')} onMenuPress={() => setBankTab('menu')} />
           </View>
         );
     }
@@ -1220,22 +1675,81 @@ function PixFlowMock({ assignmentId, assessmentId, details, steps, engine, playI
       <Header title={details.title} subtitle="Treino interativo — nenhuma ação real" onBack={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/participant/mission-details', params: { assignmentId } })} />
       <SimulationIdentityNotice reference="serviços Pix e aplicativos bancários" />
       <SyncStatusCard engine={engine} />
+      <PixJourney current={step.position === 1 ? pixEntryStage : 'checking'} />
       <Card style={styles.pixMockCard}>{renderPixScreen()}</Card>
       <Card style={styles.instructionCard}>
         <View style={styles.instructionTop}>
           <AppText variant="small" weight="800" color={colors.primary}>PASSO {step.position} DE {steps.length}</AppText>
           <Tag label="Simulação segura" tone="green" />
         </View>
-        <AppText variant="subheading" weight="800">{step.title}</AppText>
-        <AppText color={colors.textMuted}>{step.instruction}</AppText>
+        <AppText variant="subheading" weight="800">O que você está aprendendo</AppText>
+        <AppText color={colors.textMuted}>{step.position === 1 ? (pixEntryStage === 'home' ? 'Localize e abra a opção Pix no aplicativo bancário de treinamento.' : pixEntryStage === 'key' ? 'Informe para quem você quer transferir usando somente a chave fictícia fornecida pelo treino.' : pixEntryStage === 'amount' ? 'Digite o valor combinado e confira os números antes de avançar.' : 'Revise nome, chave, banco da pessoa que recebe e valor. Em um Pix real, essa conferência evita enviar dinheiro à pessoa errada.') : step.instruction}</AppText>
         <ProgressBar value={Math.round(100 * step.position / steps.length)} height={10} />
       </Card>
       <View style={styles.supportActions}>
-        <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(step.audioText); void engine.registerSupport('audio'); }} />
+        <Button label="Ouvir instrução" icon="volume-high-outline" variant="secondary" disabled={engine.busy} onPress={() => { playInstruction(pixAudioInstruction(step.position, trainingPixAmount, pixEntryStage)); void engine.registerSupport('audio'); }} />
         <Button label="Mostrar uma dica" icon="help-circle-outline" variant="soft" disabled={engine.busy} onPress={() => void engine.registerSupport('hint')} />
       </View>
     </Screen>
   );
+}
+
+function pixAudioInstruction(position: number, amount: string, entryStage: 'home' | 'key' | 'amount' | 'review') {
+  const amountLabel = formatTrainingPixAmount(amount);
+  const amountMatches = isExpectedPixAmount(amount);
+  if (position === 1) {
+    if (entryStage === 'home') return 'Localize a opção Pix no aplicativo bancário de treinamento e toque nela.';
+    if (entryStage === 'key') return 'Digite a chave fictícia ana ponto treino arroba exemplo ponto com. Não use uma chave Pix verdadeira.';
+    if (entryStage === 'amount') return 'Digite o valor que deseja praticar. O valor combinado neste exercício é vinte reais.';
+    return amountMatches
+      ? `Você digitou ${amountLabel}. O valor confere com os vinte reais combinados. Revise o nome, o banco e o valor antes de continuar.`
+      : `Você digitou ${amountLabel}, mas o valor combinado era vinte reais. Em um Pix real, volte e corrija antes de enviar.`;
+  }
+  if (position === 2) return 'Confira o nome de quem vai receber. Nesta simulação, a destinatária é Ana Treino, do Banco Exemplo.';
+  if (position === 3) return amountMatches
+    ? `Você digitou ${amountLabel}, igual aos vinte reais combinados. Escolha a opção que informa que os valores são iguais.`
+    : `Você digitou ${amountLabel}, mas o combinado era vinte reais. Escolha a opção que informa que os valores estão diferentes.`;
+  return amountMatches
+    ? `Nome, banco e valor de ${amountLabel} conferem. Agora você pode confirmar o Pix simulado.`
+    : `O valor digitado foi ${amountLabel}, diferente dos vinte reais combinados. Escolha voltar e corrigir o valor.`;
+}
+
+function PixJourney({ current }: { current: 'home' | 'key' | 'amount' | 'review' | 'checking' }) {
+  const stages = [
+    { id: 'home', label: 'Abrir Pix', icon: 'diamond-outline' as const },
+    { id: 'key', label: 'Informar chave', icon: 'person-outline' as const },
+    { id: 'amount', label: 'Digitar valor', icon: 'cash-outline' as const },
+    { id: 'review', label: 'Revisar dados', icon: 'document-text-outline' as const },
+    { id: 'checking', label: 'Conferir', icon: 'shield-checkmark-outline' as const },
+  ];
+  const currentIndex = Math.max(0, stages.findIndex(item => item.id === current));
+  return <Card style={styles.pixJourneyCard}><View style={styles.pixJourneyHeading}><Ionicons name="map-outline" size={26} color={colors.primary} /><View style={styles.flex1}><AppText weight="900">Passo a passo para fazer um Pix</AppText><AppText variant="small" color={colors.textMuted}>Siga da esquerda para a direita. A etapa destacada mostra onde você está.</AppText></View></View><View style={styles.pixJourneySteps}>{stages.map((item, index) => <View key={item.id} style={styles.pixJourneyItem}><View style={[styles.pixJourneyCircle, index <= currentIndex && styles.pixJourneyCircleActive]}><Ionicons name={index < currentIndex ? 'checkmark' : item.icon} size={21} color={index <= currentIndex ? colors.surface : colors.textMuted} /></View><AppText variant="caption" weight={index === currentIndex ? '900' : '700'} color={index === currentIndex ? colors.primary : colors.textMuted} style={styles.center}>{index + 1}. {item.label}</AppText></View>)}</View></Card>;
+}
+
+function parseTrainingPixAmount(value: string) { const clean = value.trim(); return Number(clean.includes(',') ? clean.replace(/\./g, '').replace(',', '.') : clean); }
+function isPositivePixAmount(value: string) { const amount = parseTrainingPixAmount(value); return Number.isFinite(amount) && amount > 0; }
+function isExpectedPixAmount(value: string) { return Math.abs(parseTrainingPixAmount(value) - 20) < 0.001; }
+function formatTrainingPixAmount(value: string) { const amount = parseTrainingPixAmount(value); return Number.isFinite(amount) ? amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'; }
+
+function BankCardsScreen({ cardAdded, onAddCard, onBack, onMenu }: { cardAdded: boolean; onAddCard: () => void; onBack: () => void; onMenu: () => void }) {
+  return <View style={styles.phoneShell}><View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText></View><PixBankHeader compact /><View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para Pix" onPress={onBack}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><AppText variant="heading" weight="900">Meus cartões</AppText></View>{cardAdded ? <View style={styles.mobilityTrainingCard}><AppText variant="caption" color={colors.surface}>CARTÃO FICTÍCIO</AppText><AppText variant="subheading" weight="900" color={colors.surface}>•••• •••• •••• 4242</AppText><AppText color={colors.surface}>Pessoa de Treino · 12/30</AppText></View> : <View style={styles.storeEmptyState}><Ionicons name="card-outline" size={52} color={colors.primary} /><AppText weight="900">Nenhum cartão cadastrado</AppText><AppText variant="small" color={colors.textMuted} style={styles.center}>Pratique adicionando um cartão totalmente fictício.</AppText></View>}<View style={styles.pixSafetyRow}><Ionicons name="shield-checkmark" size={22} color={colors.success} /><AppText variant="small" color={colors.successText} style={styles.flex1}>Não digite dados de um cartão verdadeiro.</AppText></View><Button label={cardAdded ? 'Cartão fictício adicionado' : 'Adicionar cartão fictício'} icon={cardAdded ? 'checkmark-circle' : 'add-circle-outline'} disabled={cardAdded} onPress={onAddCard} /><PixBankNav onPixPress={onBack} onCardsPress={() => {}} onMenuPress={onMenu} /></View>;
+}
+
+function BankMenuScreen({ onBack, onCards }: { onBack: () => void; onCards: () => void }) {
+  const items = [{ icon: 'person-outline' as const, label: 'Meu perfil' }, { icon: 'receipt-outline' as const, label: 'Extrato' }, { icon: 'key-outline' as const, label: 'Minhas chaves Pix' }, { icon: 'lock-closed-outline' as const, label: 'Segurança' }, { icon: 'help-circle-outline' as const, label: 'Ajuda' }];
+  return <View style={styles.phoneShell}><View style={styles.statusBar}><AppText variant="small" weight="700">9:41</AppText></View><PixBankHeader compact /><View style={styles.pixFlowTitle}><Pressable accessibilityRole="button" accessibilityLabel="Voltar para Pix" onPress={onBack}><Ionicons name="arrow-back" size={26} color={colors.text} /></Pressable><View><AppText variant="heading" weight="900">Menu</AppText><AppText variant="small" color={colors.textMuted}>Serviços do banco de treinamento</AppText></View></View><View style={styles.bankMenuList}>{items.map(item => <Pressable accessibilityRole="button" key={item.label} style={styles.bankMenuRow}><View style={styles.bankActionIcon}><Ionicons name={item.icon} size={24} color={colors.primary} /></View><AppText weight="800" style={styles.flex1}>{item.label}</AppText><Ionicons name="chevron-forward" size={22} color={colors.textMuted} /></Pressable>)}</View><PixBankNav onPixPress={onBack} onCardsPress={onCards} onMenuPress={() => {}} /></View>;
+}
+
+function PixStepCoach({ position, amount = '' }: { position: number; amount?: string }) {
+  const amountLabel = formatTrainingPixAmount(amount);
+  const amountMatches = isExpectedPixAmount(amount);
+  const copy = [
+    ['Observe antes de tocar', 'Leia com calma o nome e o valor que aparecem no resumo do Pix. Depois toque em “Continuar conferência”.'],
+    ['Confira primeiro o nome', 'Veja quem receberia o dinheiro. Depois toque na opção com o mesmo nome mostrado acima.'],
+    ['Compare os dois valores', amountMatches ? `Você digitou ${amountLabel}, igual aos R$ 20,00 combinados. Toque na resposta que informa que os valores são iguais.` : `Você digitou ${amountLabel}, mas o combinado era R$ 20,00. Toque na resposta que informa que os valores estão diferentes.`],
+    ['Faça uma última revisão', amountMatches ? `Nome, banco e valor de ${amountLabel} conferem. Agora você pode confirmar o Pix simulado.` : `O valor digitado foi ${amountLabel}, diferente dos R$ 20,00 combinados. Volte e corrija antes de confirmar.`],
+  ][Math.min(Math.max(position - 1, 0), 3)] ?? ['Siga o passo', 'Observe a tela e escolha com calma.'];
+  return <View style={styles.pixCoachCard}><View style={styles.pixCoachNumber}><AppText weight="900" color={colors.surface}>{position}</AppText></View><View style={styles.flex1}><AppText weight="900">Agora faça isto: {copy[0]}</AppText><AppText variant="small" color={colors.textMuted}>{copy[1]}</AppText></View><Ionicons name="arrow-down" size={28} color={colors.primary} /></View>;
 }
 
 function PixBankHeader({ compact = false }: { compact?: boolean }) {
@@ -1254,20 +1768,20 @@ function PixBankHeader({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function PixBankNav() {
+function PixBankNav({ onPixPress, onCardsPress, onMenuPress }: { onPixPress?: () => void; onCardsPress?: () => void; onMenuPress?: () => void }) {
   return (
     <View style={styles.bankBottomNav} accessibilityLabel="Navegação ilustrativa do banco de treinamento">
       <View style={styles.bankNavItem}><Ionicons name="home-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Início</AppText></View>
-      <View style={[styles.bankNavItem, styles.bankNavItemActive]}><Ionicons name="swap-horizontal" size={20} color={colors.primary} /><AppText variant="caption" weight="800" color={colors.primary}>Pix</AppText></View>
-      <View style={styles.bankNavItem}><Ionicons name="card-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Cartões</AppText></View>
-      <View style={styles.bankNavItem}><Ionicons name="menu-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Menu</AppText></View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Abrir área Pix" disabled={!onPixPress} onPress={onPixPress} style={[styles.bankNavItem, styles.bankNavItemActive]}><Ionicons name="swap-horizontal" size={20} color={colors.primary} /><AppText variant="caption" weight="800" color={colors.primary}>Pix</AppText></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Abrir cartões" onPress={onCardsPress} style={styles.bankNavItem}><Ionicons name="card-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Cartões</AppText></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu do banco" onPress={onMenuPress} style={styles.bankNavItem}><Ionicons name="menu-outline" size={20} color={colors.textMuted} /><AppText variant="caption" color={colors.textMuted}>Menu</AppText></Pressable>
     </View>
   );
 }
 
-function PixBankActions({ step, busy, onSubmit }: { step: ParticipantMissionStep; busy: boolean; onSubmit: (action: MissionAction) => Promise<void> }) {
+function PixBankActions({ step, busy, lastAnswerCorrect, amountMatches = true, onCorrectAmount, onSubmit }: { step: ParticipantMissionStep; busy: boolean; lastAnswerCorrect: boolean | null; amountMatches?: boolean; onCorrectAmount?: () => void; onSubmit: (action: MissionAction) => Promise<void> }) {
   const expected = asObject(step.expectedAction);
-  const options = Array.isArray(step.options) ? step.options.filter(isOption) : [];
+  const options = step.position === 3 ? [{ id: 'same-value', label: 'Os valores são iguais' }, { id: 'different-value', label: 'Os valores estão diferentes' }] : step.position === 4 && !amountMatches ? [{ id: 'confirm', label: 'Confirmar mesmo com o valor diferente' }, { id: 'cancel', label: 'Voltar e corrigir o valor' }] : Array.isArray(step.options) ? step.options.filter(isOption) : [];
 
   if (!options.length) {
     return <Button label="Continuar conferência" icon="arrow-forward" variant="primary" disabled={busy} onPress={() => void onSubmit({ action: 'continue' })} />;
@@ -1275,29 +1789,33 @@ function PixBankActions({ step, busy, onSubmit }: { step: ParticipantMissionStep
 
   return (
     <View style={styles.bankActionList}>
-      <AppText variant="small" weight="800" color={colors.textMuted}>{step.position === 4 ? 'ESCOLHA UMA AÇÃO' : 'TOQUE NA INFORMAÇÃO CORRETA'}</AppText>
+      {lastAnswerCorrect === false ? <View accessibilityRole="alert" style={styles.pixWrongChoice}><Ionicons name="warning" size={26} color={colors.danger} /><View style={styles.flex1}><AppText weight="900" color={colors.danger}>Confira novamente</AppText><AppText variant="small">{step.position === 2 ? 'O nome precisa ser igual ao nome mostrado no resumo: Ana Treino.' : step.position === 3 ? (amountMatches ? 'Os dois valores mostrados são iguais.' : 'O valor digitado é diferente dos R$ 20,00 combinados.') : 'Nome, banco e valor estão corretos. Neste treino, você já pode confirmar.'}</AppText><AppText variant="small" weight="900" color={colors.primary}>Tente novamente abaixo.</AppText></View></View> : null}
+      <View style={styles.pixTouchHint}><Ionicons name="hand-left-outline" size={24} color={colors.primary} /><AppText variant="small" weight="900" color={colors.primary}>{step.position === 4 ? 'TOQUE NA AÇÃO MAIS SEGURA' : 'TOQUE NA RESPOSTA CORRETA'}</AppText></View>
       {options.map((option) => {
-        const cancelAction = option.id === 'cancel';
-        const riskyAction = option.id === 'confirm';
+        const safeAction = step.position === 4 ? (amountMatches ? option.id === 'confirm' : option.id === 'cancel') : option.id === 'cancel';
+        const riskyAction = step.position === 4 ? (!amountMatches && option.id === 'confirm') : option.id === 'confirm';
         return (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={option.label}
             disabled={busy}
             key={option.id}
-            onPress={() => void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: option.id })}
+            onPress={() => {
+              if (step.position === 4 && !amountMatches && option.id === 'cancel' && onCorrectAmount) { onCorrectAmount(); return; }
+              void onSubmit({ action: expected.action === 'select' ? 'select' : 'choose', optionId: step.position === 3 && !amountMatches ? (option.id === 'different-value' ? 'same-value' : 'different-value') : step.position === 4 && !amountMatches ? 'cancel' : option.id });
+            }}
             style={({ pressed }) => [
               styles.bankActionRow,
-              cancelAction && styles.bankActionRowSafe,
+              safeAction && styles.bankActionRowSafe,
               riskyAction && styles.bankActionRowRisky,
               pressed && styles.bankActionRowPressed,
             ]}
           >
-            <View style={[styles.bankActionIcon, cancelAction && styles.bankActionIconSafe]}>
+            <View style={[styles.bankActionIcon, safeAction && styles.bankActionIconSafe]}>
               <Ionicons
-                name={cancelAction ? 'close-circle-outline' : step.position === 2 ? 'person-outline' : step.position === 3 ? 'calculator-outline' : 'arrow-forward-outline'}
+                name={step.position === 4 && option.id === 'confirm' ? 'checkmark-circle-outline' : option.id === 'cancel' ? 'arrow-back-circle-outline' : step.position === 2 ? 'person-outline' : step.position === 3 ? 'calculator-outline' : 'arrow-forward-outline'}
                 size={24}
-                color={cancelAction ? colors.success : colors.primary}
+                color={safeAction ? colors.success : colors.primary}
               />
             </View>
             <AppText weight="800" style={styles.flex1}>{option.label}</AppText>
@@ -1467,10 +1985,38 @@ const styles = StyleSheet.create({
   pixSummaryCompact: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   pixDivider: { backgroundColor: colors.border, height: 1, marginVertical: spacing.sm },
   pixSafetyRow: { alignItems: 'center', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  pixCoachCard: { alignItems: 'center', backgroundColor: '#E8F1FF', borderColor: '#8AB4F8', borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  pixCoachNumber: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 40, justifyContent: 'center', width: 40 },
+  pixWrongChoice: { alignItems: 'flex-start', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  pixTouchHint: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.primarySoft, borderRadius: radius.round, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  pixEyeButton: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
+  pixShortcutGrid: { flexDirection: 'row', gap: spacing.sm },
+  pixShortcut: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.lg, borderWidth: 2, flex: 1, gap: spacing.xs, minHeight: 118, justifyContent: 'center', padding: spacing.sm, ...shadow },
+  pixShortcutIcon: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 54, justifyContent: 'center', width: 54 },
+  pixShortcutDisabled: { alignItems: 'center', backgroundColor: '#ECE9EF', borderRadius: radius.lg, flex: 1, gap: spacing.sm, justifyContent: 'center', minHeight: 118, opacity: 0.72, padding: spacing.sm },
+  pixFlowTitle: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  pixTrainingInput: { backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.md, borderWidth: 2, color: colors.text, fontSize: 18, minHeight: 60, paddingHorizontal: spacing.md },
+  pixCopyExample: { alignItems: 'center', backgroundColor: '#FFF8D9', borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  pixTrainingFill: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.xs, minHeight: 44, paddingHorizontal: spacing.md },
+  pixAmountInput: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.primary, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.sm, minHeight: 76, paddingHorizontal: spacing.lg },
+  pixAmountTextInput: { color: colors.text, flex: 1, fontSize: 30, fontWeight: '800', minHeight: 70 },
+  pixRecipientBank: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm, padding: spacing.md },
+  pixRecipientBankIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
+  pixJourneyCard: { backgroundColor: colors.surface, borderColor: colors.primaryMuted, gap: spacing.md },
+  pixJourneyHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  pixJourneySteps: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'space-between' },
+  pixJourneyItem: { alignItems: 'center', flex: 1, gap: spacing.xs, minWidth: 72 },
+  pixJourneyCircle: { alignItems: 'center', backgroundColor: '#E6E3E9', borderColor: colors.border, borderRadius: radius.round, borderWidth: 1, height: 44, justifyContent: 'center', width: 44 },
+  pixJourneyCircleActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  bankMenuList: { gap: spacing.sm },
+  bankMenuRow: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, minHeight: 64, padding: spacing.md },
   pixComparisonRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   pixComparisonCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, flex: 1, gap: spacing.xs, padding: spacing.md },
   pixComparisonWarning: { backgroundColor: colors.warningSoft, borderColor: colors.warning },
   pixWarningCard: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm, padding: spacing.xl },
+  pixComparisonSafe: { backgroundColor: colors.successSoft, borderColor: colors.success },
+  pixCheckedCard: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1.5, gap: spacing.sm, padding: spacing.xl },
+  pixCheckedList: { alignSelf: 'stretch', backgroundColor: colors.surface, borderRadius: radius.md, gap: spacing.xs, padding: spacing.md },
   bankHeader: { backgroundColor: colors.primary, borderRadius: radius.lg, gap: spacing.md, padding: spacing.lg },
   bankHeaderCompact: { paddingVertical: spacing.md },
   bankHeaderTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
@@ -1714,6 +2260,78 @@ const styles = StyleSheet.create({
   fakeCallControls: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.xl },
   fakeCallButton: { alignItems: 'center', backgroundColor: '#E2E4E8', borderRadius: radius.round, height: 58, justifyContent: 'center', width: 58 },
   fakeCallEnd: { backgroundColor: '#C93636', transform: [{ rotate: '135deg' }] },
+  callExperience: { gap: spacing.md, padding: spacing.lg },
+  callProgressRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 44 },
+  callBackButton: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs, minHeight: 44, paddingRight: spacing.md },
+  callScreen: { alignItems: 'center', borderRadius: radius.xl, gap: spacing.xs, overflow: 'hidden', padding: spacing.lg },
+  callStatusPill: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'rgba(0,0,0,0.22)', borderRadius: radius.round, flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  callLiveDot: { backgroundColor: '#7FE39A', borderRadius: radius.round, height: 9, width: 9 },
+  callCallerAvatar: { backgroundColor: colors.surface, marginTop: spacing.sm },
+  callSpeechBubble: { alignItems: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.lg, flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, padding: spacing.md, width: '100%' },
+  callControl: { alignItems: 'center', gap: spacing.xs, minWidth: 62 },
+  callWarningCard: { alignItems: 'center', backgroundColor: colors.warningSoft, borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  callCoachCard: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  callCoachNumber: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 38, justifyContent: 'center', width: 38 },
+  callChoices: { borderColor: colors.primaryMuted, borderRadius: radius.lg, borderStyle: 'dashed', borderWidth: 2, gap: spacing.sm, padding: spacing.sm },
+  callChoicesRetry: { backgroundColor: colors.warningSoft, borderColor: colors.warning },
+  callChoice: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 72, padding: spacing.md },
+  callChoiceLetter: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 38, justifyContent: 'center', width: 38 },
+  callRemember: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  callModalBackdrop: { alignItems: 'center', backgroundColor: 'rgba(20, 18, 27, 0.72)', flex: 1, justifyContent: 'center', padding: spacing.lg },
+  callModalCard: { alignItems: 'stretch', backgroundColor: colors.surface, borderRadius: radius.xl, gap: spacing.md, maxWidth: 560, padding: spacing.xl, width: '100%', ...shadow },
+  callModalIcon: { alignItems: 'center', alignSelf: 'center', borderRadius: radius.round, height: 76, justifyContent: 'center', width: 76 },
+  callModalIconSafe: { backgroundColor: colors.success },
+  callModalIconDanger: { backgroundColor: colors.danger },
+  callModalLesson: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  callModalConsequence: { alignItems: 'flex-start', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  scamExperience: { gap: spacing.md, padding: spacing.lg },
+  scamPhoneHeader: { alignItems: 'center', backgroundColor: '#075E54', borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  scamAvatar: { alignItems: 'center', backgroundColor: '#C93636', borderRadius: radius.round, height: 48, justifyContent: 'center', width: 48 },
+  scamChannelNotice: { alignItems: 'flex-start', backgroundColor: '#E7F5EF', borderColor: '#25D366', borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  scamChatArea: { backgroundColor: '#EFEAE2', borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg, gap: spacing.md, minHeight: 245, padding: spacing.md },
+  scamBubble: { alignSelf: 'flex-start', backgroundColor: '#FFFFFF', borderBottomLeftRadius: 4, borderBottomRightRadius: radius.lg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, gap: spacing.sm, maxWidth: '90%', padding: spacing.md, ...shadow },
+  scamMessageTime: { alignSelf: 'flex-end' },
+  scamFakeLink: { alignItems: 'center', backgroundColor: '#FFF0F1', borderRadius: radius.sm, flexDirection: 'row', gap: spacing.xs, padding: spacing.sm },
+  scamSignals: { backgroundColor: colors.surface, borderColor: colors.danger, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm, padding: spacing.md },
+  scamSignalRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  scamReviewList: { backgroundColor: colors.surface, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1.5, gap: spacing.sm, padding: spacing.lg },
+  scamWhyCard: { backgroundColor: '#FFFDF8', borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1.5, gap: spacing.md, padding: spacing.md },
+  scamWhyHeading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  scamWhyRow: { alignItems: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.sm },
+  scamWhyIcon: { alignItems: 'center', backgroundColor: '#FFF0F1', borderRadius: radius.round, height: 38, justifyContent: 'center', width: 38 },
+  scamDoNow: { alignItems: 'flex-start', backgroundColor: colors.successSoft, borderRadius: radius.md, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  scamComposer: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  scamComposerInput: { backgroundColor: colors.surface, borderRadius: radius.round, flex: 1, justifyContent: 'center', minHeight: 46, paddingHorizontal: spacing.md },
+  scamMic: { alignItems: 'center', backgroundColor: '#008069', borderRadius: radius.round, height: 44, justifyContent: 'center', width: 44 },
+  familyAvatar: { backgroundColor: '#607D8B' },
+  familyTrainingNotice: { alignItems: 'flex-start', backgroundColor: '#E7F5EF', borderColor: '#25D366', borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  familyChatArea: { backgroundColor: '#EFEAE2', borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg, gap: spacing.sm, minHeight: 230, padding: spacing.md },
+  familySignalCard: { backgroundColor: '#FFF8E1', borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1.5, gap: spacing.sm, padding: spacing.md },
+  locationExperience: { gap: spacing.md, padding: spacing.lg },
+  locationAvatar: { backgroundColor: '#6A5ACD' },
+  locationSafetyNotice: { alignItems: 'flex-start', backgroundColor: '#E7F5EF', borderColor: '#25D366', borderRadius: radius.md, borderWidth: 1.5, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  locationChatArea: { backgroundColor: '#EFEAE2', borderRadius: radius.lg, gap: spacing.sm, minHeight: 230, padding: spacing.md },
+  locationDatePill: { alignSelf: 'center', backgroundColor: '#DCE7E9', borderRadius: radius.round, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  locationOutgoingBubble: { alignSelf: 'flex-end', backgroundColor: '#D9FDD3', borderBottomLeftRadius: radius.lg, borderBottomRightRadius: 4, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, gap: spacing.xs, maxWidth: '82%', padding: spacing.md },
+  locationMapCard: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.md, ...shadow },
+  locationMapGraphic: { alignItems: 'center', backgroundColor: '#DCEBE1', borderRadius: radius.md, height: 92, justifyContent: 'center', overflow: 'hidden', width: 120 },
+  locationRoute: { backgroundColor: '#8AB4F8', height: 5, position: 'absolute', transform: [{ rotate: '-22deg' }], width: 100 },
+  locationAttachmentSheet: { backgroundColor: colors.surface, borderRadius: radius.lg, gap: spacing.md, padding: spacing.md, ...shadow },
+  locationAttachmentGrid: { flexDirection: 'row', justifyContent: 'space-around' },
+  locationAttachmentItem: { alignItems: 'center', gap: spacing.xs, minWidth: 82, padding: spacing.xs },
+  locationAttachmentCircle: { alignItems: 'center', borderRadius: radius.round, height: 56, justifyContent: 'center', width: 56 },
+  locationHighlightedClip: { alignItems: 'center', backgroundColor: '#D9FDD3', borderColor: '#075E54', borderRadius: radius.round, borderWidth: 2, height: 44, justifyContent: 'center', width: 44 },
+  locationCoach: { alignItems: 'flex-start', backgroundColor: '#E8F1FF', borderColor: '#8AB4F8', borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  locationWhereToTap: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, padding: spacing.sm },
+  locationTip: { alignItems: 'flex-start', backgroundColor: '#FFF8E1', borderColor: colors.warning, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  scamSmsSystem: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  scamCoach: { alignItems: 'center', backgroundColor: colors.primarySoft, borderColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  scamCoachNumber: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.round, height: 40, justifyContent: 'center', width: 40 },
+  scamWrongAlert: { alignItems: 'flex-start', backgroundColor: '#FFF0F1', borderColor: colors.danger, borderRadius: radius.lg, borderWidth: 2, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
+  scamChoices: { borderColor: colors.primaryMuted, borderRadius: radius.lg, borderStyle: 'dashed', borderWidth: 2, gap: spacing.sm, padding: spacing.sm },
+  scamChoice: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, minHeight: 72, padding: spacing.md },
+  scamChoiceLetter: { alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: radius.round, height: 40, justifyContent: 'center', width: 40 },
+  scamRule: { alignItems: 'center', backgroundColor: colors.successSoft, borderColor: colors.success, borderRadius: radius.lg, borderWidth: 1.5, flexDirection: 'row', gap: spacing.md, padding: spacing.md },
   govFrame: { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 2, borderRadius: radius.xl, overflow: 'hidden', padding: 0 },
   govStepGuide: { alignItems: 'flex-start', backgroundColor: '#E8F1FF', borderBottomColor: '#B8D2FA', borderBottomWidth: 1, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   govStepGuideBadge: { alignItems: 'center', backgroundColor: '#1351B4', borderRadius: radius.round, height: 42, justifyContent: 'center', width: 42 },
